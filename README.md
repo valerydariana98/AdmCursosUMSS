@@ -1,1 +1,1 @@
-# postgradoInscripcionesCertificadosUMSS
+# AdministracionOfertaCursosUMSS
