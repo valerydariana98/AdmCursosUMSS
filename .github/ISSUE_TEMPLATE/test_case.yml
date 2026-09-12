@@ -1,0 +1,154 @@
+name: "Test Case"
+
+description: "Registra un caso de prueba para verificar una funcionalidad del sistema."
+
+title: "[TC] "
+
+labels:
+  - "type: test-case"
+
+body:
+
+  - type: input
+    id: tc-id
+    attributes:
+      label: "ID del Test Case"
+      description: "Identificador único. Utilizar el formato TC-XXX."
+      placeholder: "TC-001"
+    validations:
+      required: true
+
+  - type: input
+    id: historia
+    attributes:
+      label: "Historia de Usuario relacionada"
+      description: "Indica la Historia de Usuario que origina este caso de prueba."
+      placeholder: "HU-001"
+    validations:
+      required: true
+
+  - type: input
+    id: titulo-caso
+    attributes:
+      label: "Título"
+      description: "Describe brevemente qué se verificará."
+      placeholder: "Registrar ingreso de estudiante habilitado"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prioridad
+    attributes:
+      label: "Prioridad"
+      description: "Indica la importancia del caso de prueba."
+      options:
+        - "Critical"
+        - "High"
+        - "Medium"
+        - "Low"
+    validations:
+      required: true
+
+  - type: input
+    id: modulo
+    attributes:
+      label: "Módulo"
+      description: "Indica el módulo del sistema al que pertenece la prueba."
+      placeholder: "Ingreso de estudiantes"
+    validations:
+      required: true
+
+  - type: textarea
+    id: precondiciones
+    attributes:
+      label: "Precondiciones"
+      description: "Indica las condiciones que deben cumplirse antes de ejecutar la prueba."
+      placeholder: |
+        - El usuario debe haber iniciado sesión.
+        - El examen debe estar creado.
+        - El estudiante debe estar habilitado.
+    validations:
+      required: true
+
+  - type: textarea
+    id: datos-prueba
+    attributes:
+      label: "Datos de prueba"
+      description: "Indica los datos necesarios para ejecutar el caso."
+      placeholder: |
+        Estudiante: EST-001
+        Examen: EX-001
+        Usuario: DOC-001
+    validations:
+      required: true
+
+  - type: textarea
+    id: pasos
+    attributes:
+      label: "Pasos para ejecutar"
+      description: "Describe las acciones que debe realizar el tester, en orden."
+      placeholder: |
+        1. Iniciar sesión.
+        2. Seleccionar el curso.
+        3. Seleccionar el examen.
+        4. Registrar el ingreso del estudiante.
+    validations:
+      required: true
+
+  - type: textarea
+    id: resultado-esperado
+    attributes:
+      label: "Resultado esperado"
+      description: "Describe el comportamiento que debería producir el sistema."
+      placeholder: "El sistema registra correctamente el ingreso del estudiante."
+    validations:
+      required: true
+
+  - type: textarea
+    id: resultado-obtenido
+    attributes:
+      label: "Resultado obtenido"
+      description: "Completar después de ejecutar la prueba. Indica qué ocurrió realmente."
+      placeholder: "Pendiente de ejecución."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: estado
+    attributes:
+      label: "Estado"
+      description: "Indica el resultado actual de la ejecución."
+      options:
+        - "Not Run"
+        - "Pass"
+        - "Fail"
+        - "Blocked"
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidencia
+    attributes:
+      label: "Evidencia"
+      description: "Adjunta capturas de pantalla, videos o archivos cuando corresponda."
+      placeholder: "Arrastra aquí la evidencia o indica N/A si no corresponde."
+    validations:
+      required: false
+
+  - type: input
+    id: tester
+    attributes:
+      label: "Tester"
+      description: "Persona responsable de ejecutar la prueba."
+      placeholder: "@usuario-github"
+    validations:
+      required: true
+
+  - type: input
+    id: fecha
+    attributes:
+      label: "Fecha de ejecución"
+      description: "Fecha en la que se ejecutó la prueba. Utilizar el formato DD/MM/YYYY."
+      placeholder: "12/09/2026"
+    validations:
+      required: true
