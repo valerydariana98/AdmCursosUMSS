@@ -1,0 +1,53 @@
+name: User Story
+description: Crear una nueva Historia de Usuario
+title: "[HU] "
+labels:
+  - "user story"
+body:
+  - type: input
+    id: user
+    attributes:
+      label: Tipo de usuario
+      description: ¿Quién necesita esta funcionalidad?
+      placeholder: "Ej. estudiante, administrador, docente"
+    validations:
+      required: true
+
+  - type: textarea
+    id: need
+    attributes:
+      label: Necesidad
+      description: Describe qué quiere hacer el usuario.
+      placeholder: "Quiero..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefit
+    attributes:
+      label: Beneficio
+      description: Describe para qué necesita realizar esta acción o qué beneficio obtiene.
+      placeholder: "Para..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Criterios de aceptación
+      description: Define las condiciones que deben cumplirse para considerar terminada la Historia de Usuario.
+      placeholder: |
+        Dado que...
+        Cuando...
+        Entonces...
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencias
+      description: Indica otras Issues, funcionalidades o condiciones de las que depende esta Historia de Usuario. Si no existen, puedes dejar este campo vacío.
+      placeholder: "Ej. Depende de #123"
+    validations:
+      required: false
