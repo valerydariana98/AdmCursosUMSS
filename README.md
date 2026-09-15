@@ -1,1 +1,1 @@
-# AdministracionOfertaCursosUMSS
+# AdmCursosUMSS
