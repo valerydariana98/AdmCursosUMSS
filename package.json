@@ -1,0 +1,14 @@
+{
+  "name": "AdmCursosUMSS",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter client --filter server dev",
+    "build": "pnpm --recursive build",
+    "clean": "pnpm --recursive exec rimraf dist .vite node_modules"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.0"
+  }
+}
