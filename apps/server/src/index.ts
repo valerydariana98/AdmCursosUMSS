@@ -1,12 +1,11 @@
-import http from 'node:http';
+import dotenv from 'dotenv';
+import { resolve } from 'node:path';
+import { app } from './app.js';
 
-const PORT = process.env.PORT || 3001;
+dotenv.config({ path: resolve(process.cwd(), '../../.env') });
 
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ message: 'Servidor corriendo correctamente' }));
-});
+const PORT = Number(process.env.PORT) || 3001;
 
-server.listen(PORT, () => {
-  console.log(` Servidor listo en http://localhost:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`Servidor listo en http://localhost:${PORT}`);
 });

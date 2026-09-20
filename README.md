@@ -128,3 +128,69 @@ AdmCursosUMSS/
 ├── .env.example      # Plantilla de variables de entorno
 └── pnpm-workspace.yaml
 ```
+
+---
+
+### `apps/client` — Frontend (React + Vite + TypeScript)
+
+Aplicación web en React con Vite. Todo el consumo de la API del backend se hace desde aquí.
+
+```text
+apps/client/
+├── src/
+│   ├── components/   # Componentes reutilizables (botones, formularios, modales, tablas...)
+│   ├── pages/        # Vistas/páginas de la aplicación (Login, Cursos, Oferta...)
+│   ├── hooks/        # Hooks personalizados de React (useAuth, useCurso...)
+│   └── services/     # Capa de comunicación con la API (fetch/axios a /api)
+│   ├── App.tsx       # Componente raíz (rutas de la aplicación)
+│   ├── main.tsx      # Punto de entrada (monta React en el DOM)
+│   └── index.css     # Estilos globales
+├── index.html        # Plantilla HTML raíz de Vite
+└── vite.config.ts    # Configuración de Vite (puertos, plugins, proxy)
+```
+
+### `apps/server` — Backend (Node.js + Express + TypeScript)
+
+API REST. Expone los endpoints del sistema y se conecta a PostgreSQL.
+
+```text
+apps/server/
+├── src/
+│   ├── routes/       # Definición de rutas de la API (montadas en Express)
+│   ├── controllers/  # Manejo de peticiones HTTP (req/res) y respuesta al cliente
+│   ├── services/     # Lógica de negocio (reglas de la aplicación)
+│   ├── models/       # Modelos de datos y consultas SQL/ORMs
+│   ├── middlewares/  # Funciones intermedias (validación de token, errores...)
+│   ├── db/           # Conexión a PostgreSQL (pool de pg)
+│   ├── app.ts        # Configuración de Express (cors, json, montaje de rutas)
+│   └── index.ts      # Punto de entrada (inicia el servidor y carga variables de entorno)
+└── tsconfig.json
+```
+
+### `packages/shared` — Código compartido
+
+Tipos TypeScript, interfaces, constantes y utilidades que usan tanto `client` como `server` (ej. tipos de los models, `API_URL`).
+
+> **Regla:** si un tipo de dato se usa en ambos lados (ej. `Curso`), defínelo aquí y no dupliques código.
+
+---
+
+## Base de Datos (PostgreSQL)
+
+El proyecto usa **PostgreSQL** como motor de base de datos. La conexión se realiza mediante `pg` (Node-postgres) y se configura con las variables de entorno del `.env`.
+
+* **Archivo de conexión:** `apps/server/src/db/index.ts` (exporta un `pool` para ejecutar consultas).
+* **Consulta de ejemplo:**
+  ```typescript
+  import { pool } from '../db';
+
+  const { rows } = await pool.query('SELECT * FROM curso');
+  ```
+
+### ¿Cómo crear la base de datos?
+
+1. Con `psql` u otra herramienta (PgAdmin, DBeaver) crea la base de datos:
+   ```sql
+   CREATE DATABASE adm_cursos_umss;
+   ```
+2. Asegúrate de que las variables `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD` y `PGDATABASE` de tu `.env` coincidan con tu instalación local de PostgreSQL.
