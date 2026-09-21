@@ -1,14 +1,17 @@
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import dotenv from 'dotenv';
+import * as schema from './schema.js';
 
-export const pool = new Pool({
-  host: process.env.PGHOST || 'localhost',
-  port: Number(process.env.PGPORT) || 5432,
-  user: process.env.PGUSER || 'postgres',
-  password: process.env.PGPASSWORD || 'postgres',
-  database: process.env.PGDATABASE || 'adm_cursos_umss',
+dotenv.config();
+
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL no está definida en el archivo .env');
+}
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 });
 
-export async function checkDbConnection(): Promise<void> {
-  const { rows } = await pool.query('SELECT NOW()');
-  console.log(`Conexión a PostgreSQL exitosa: ${rows[0].now}`);
-}
+export const db = drizzle(pool, { schema });

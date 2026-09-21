@@ -1,8 +1,7 @@
 import dotenv from 'dotenv';
-import { resolve } from 'node:path';
 import { app } from './app.js';
 
-dotenv.config({ path: resolve(process.cwd(), '../../.env') });
+dotenv.config();
 
 const PORT = Number(process.env.PORT) || 3001;
 

@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import { API_URL } from 'shared';
 import healthRouter from './routes/health.routes.js';
 
 const app = express();
@@ -14,4 +13,4 @@ app.get('/', (_req, res) => {
 
 app.use('/api/health', healthRouter);
 
-export { app, API_URL };
+export { app };

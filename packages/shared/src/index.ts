@@ -1,2 +1,2 @@
 // packages/shared/src/index.ts
-export const API_URL = 'http://localhost:3001';
+// Tipos y utilidades compartidas entre apps/* y packages/*.

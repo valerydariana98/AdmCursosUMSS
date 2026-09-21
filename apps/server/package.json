@@ -5,11 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.6.1",
+    "drizzle-orm": "^0.45.2",
     "express": "^4.19.2",
     "pg": "^8.23.0",
     "shared": "workspace:*"
@@ -19,6 +23,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^20.19.43",
     "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.13",
     "typescript": "^5.4.0"
   }
