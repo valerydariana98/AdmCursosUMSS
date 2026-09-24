@@ -1,12 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+import Prueba from './pages/Prueba';
 
 function App() {
-  return (
-    <div>
-      <h1>AdmCursos UMSS</h1>
-      <p>API: {API_URL}</p>
-    </div>
-  );
+  return <Prueba />;
 }
 
 export default App;

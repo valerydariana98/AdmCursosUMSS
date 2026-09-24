@@ -1,5 +1,40 @@
 @import "tailwindcss";
 
-body {
-  @apply bg-slate-50 text-slate-800 antialiased;
+/* Tipografías centralizadas. Cambiar aquí afecta a todo el proyecto:
+  font-inter = fuente principal, font-nunito = fuente secundaria */
+.font-inter {font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;}
+.font-nunito {font-family: 'Nunito', ui-sans-serif, system-ui, sans-serif;}
+
+@layer utilites{
+
+  
+
+  /* Background Colors */
+  /* son los colores de fondo, los 3 del figma, lat = barra lateral, 
+     main = fondo blanco, main2 = fondo gris */
+  .bg-lat{background-color: #0C103C;}
+  .text-lat{color: #0C103C;}
+
+  .bg-main{background-color: #FFFFFF;}
+  .text-main{color: #FFFFFF;}
+
+  .bg-main2{background-color: #F8FAFC;}
+  .text-main2{color: #F8FAFC;}
+
+  .bg-primary {background-color: #000000;}
+  .text-primary {color: #000000;}
+
+  .bg-secondary {background-color: #626C7A;}
+  .text-secondary {color: #626C7A;}
+
+  .bg-error {background-color: #AB1B1E;}
+  .text-error {color: #AB1B1E;}
+
+  .bg-success {background-color: #047857;}
+  .text-success {color: #047857;}
+
+  .bg-warning {background-color: #B45309;}
+  .text-warning {color: #B45309;}
+
+
 }
