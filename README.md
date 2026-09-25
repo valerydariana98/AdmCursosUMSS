@@ -39,11 +39,12 @@ Sigue estos pasos la primera vez que clones el proyecto:
    ```
    *(Selecciona y aprueba paquetes como `esbuild` si la terminal te lo solicita).*
 
-4. **Configurar variables de entorno:**
-   Crea una copia del archivo de plantilla en la raíz para habilitar tu entorno local:
+4. **Configurar variables de entorno (una por app):**
    ```bash
-   cp .env.example .env
+   cp apps/server/.env.example apps/server/.env
+   cp apps/client/.env.example apps/client/.env
    ```
+   Luego completa los valores reales en `apps/server/.env` (`PORT` y `DATABASE_URL`) y, si hace falta, el `VITE_API_URL` del cliente.
 
 ---
 
@@ -63,6 +64,14 @@ Genera las versiones de producción en el orden correcto de dependencias:
 pnpm build
 ```
 
+### 3. Comandos de base de datos (solo server)
+```bash
+pnpm --filter server db:generate   # genera migraciones desde el schema
+pnpm --filter server db:push       # aplica el schema directamente a la BD
+pnpm --filter server db:studio     # abre el explorador visual de drizzle
+pnpm --filter server db:seed       # inserta los catálogos base (tipo_estudiante, tipos)
+```
+
 ---
 
 ## Reglas de Oro del Monorepo
@@ -74,12 +83,12 @@ Todas las instalaciones de librerías deben realizarse desde la **raíz del proy
 
 * **Agregar una librería al Frontend (`client`):**
   ```bash
-  pnpm --filter client add axios react-router-dom
+  pnpm --filter client add axios
   ```
 
 * **Agregar una librería al Backend (`server`):**
   ```bash
-  pnpm --filter server add express cors pg
+  pnpm --filter server add zod jsonwebtoken
   ```
 
 * **Agregar una herramienta global de desarrollo (en la raíz):**
@@ -94,24 +103,72 @@ Todas las instalaciones de librerías deben realizarse desde la **raíz del proy
 El paquete `packages/shared` almacena tipos de TypeScript, constantes e interfaces que necesitan tanto el cliente como el servidor.
 
 ### 1. Agregar o editar tipos compartidos
-Edita o crea tipos en `packages/shared/src/index.ts`:
+Edita `packages/shared/src/index.ts`:
 
 ```typescript
 // packages/shared/src/index.ts
 export interface Curso {
-  id: string;
-  nombre: string;
-  codigo: string;
+  id: number;
+  nombreCurso: string;
+  // ...
 }
 ```
 
 ### 2. Importar en el Cliente o Servidor
-Usa el paquete `shared` directamente en cualquier archivo de `apps/client` o `apps/server`:
-
 ```typescript
-// En apps/client/src/App.tsx o en apps/server/src/index.ts
-import { Curso } from 'shared';
+// En apps/client/src/App.tsx o en apps/server/src/controllers/x.controller.ts
+import type { Curso } from 'shared';
 ```
+
+> **Regla:** si un tipo de dato se usa en ambos lados (ej. `Curso`), defínelo aquí y no dupliques código.
+
+---
+
+## Base de Datos (PostgreSQL + Drizzle)
+
+El proyecto usa **PostgreSQL** conectado desde el server con **Drizzle ORM** sobre `pg`.
+
+* **Schema:** `apps/server/src/db/schema.ts` (define tablas, enums y relaciones).
+* **Conexión:** `apps/server/src/db/index.ts` exporta `db` (drizzle) a partir de `DATABASE_URL`.
+* **Variables de entorno (`apps/server/.env`):**
+  ```
+  PORT=3001
+  DATABASE_URL=postgres://usuario:password@host:puerto/database
+  ```
+  En despliegues como Aiven/DigitalOcean suele requerirse `?sslmode=require` (el pool ya usa `rejectUnauthorized: false`).
+
+### ¿Cómo crear/actualizar la estructura?
+```bash
+pnpm --filter server db:push     # aplica schema.ts a la BD (rápido, para desarrollo)
+pnpm --filter server db:seed     # inserta los catálogos base
+```
+Para producción es recomendable versionar migraciones con `db:generate` → migraciones SQL → `drizzle-kit migrate`.
+
+### Ejemplo de consulta con drizzle
+```typescript
+// apps/server/src/services/cursos.service.ts
+import { eq } from 'drizzle-orm';
+import { db } from '../db/index.js';
+import { cursos } from '../db/schema.js';
+
+export const listarCursos = async () => db.select().from(cursos);
+```
+
+---
+
+## Cómo Probar el Backend
+
+1. Levantá el server con `pnpm --filter server dev`.
+2. Verificá que responde:
+   ```bash
+   curl http://localhost:3001/api/health
+   # → { "status": "ok", "database": "connected", ... }
+   ```
+3. Endpoints de ejemplo ya montados:
+   ```bash
+   curl http://localhost:3001/api/cursos        # listar cursos
+   curl http://localhost:3001/api/cursos/1      # curso por id
+   ```
 
 ---
 
@@ -124,12 +181,9 @@ AdmCursosUMSS/
 │   └── server/       # Backend en Node.js + Express + TypeScript
 ├── packages/
 │   └── shared/       # Tipos, interfaces y utilidades compartidas
-├── .env              # Variables de entorno locales (NO subir a Git)
-├── .env.example      # Plantilla de variables de entorno
-└── pnpm-workspace.yaml
+├── pnpm-workspace.yaml
+└── package.json
 ```
-
----
 
 ### `apps/client` — Frontend (React + Vite + TypeScript)
 
@@ -138,13 +192,13 @@ Aplicación web en React con Vite. Todo el consumo de la API del backend se hace
 ```text
 apps/client/
 ├── src/
-│   ├── components/   # Componentes reutilizables (botones, formularios, modales, tablas...)
+│   ├── components/   # Componentes reutilizables (Button, TextField, RadioGroup...)
 │   ├── pages/        # Vistas/páginas de la aplicación (Login, Cursos, Oferta...)
 │   ├── hooks/        # Hooks personalizados de React (useAuth, useCurso...)
 │   └── services/     # Capa de comunicación con la API (fetch/axios a /api)
 │   ├── App.tsx       # Componente raíz (rutas de la aplicación)
 │   ├── main.tsx      # Punto de entrada (monta React en el DOM)
-│   └── index.css     # Estilos globales
+│   └── index.css     # Estilos globales y tokens de diseño
 ├── index.html        # Plantilla HTML raíz de Vite
 └── vite.config.ts    # Configuración de Vite (puertos, plugins, proxy)
 ```
@@ -159,38 +213,15 @@ apps/server/
 │   ├── routes/       # Definición de rutas de la API (montadas en Express)
 │   ├── controllers/  # Manejo de peticiones HTTP (req/res) y respuesta al cliente
 │   ├── services/     # Lógica de negocio (reglas de la aplicación)
-│   ├── models/       # Modelos de datos y consultas SQL/ORMs
-│   ├── middlewares/  # Funciones intermedias (validación de token, errores...)
-│   ├── db/           # Conexión a PostgreSQL (pool de pg)
+│   ├── models/       # DTOs y modelos de datos (los de BD viven en db/schema.ts)
+│   ├── middlewares/  # Funciones intermedias (errorHandler, validación de token...)
+│   ├── db/           # Conexión a PostgreSQL (drizzle + pool) y schema.ts
 │   ├── app.ts        # Configuración de Express (cors, json, montaje de rutas)
 │   └── index.ts      # Punto de entrada (inicia el servidor y carga variables de entorno)
+├── drizzle.config.ts # Configuración de drizzle-kit (schema, out, dialecto)
 └── tsconfig.json
 ```
 
 ### `packages/shared` — Código compartido
 
-Tipos TypeScript, interfaces, constantes y utilidades que usan tanto `client` como `server` (ej. tipos de los models, `API_URL`).
-
-> **Regla:** si un tipo de dato se usa en ambos lados (ej. `Curso`), defínelo aquí y no dupliques código.
-
----
-
-## Base de Datos (PostgreSQL)
-
-El proyecto usa **PostgreSQL** como motor de base de datos. La conexión se realiza mediante `pg` (Node-postgres) y se configura con las variables de entorno del `.env`.
-
-* **Archivo de conexión:** `apps/server/src/db/index.ts` (exporta un `pool` para ejecutar consultas).
-* **Consulta de ejemplo:**
-  ```typescript
-  import { pool } from '../db';
-
-  const { rows } = await pool.query('SELECT * FROM curso');
-  ```
-
-### ¿Cómo crear la base de datos?
-
-1. Con `psql` u otra herramienta (PgAdmin, DBeaver) crea la base de datos:
-   ```sql
-   CREATE DATABASE adm_cursos_umss;
-   ```
-2. Asegúrate de que las variables `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD` y `PGDATABASE` de tu `.env` coincidan con tu instalación local de PostgreSQL.
+Tipos TypeScript, interfaces, constantes y utilidades que usan tanto `client` como `server` (ej. `Curso`, `Grupo`, enums).

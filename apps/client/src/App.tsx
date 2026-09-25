@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Sidebar from './layout/Sidebar';
 import { useInstructors } from './hooks/useInstructors';
-import InstructorsListPage from './pages/instructors/InstructorsListPage';
+import InstructorsListPage from './pages/instructors/instructorsListPage'
 import Prueba from './pages/Prueba';
 
 export default function App() {
