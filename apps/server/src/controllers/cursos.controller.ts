@@ -1,6 +1,10 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { Curso } from 'shared';
-import { listarCursos, obtenerCursoPorId } from '../services/cursos.service.js';
+import {
+  crearCurso as crearCursoService,
+  listarCursos,
+  obtenerCursoPorId,
+} from '../services/cursos.service.js';
 
 export const obtenerCursos = async (
   _req: Request,
@@ -28,6 +32,19 @@ export const obtenerCurso = async (
       return;
     }
     res.json(curso);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const crearCurso = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const curso: Curso = await crearCursoService(req.body);
+    res.status(201).json(curso);
   } catch (error) {
     next(error);
   }

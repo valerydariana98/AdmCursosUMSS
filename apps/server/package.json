@@ -18,7 +18,8 @@
     "drizzle-orm": "^0.45.2",
     "express": "^4.19.2",
     "pg": "^8.23.0",
-    "shared": "workspace:*"
+    "shared": "workspace:*",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
