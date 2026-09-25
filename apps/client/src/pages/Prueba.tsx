@@ -22,8 +22,6 @@ const Prueba = () => {
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans">
-      {/* 1. LAYOUT SIDEBAR FIJO */}
-      <Sidebar currentPath={currentTab} onNavigate={(path) => setCurrentTab(path)} />
 
       {/* 2. CONTENIDO PRINCIPAL / SHOWCASE DE COMPONENTES */}
       <main className="flex-1 overflow-y-auto p-8 space-y-8">
@@ -31,10 +29,6 @@ const Prueba = () => {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Catálogo General de Componentes UI</h1>
             <p className="text-sm text-gray-500">Formación Continua - UMSS</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400 font-medium">Estado global:</span>
-            <Badge status="Activo" />
           </div>
         </header>
 
@@ -48,11 +42,11 @@ const Prueba = () => {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 font-medium">Estado Activo:</span>
-              <Badge status="Activo" />
+              <Badge status={true} />
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 font-medium">Estado Inactivo:</span>
-              <Badge status="Inactivo" />
+              <Badge status={false} />
             </div>
           </div>
         </Card>
