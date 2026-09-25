@@ -7,7 +7,7 @@ export const validate =
 
     if (!result.success) {
       res.status(400).json({
-        message: 'Datos inválidos',
+        message: 'Invalid request data',
         errors: result.error.issues.map((issue) => ({
           path: issue.path.join('.'),
           message: issue.message,

@@ -1,12 +1,12 @@
 // packages/shared/src/index.ts
-// Tipos compartidos entre apps/* y packages/*.
-// Si un tipo se usa en client y server, defínelo aquí.
+// Types shared between apps/* and packages/*.
+// If a type is used by both client and server, define it here.
 
-export type Modalidad = 'presencial' | 'virtual' | 'hibrida';
-export type EstadoGrupo = 'preinscripcion' | 'habilitado' | 'inhabilitado' | 'finalizado';
-export type TipoEvaluacion = 'asistencia' | 'eval' | 'trabajo';
+export type Modality = 'presencial' | 'virtual' | 'hibrida';
+export type GroupStatus = 'preinscripcion' | 'habilitado' | 'inhabilitado' | 'finalizado';
+export type EvaluationType = 'asistencia' | 'eval' | 'trabajo';
 
-export interface Curso {
+export interface Course {
   id: number;
   nombreCurso: string;
   duracionHoras: number;
@@ -21,23 +21,23 @@ export interface Curso {
   estado: boolean;
 }
 
-export type CrearCurso = Omit<Curso, 'id'>;
+export type CreateCourse = Omit<Course, 'id'>;
 
-export interface Grupo {
+export interface Group {
   id: number;
   numGrupo: number;
   idCurso: number;
   idInstructor: number;
   horaIni: string;
   horaFin: string;
-  modalidad: Modalidad;
+  modalidad: Modality;
   aula: string | null;
   minimEst: number;
   maxEst: number;
-  estado: EstadoGrupo;
+  estado: GroupStatus;
 }
 
-export interface Estudiante {
+export interface Student {
   id: number;
   codSis: string | null;
   ci: string;
@@ -47,7 +47,7 @@ export interface Estudiante {
   celular: string;
 }
 
-export interface Inscripcion {
+export interface Enrollment {
   id: number;
   idEst: number;
   idGrupo: number;
