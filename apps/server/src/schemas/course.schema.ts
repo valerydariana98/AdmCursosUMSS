@@ -2,23 +2,35 @@ import { z } from 'zod';
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
+const isRealDate = (value: string): boolean => {
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+};
+
 export const createCourseSchema = z
   .object({
     nombreCurso: z
       .string({ error: 'Course name is required' })
+      .trim()
       .min(1, 'Course name is required')
-      .max(255, 'Course name must be at most 255 characters')
-      .trim(),
+      .max(255, 'Course name must be at most 255 characters'),
     duracionHoras: z
       .number({ error: 'Duration must be a number' })
       .int('Duration must be an integer')
       .positive('Duration must be greater than 0'),
     fechaIni: z
       .string({ error: 'Start date is required' })
-      .regex(dateRegex, 'Invalid format, expected YYYY-MM-DD'),
+      .regex(dateRegex, 'Invalid format, expected YYYY-MM-DD')
+      .refine(isRealDate, 'Invalid date, expected a real calendar date'),
     fechaFin: z
       .string({ error: 'End date is required' })
-      .regex(dateRegex, 'Invalid format, expected YYYY-MM-DD'),
+      .regex(dateRegex, 'Invalid format, expected YYYY-MM-DD')
+      .refine(isRealDate, 'Invalid date, expected a real calendar date'),
     costoUmss: z
       .number({ error: 'UMSS cost must be a number' })
       .int()
@@ -48,5 +60,10 @@ export const createCourseSchema = z
     message: 'End date must be equal to or later than start date',
     path: ['fechaFin'],
   });
+
+export const coursesQuerySchema = z.object({
+  view: z.enum(['current', 'archived']).optional(),
+  periodo: z.string().regex(/^[12]-\d{4}$/).optional(),
+});
 
 export type CreateCourseInput = z.infer<typeof createCourseSchema>;

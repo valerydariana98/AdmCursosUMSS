@@ -166,8 +166,9 @@ export const listarCursos = async () => db.select().from(cursos);
    ```
 3. Endpoints de ejemplo ya montados:
    ```bash
-   curl http://localhost:3001/api/cursos        # listar cursos
-   curl http://localhost:3001/api/cursos/1      # curso por id
+   curl http://localhost:3001/api/courses                  # cursos del periodo actual
+   curl http://localhost:3001/api/courses/1                # curso por id
+   curl "http://localhost:3001/api/courses?view=archived"  # finalizados de periodos pasados
    ```
 
 ---
@@ -213,8 +214,10 @@ apps/server/
 │   ├── routes/       # Definición de rutas de la API (montadas en Express)
 │   ├── controllers/  # Manejo de peticiones HTTP (req/res) y respuesta al cliente
 │   ├── services/     # Lógica de negocio (reglas de la aplicación)
+│   ├── schemas/      # Esquemas de validación zod por recurso (course.schema.ts...)
 │   ├── models/       # DTOs y modelos de datos (los de BD viven en db/schema.ts)
-│   ├── middlewares/  # Funciones intermedias (errorHandler, validación de token...)
+│   ├── middlewares/  # Funciones intermedias (errorHandler, validate, validación de token...)
+│   ├── utils/        # Helpers sin dependencias (period.ts...)
 │   ├── db/           # Conexión a PostgreSQL (drizzle + pool) y schema.ts
 │   ├── app.ts        # Configuración de Express (cors, json, montaje de rutas)
 │   └── index.ts      # Punto de entrada (inicia el servidor y carga variables de entorno)
@@ -224,4 +227,4 @@ apps/server/
 
 ### `packages/shared` — Código compartido
 
-Tipos TypeScript, interfaces, constantes y utilidades que usan tanto `client` como `server` (ej. `Curso`, `Grupo`, enums).
+Tipos TypeScript, interfaces, constantes y utilidades que usan tanto `client` como `server` (ej. `Course`, `Group`, enums).
