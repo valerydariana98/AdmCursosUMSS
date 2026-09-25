@@ -1,20 +1,44 @@
-import { and, eq, ne } from 'drizzle-orm';
+import { and, count, eq, ilike, ne, type SQL } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { cursos, grupos } from '../db/schema.js';
-import type { CreateCourseInput } from '../schemas/course.schema.js';
+import type { CoursesQuery, CreateCourseInput } from '../schemas/course.schema.js';
 import { getCurrentPeriod } from '../utils/period.js';
 
-export const listCourses = async (view?: string, periodo?: string) => {
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 10;
+
+export const listCourses = async (query: CoursesQuery = {}) => {
+  const { view, periodo, page = DEFAULT_PAGE, limit = DEFAULT_LIMIT, search } = query;
   const targetPeriod = periodo ?? getCurrentPeriod();
 
-  if (view === 'archived') {
-    return db
-      .select()
-      .from(cursos)
-      .where(and(ne(cursos.periodo, targetPeriod), eq(cursos.estado, false)));
+  const periodFilter =
+    view === 'archived'
+      ? and(ne(cursos.periodo, targetPeriod), eq(cursos.estado, false))!
+      : eq(cursos.periodo, targetPeriod);
+
+  const filters: SQL[] = [periodFilter];
+
+  if (search) {
+    filters.push(ilike(cursos.nombreCurso, `%${search}%`));
   }
 
-  return db.select().from(cursos).where(eq(cursos.periodo, targetPeriod));
+  const where = and(...filters);
+  const offset = (page - 1) * limit;
+
+  const [rows, [totalRow]] = await Promise.all([
+    db.select().from(cursos).where(where).limit(limit).offset(offset),
+    db.select({ value: count() }).from(cursos).where(where),
+  ]);
+
+  const total = totalRow.value;
+
+  return {
+    data: rows,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 export const createCourse = async (data: CreateCourseInput) => {

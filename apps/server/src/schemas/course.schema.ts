@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { getCurrentPeriodYear, getPeriodYear } from '../utils/period.js';
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+const periodRegex = /^[12]-\d{4}$/;
 
 const isRealDate = (value: string): boolean => {
   const [year, month, day] = value.split('-').map(Number);
@@ -54,16 +56,24 @@ export const createCourseSchema = z
       .min(0, 'Maximum absences cannot be negative'),
     periodo: z
       .string({ error: 'Period is required' })
-      .regex(/^[12]-\d{4}$/, 'Invalid format, expected 1-2026 (semester-year), e.g. 1-2026, 2-2026'),
+      .regex(periodRegex, 'Invalid format, expected 1-2026 (semester-year), e.g. 1-2026, 2-2026'),
   })
   .refine((data) => data.fechaFin >= data.fechaIni, {
     message: 'End date must be equal to or later than start date',
     path: ['fechaFin'],
+  })
+  .refine((data) => getPeriodYear(data.periodo) >= getCurrentPeriodYear(), {
+    message: 'Period cannot belong to a past year',
+    path: ['periodo'],
   });
 
 export const coursesQuerySchema = z.object({
   view: z.enum(['current', 'archived']).optional(),
-  periodo: z.string().regex(/^[12]-\d{4}$/).optional(),
+  periodo: z.string().regex(periodRegex).optional(),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().max(100).optional(),
+  search: z.string().trim().optional(),
 });
 
 export type CreateCourseInput = z.infer<typeof createCourseSchema>;
+export type CoursesQuery = z.infer<typeof coursesQuerySchema>;
