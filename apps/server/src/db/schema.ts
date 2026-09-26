@@ -32,7 +32,7 @@ export const tipoEvalEnum = pgEnum('tipo_eval_enum', ['asistencia', 'eval', 'tra
 // 1. Usuarios
 export const usuarios = pgTable('usuarios', {
   id: serial('id').primaryKey(),
-  username: varchar('username', { length: 255 }).notNull(),
+  username: varchar('username', { length: 255 }).notNull().unique(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
   rol: rolEnum('rol').notNull(),

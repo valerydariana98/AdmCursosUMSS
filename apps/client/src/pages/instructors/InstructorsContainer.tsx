@@ -1,11 +1,15 @@
 // apps/client/src/pages/instructors/InstructorsContainer.tsx
 import { useState } from 'react';
 import { useInstructors } from '../../hooks/useInstructors';
+import type { Instructor } from '../../types/instructor';
 import InstructorsListPage from './InstructorsListPage';
-import InstructorCreatePage from './InstructorCreatePage';
+import InstructorFormPage from './InstructorFormPage';
+
+type ViewMode = 'list' | 'create' | 'edit';
 
 export default function InstructorsContainer() {
-  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit'>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [editingInstructor, setEditingInstructor] = useState<Instructor | null>(null);
 
   const {
     instructors,
@@ -20,16 +24,28 @@ export default function InstructorsContainer() {
     setStatusFilter,
     setPage,
     addInstructor,
+    updateInstructor,
   } = useInstructors();
 
-  if (viewMode === 'create') {
+  const goToList = () => {
+    setEditingInstructor(null);
+    setViewMode('list');
+  };
+
+  if (viewMode === 'create' || viewMode === 'edit') {
     return (
-      <InstructorCreatePage
+      <InstructorFormPage
+        mode={viewMode}
+        instructor={editingInstructor ?? undefined}
         onSave={async (data) => {
-          await addInstructor(data);
-          setViewMode('list');
+          if (viewMode === 'edit' && editingInstructor) {
+            await updateInstructor(editingInstructor.id, data);
+          } else {
+            await addInstructor(data);
+          }
+          goToList();
         }}
-        onCancel={() => setViewMode('list')}
+        onCancel={goToList}
       />
     );
   }
@@ -47,8 +63,14 @@ export default function InstructorsContainer() {
       statusFilter={statusFilter}
       onStatusFilterChange={setStatusFilter}
       onPageChange={setPage}
-      onNavigateToCreate={() => setViewMode('create')}
-      onNavigateToEdit={(inst) => alert(`Próximamente HU #15: Editar a ${inst.nombres}`)}
+      onNavigateToCreate={() => {
+        setEditingInstructor(null);
+        setViewMode('create');
+      }}
+      onNavigateToEdit={(inst) => {
+        setEditingInstructor(inst);
+        setViewMode('edit');
+      }}
       onDeleteInstructor={(inst) => alert(`Próximamente HU #16: Eliminar a ${inst.nombres}`)}
     />
   );

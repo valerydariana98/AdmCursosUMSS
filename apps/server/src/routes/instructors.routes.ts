@@ -3,6 +3,7 @@ import {
   createInstructor,
   getInstructor,
   getInstructors,
+  updateInstructor,
 } from '../controllers/instructors.controller.js';
 import { validate, validateParams, validateQuery } from '../middlewares/validate.js';
 import { createInstructorSchema, instructorsQuerySchema } from '../schemas/instructor.schema.js';
@@ -13,5 +14,11 @@ const router = Router();
 router.get('/', validateQuery(instructorsQuerySchema), getInstructors);
 router.get('/:id', validateParams(idParamsSchema), getInstructor);
 router.post('/', validate(createInstructorSchema), createInstructor);
+router.put(
+  '/:id',
+  validateParams(idParamsSchema),
+  validate(createInstructorSchema),
+  updateInstructor
+);
 
 export default router;

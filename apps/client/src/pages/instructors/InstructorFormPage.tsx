@@ -1,4 +1,4 @@
-// apps/client/src/pages/instructors/InstructorCreatePage.tsx
+// apps/client/src/pages/instructors/InstructorFormPage.tsx
 import React, { useState, useEffect } from 'react';
 import Button from '../../components/Button';
 import TextField from '../../components/TextField';
@@ -6,32 +6,58 @@ import Select from '../../components/Select';
 import Toggle from '../../components/Toggle';
 import AlertInfo from '../../components/AlertInfo';
 import Card from '../../components/Card';
-import { CreateInstructorDTO } from '../../types/instructor';
+import { CreateInstructorDTO, Instructor } from '../../types/instructor';
 import { ApiError } from '../../services/api';
 import { instructorSchema } from '../../schemas/instructorSchema';
 
-interface InstructorCreatePageProps {
+const CARGO_OPTIONS = [
+  { value: 'Docente UMSS', label: 'Docente UMSS' },
+  { value: 'Docente Invitado', label: 'Docente Invitado' },
+  { value: 'Auxiliar UMSS', label: 'Auxiliar UMSS' },
+  { value: 'Auxiliar Invitado', label: 'Auxiliar Invitado' },
+  { value: 'otro', label: 'Otro (Especificar manualmente)' },
+];
+
+const CUSTOM_CARGO = 'otro';
+
+interface InstructorFormPageProps {
+  mode: 'create' | 'edit';
+  /** Solo en modo edición: el docente que se está editando. */
+  instructor?: Instructor;
   onSave: (data: CreateInstructorDTO) => Promise<void>;
   onCancel: () => void;
 }
 
-export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
+export const InstructorFormPage: React.FC<InstructorFormPageProps> = ({
+  mode,
+  instructor,
   onSave,
   onCancel,
 }) => {
-  const [nombres, setNombres] = useState('');
-  const [apPaterno, setApPaterno] = useState('');
-  const [apMaterno, setApMaterno] = useState('');
-  const [ci, setCi] = useState('');
-  const [telefono, setTelefono] = useState('');
-  const [email, setEmail] = useState('');
+  const isEdit = mode === 'edit';
 
-  const [selectedCargoOption, setSelectedCargoOption] = useState('Docente UMSS');
-  const [customCargo, setCustomCargo] = useState('');
+  // En edición el componente se monta con el docente ya cargado por el listado,
+  // así que el valor inicial del useState alcanza para sembrar todos los campos.
+  const [nombres, setNombres] = useState(instructor?.nombres ?? '');
+  const [apPaterno, setApPaterno] = useState(instructor?.apPaterno ?? '');
+  const [apMaterno, setApMaterno] = useState(instructor?.apMaterno ?? '');
+  const [ci, setCi] = useState(instructor?.ci ?? '');
+  const [telefono, setTelefono] = useState(instructor?.telefono ?? '');
+  const [email, setEmail] = useState(instructor?.email ?? '');
 
-  const [estado, setEstado] = useState(true);
-  const [username, setUsername] = useState('');
-  const [usernameTouched, setUsernameTouched] = useState(false);
+  // Si el cargo guardado no está en la lista, cae en "Otro" y se muestra el valor real.
+  const currentCargo = instructor?.cargo ?? 'Docente UMSS';
+  const isCustomCargo = !CARGO_OPTIONS.some((o) => o.value === currentCargo);
+
+  const [selectedCargoOption, setSelectedCargoOption] = useState(
+    isCustomCargo ? CUSTOM_CARGO : currentCargo
+  );
+  const [customCargo, setCustomCargo] = useState(isCustomCargo ? currentCargo : '');
+
+  const [estado, setEstado] = useState(instructor?.estado ?? true);
+  const [username, setUsername] = useState(instructor?.username ?? '');
+  // En edición el usuario ya existe: el autocompletado no debe pisarlo.
+  const [usernameTouched, setUsernameTouched] = useState(isEdit);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -48,12 +74,18 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
     setUsername(cleanFirst || cleanPaterno ? `${cleanFirst}${cleanPaterno}${currentYear}` : '');
   }, [nombres, apPaterno, usernameTouched]);
 
+  const handleCargoChange = (value: string) => {
+    setSelectedCargoOption(value);
+    if (value !== CUSTOM_CARGO) setCustomCargo('');
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
     setSubmitError(null);
 
-    const finalCargo = selectedCargoOption === 'otro' ? customCargo.trim() : selectedCargoOption;
+    const finalCargo =
+      selectedCargoOption === CUSTOM_CARGO ? customCargo.trim() : selectedCargoOption;
 
     const formData = {
       nombres: nombres.trim(),
@@ -96,7 +128,9 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
           setErrors(fieldErrors);
         }
       } else {
-        setSubmitError('No se pudo guardar el instructor');
+        setSubmitError(
+          isEdit ? 'No se pudo actualizar el instructor' : 'No se pudo guardar el instructor'
+        );
       }
     } finally {
       setSubmitting(false);
@@ -108,16 +142,21 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <span className="text-xs text-gray-400 font-medium">
-            Instructores / <strong className="text-gray-700">Nuevo instructor</strong>
+            Instructores /{' '}
+            <strong className="text-gray-700">
+              {isEdit ? 'Editar instructor' : 'Nuevo instructor'}
+            </strong>
           </span>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">Agregar Instructor</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mt-1">
+            {isEdit ? 'Editar Instructor' : 'Agregar Instructor'}
+          </h1>
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" onClick={onCancel} disabled={submitting}>
             Cancelar
           </Button>
           <Button variant="primary" onClick={() => handleSubmit()} disabled={submitting}>
-            {submitting ? 'Guardando...' : 'Guardar Instructor'}
+            {submitting ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Guardar Instructor'}
           </Button>
         </div>
       </div>
@@ -190,18 +229,12 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
             <Select
               label="Cargo"
               value={selectedCargoOption}
-              onChange={(e) => setSelectedCargoOption(e.target.value)}
-              options={[
-                { value: 'Docente UMSS', label: 'Docente UMSS' },
-                { value: 'Docente Invitado', label: 'Docente Invitado' },
-                { value: 'Auxiliar UMSS', label: 'Auxiliar UMSS' },
-                { value: 'Auxiliar Invitado', label: 'Auxiliar Invitado' },
-                { value: 'otro', label: 'Otro (Especificar manualmente)' },
-              ]}
+              onChange={(e) => handleCargoChange(e.target.value)}
+              options={CARGO_OPTIONS}
               error={errors.cargo}
             />
 
-            {selectedCargoOption === 'otro' && (
+            {selectedCargoOption === CUSTOM_CARGO && (
               <TextField
                 label="Especifique el cargo"
                 placeholder="Ej. Docente Investigador"
@@ -228,8 +261,16 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
 
           <AlertInfo
             type="info"
-            title="La contraseña inicial será el CI del docente"
-            subtitle="El docente podrá cambiarla al iniciar sesión por primera vez"
+            title={
+              isEdit
+                ? 'La contraseña del docente no se modifica'
+                : 'La contraseña inicial será el CI del docente'
+            }
+            subtitle={
+              isEdit
+                ? 'Solo se actualizan los datos del docente y su usuario de acceso'
+                : 'El docente podrá cambiarla al iniciar sesión por primera vez'
+            }
           />
 
           {/* Bloque de Estado Rediseñado: Armónico, Azul Institucional y Alineado */}
@@ -261,4 +302,4 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
   );
 };
 
-export default InstructorCreatePage;
+export default InstructorFormPage;

@@ -5,11 +5,13 @@ import {
   createInstructor as createInstructorService,
   getInstructorById,
   listInstructors,
+  updateInstructor as updateInstructorService,
 } from '../services/instructors.service.js';
 
 const FAILURE_MESSAGES = {
   ci_taken: 'El CI registrado ya existe en el sistema',
   email_taken: 'El correo registrado ya existe en el sistema',
+  username_taken: 'El nombre de usuario ya está en uso, modifícalo para continuar',
 } as const;
 
 export const getInstructors = async (
@@ -59,6 +61,31 @@ export const createInstructor = async (
     }
 
     res.status(201).json(result.instructor);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateInstructor = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = Number(req.params.id);
+    const result = await updateInstructorService(id, req.body);
+
+    if (!result.ok) {
+      if (result.reason === 'not_found') {
+        res.status(404).json({ message: 'Instructor not found' });
+        return;
+      }
+
+      res.status(409).json({ message: FAILURE_MESSAGES[result.reason] });
+      return;
+    }
+
+    res.json(result.instructor);
   } catch (error) {
     next(error);
   }
