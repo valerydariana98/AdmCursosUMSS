@@ -3,10 +3,17 @@ import React from 'react';
 
 interface BadgeProps {
   status: boolean; // boolean según BD (true = Activo, false = Inactivo)
+  activeLabel?: string;
+  inactiveLabel?: string;
   className?: string;
 }
 
-const Badge: React.FC<BadgeProps> = ({ status, className = '' }) => {
+const Badge: React.FC<BadgeProps> = ({
+  status,
+  activeLabel = 'Activo',
+  inactiveLabel = 'Inactivo',
+  className = '',
+}) => {
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-colors select-none ${
@@ -20,7 +27,7 @@ const Badge: React.FC<BadgeProps> = ({ status, className = '' }) => {
           status ? 'bg-emerald-600 animate-pulse' : 'bg-gray-500'
         }`}
       />
-      {status ? 'Activo' : 'Inactivo'}
+      {status ? activeLabel : inactiveLabel}
     </span>
   );
 };

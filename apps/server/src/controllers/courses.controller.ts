@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { Course } from 'shared';
+import type { CoursesQuery } from '../schemas/course.schema.js';
 import {
   createCourse as createCourseService,
   deleteCourse as deleteCourseService,
@@ -14,10 +15,8 @@ export const getCourses = async (
   next: NextFunction
 ) => {
   try {
-    const view = typeof req.query.view === 'string' ? req.query.view : undefined;
-    const periodo = typeof req.query.periodo === 'string' ? req.query.periodo : undefined;
-    const lista: Course[] = await listCourses(view, periodo);
-    res.json(lista);
+    const result = await listCourses(req.query as CoursesQuery);
+    res.json(result);
   } catch (error) {
     next(error);
   }

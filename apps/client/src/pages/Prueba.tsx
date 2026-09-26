@@ -1,6 +1,5 @@
 // apps/client/src/pages/Prueba.tsx
 import { useState } from 'react';
-import Sidebar from '../layout/Sidebar';
 import Button from '../components/Button';
 import TextField from '../components/TextField';
 import Select from '../components/Select';
@@ -11,8 +10,6 @@ import RadioGroup from '../components/RadioGroup';
 import Card from '../components/Card';
 
 const Prueba = () => {
-  const [currentTab, setCurrentTab] = useState('instructores');
-  
   // Estados de prueba interactivos
   const [nombre, setNombre] = useState('Carlos');
   const [cargo, setCargo] = useState('titular');
