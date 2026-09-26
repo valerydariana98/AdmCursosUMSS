@@ -47,6 +47,34 @@ export interface Student {
   celular: string;
 }
 
+export interface Instructor {
+  id: number;
+  usuarioId: number | null;
+  nombres: string;
+  apPaterno: string;
+  apMaterno: string;
+  estado: boolean;
+  telefono: string;
+  ci: string;
+  cargo: string;
+  email: string | null; // vive en usuarios.email
+  username: string | null; // vive en usuarios.username
+  gruposAsignadosCount: number;
+}
+
+export type CreateInstructor = Omit<
+  Instructor,
+  'id' | 'usuarioId' | 'gruposAsignadosCount'
+>;
+
+export interface PaginatedInstructors {
+  data: Instructor[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface Enrollment {
   id: number;
   idEst: number;

@@ -4,16 +4,21 @@ import Button from '../../components/Button';
 import TextField from '../../components/TextField';
 import Select from '../../components/Select';
 import Badge from '../../components/Badge';
+import type { InstructorEstadoFilter } from '../../services/instructorService';
 import { Instructor } from '../../types/instructor';
 
 interface InstructorsListPageProps {
   instructors: Instructor[];
   totalCount: number;
+  page: number;
+  totalPages: number;
   loading: boolean;
+  error?: string | null;
   searchTerm: string;
   onSearchChange: (val: string) => void;
-  statusFilter: string;
-  onStatusFilterChange: (val: string) => void;
+  statusFilter: InstructorEstadoFilter;
+  onStatusFilterChange: (val: InstructorEstadoFilter) => void;
+  onPageChange: (page: number) => void;
   onNavigateToCreate?: () => void;
   onNavigateToEdit?: (instructor: Instructor) => void;
   onDeleteInstructor?: (instructor: Instructor) => void;
@@ -22,22 +27,25 @@ interface InstructorsListPageProps {
 export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
   instructors,
   totalCount,
+  page,
+  totalPages,
   loading,
+  error,
   searchTerm,
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  onPageChange,
   onNavigateToCreate,
   onNavigateToEdit,
   onDeleteInstructor,
 }) => {
   return (
     <div className="p-8 bg-[#F8FAFC] min-h-screen font-sans">
-      {/* Encabezado Principal */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Instructores</h1>
-          <p className="text-sm text-gray-500">Docentes registrados en el sistema</p>
+          <p className="text-sm text-gray-500">Docentes y auxiliares registrados en el sistema</p>
         </div>
         <Button
           variant="primary"
@@ -52,9 +60,7 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
         </Button>
       </div>
 
-      {/* Tarjeta Contenedora de Tabla y Filtros */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-        {/* Barra de Filtros */}
         <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <TextField
@@ -71,7 +77,9 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
           <div className="w-full sm:w-56">
             <Select
               value={statusFilter}
-              onChange={(e) => onStatusFilterChange(e.target.value)}
+              onChange={(e) =>
+                onStatusFilterChange(e.target.value as InstructorEstadoFilter)
+              }
               options={[
                 { value: 'todos', label: 'Todos los estados' },
                 { value: 'activo', label: 'Activo' },
@@ -81,7 +89,6 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
           </div>
         </div>
 
-        {/* Tabla */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -96,7 +103,13 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
-              {loading ? (
+              {error ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-red-600">
+                    {error}
+                  </td>
+                </tr>
+              ) : loading ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-gray-400">
                     Cargando instructores...
@@ -155,16 +168,26 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
           </table>
         </div>
 
-        {/* Paginación / Resumen */}
         <div className="p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
           <span>
             Mostrando {instructors.length} de {totalCount} instructores
+            {totalPages > 1 && ` (página ${page} de ${totalPages})`}
           </span>
           <div className="flex gap-2">
-            <Button size="sm" variant="secondary" disabled>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={loading || page <= 1}
+              onClick={() => onPageChange(page - 1)}
+            >
               Anterior
             </Button>
-            <Button size="sm" variant="secondary" disabled>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={loading || page >= totalPages}
+              onClick={() => onPageChange(page + 1)}
+            >
               Siguiente
             </Button>
           </div>
