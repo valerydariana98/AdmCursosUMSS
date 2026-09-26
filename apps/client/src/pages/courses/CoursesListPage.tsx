@@ -57,6 +57,7 @@ const CoursesListPage = () => {
   const [deleting, setDeleting] = useState(false);
 
   const isArchived = view === 'archived';
+  const columnCount = isArchived ? 6 : 5;
 
   const closeDeleteModal = () => {
     setCourseToDelete(null);
@@ -90,7 +91,7 @@ const CoursesListPage = () => {
     if (loading) {
       return (
         <tr>
-          <td colSpan={6} className="py-8 text-center text-gray-400">
+          <td colSpan={columnCount} className="py-8 text-center text-gray-400">
             Cargando cursos...
           </td>
         </tr>
@@ -100,7 +101,7 @@ const CoursesListPage = () => {
     if (courses.length === 0) {
       return (
         <tr>
-          <td colSpan={6} className="py-8 text-center text-gray-400">
+          <td colSpan={columnCount} className="py-8 text-center text-gray-400">
             No se encontraron cursos.
           </td>
         </tr>
@@ -112,11 +113,11 @@ const CoursesListPage = () => {
         <td className="py-4 px-6">
           <p className="font-bold text-gray-900">{course.nombreCurso}</p>
           <p className="text-xs text-gray-400 mt-0.5">
-            Costo UMSS: Bs. {course.costoUmss}
+            UMSS Bs. {course.costoUmss} · Aux. Bs. {course.costoAux} · Ext. Bs.{' '}
+            {course.costoExterno}
           </p>
         </td>
         <td className="py-4 px-4 text-gray-600">{course.duracionHoras} hrs</td>
-        <td className="py-4 px-4 text-gray-600">{course.periodo}</td>
         <td className="py-4 px-4 text-gray-600">
           {isArchived ? formatDate(course.fechaFin) : formatDateRange(course.fechaIni, course.fechaFin)}
         </td>
@@ -125,6 +126,7 @@ const CoursesListPage = () => {
         ) : null}
         <td className="py-4 px-4">
           <Badge status={course.estado} inactiveLabel="Finalizado" />
+          <p className="text-xs text-gray-400 mt-1">{course.periodo}</p>
         </td>
         <td className="py-4 px-6 text-right whitespace-nowrap">
           {isArchived ? (
@@ -227,7 +229,6 @@ const CoursesListPage = () => {
               <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 <th className="py-3.5 px-6">Curso</th>
                 <th className="py-3.5 px-4">Duración</th>
-                <th className="py-3.5 px-4">Periodo</th>
                 <th className="py-3.5 px-4">{isArchived ? 'Fecha Fin' : 'Fechas'}</th>
                 {isArchived && <th className="py-3.5 px-4">Inscritos</th>}
                 <th className="py-3.5 px-4">Estado</th>
