@@ -71,6 +71,12 @@ export const useInstructors = () => {
     return created;
   };
 
+  const updateInstructor = async (id: number, data: CreateInstructorDTO) => {
+    const updated = await instructorService.update(id, data);
+    await fetchInstructors();
+    return updated;
+  };
+
   return {
     instructors,
     total,
@@ -86,5 +92,6 @@ export const useInstructors = () => {
     setPage,
     refetch: fetchInstructors,
     addInstructor,
+    updateInstructor,
   };
 };

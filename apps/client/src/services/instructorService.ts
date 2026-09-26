@@ -38,4 +38,7 @@ export const instructorService = {
   create(data: CreateInstructorDTO): Promise<Instructor> {
     return api.post<Instructor>('/api/instructores', data);
   },
+  update(id: number, data: CreateInstructorDTO): Promise<Instructor> {
+    return api.put<Instructor>(`/api/instructores/${id}`, data);
+  },
 };

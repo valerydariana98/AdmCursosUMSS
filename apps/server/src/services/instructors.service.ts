@@ -9,11 +9,15 @@ const DEFAULT_LIMIT = 10;
 
 const PG_UNIQUE_VIOLATION = '23505';
 
-export type CreateInstructorFailure = 'ci_taken' | 'email_taken';
+export type CreateInstructorFailure = 'ci_taken' | 'email_taken' | 'username_taken';
 
 export type CreateInstructorResult =
   | { ok: true; instructor: Instructor }
   | { ok: false; reason: CreateInstructorFailure };
+
+export type UpdateInstructorResult =
+  | { ok: true; instructor: Instructor }
+  | { ok: false; reason: CreateInstructorFailure | 'not_found' };
 
 const instructorColumns = {
   id: instructores.id,
@@ -39,6 +43,7 @@ const resolveUniqueViolation = (error: unknown): CreateInstructorFailure | null 
   if (code === PG_UNIQUE_VIOLATION) {
     if (constraint === 'instructores_ci_unico') return 'ci_taken';
     if (constraint === 'usuarios_email_unique') return 'email_taken';
+    if (constraint === 'usuarios_username_unique') return 'username_taken';
   }
 
   const cause = (error as { cause?: unknown }).cause;
@@ -116,7 +121,7 @@ export const createInstructor = async (
 ): Promise<CreateInstructorResult> => {
   try {
     return await db.transaction(async (tx) => {
-      // La contraseña inicial del docente es su CI (ver InstructorCreatePage).
+      // La contraseña inicial del docente es su CI (ver InstructorFormPage).
       const [usuario] = await tx
         .insert(usuarios)
         .values({
@@ -151,6 +156,58 @@ export const createInstructor = async (
         },
       };
     });
+  } catch (error) {
+    const reason = resolveUniqueViolation(error);
+    if (reason) return { ok: false, reason };
+    throw error;
+  }
+};
+
+export const updateInstructor = async (
+  id: number,
+  data: CreateInstructorInput
+): Promise<UpdateInstructorResult> => {
+  try {
+    const outcome = await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select({ id: instructores.id, usuarioId: instructores.usuarioId })
+        .from(instructores)
+        .where(eq(instructores.id, id));
+
+      if (!existing) return { status: 'not_found' as const };
+
+      await tx
+        .update(instructores)
+        .set({
+          nombres: data.nombres,
+          apPaterno: data.apPaterno,
+          apMaterno: data.apMaterno,
+          ci: data.ci,
+          telefono: data.telefono,
+          cargo: data.cargo,
+          estado: data.estado,
+        })
+        .where(eq(instructores.id, id));
+
+      // El correo y el usuario viven en `usuarios`. La contraseña NO se toca:
+      // se congela en el alta y no debe pisarse si el docente ya la cambió.
+      if (existing.usuarioId) {
+        await tx
+          .update(usuarios)
+          .set({ email: data.email, username: data.username })
+          .where(eq(usuarios.id, existing.usuarioId));
+      }
+
+      return { status: 'updated' as const };
+    });
+
+    if (outcome.status === 'not_found') return { ok: false, reason: 'not_found' };
+
+    // Se relee la fila completa para devolver el mismo shape que devuelve el listado.
+    const instructor = await getInstructorById(id);
+    if (!instructor) return { ok: false, reason: 'not_found' };
+
+    return { ok: true, instructor };
   } catch (error) {
     const reason = resolveUniqueViolation(error);
     if (reason) return { ok: false, reason };
