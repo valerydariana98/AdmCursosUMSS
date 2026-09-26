@@ -10,11 +10,15 @@ export default function InstructorsContainer() {
   const {
     instructors,
     totalCount,
+    page,
+    totalPages,
     loading,
+    error,
     searchTerm,
     setSearchTerm,
     statusFilter,
     setStatusFilter,
+    setPage,
     addInstructor,
   } = useInstructors();
 
@@ -34,11 +38,15 @@ export default function InstructorsContainer() {
     <InstructorsListPage
       instructors={instructors}
       totalCount={totalCount}
+      page={page}
+      totalPages={totalPages}
       loading={loading}
+      error={error}
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}
       statusFilter={statusFilter}
       onStatusFilterChange={setStatusFilter}
+      onPageChange={setPage}
       onNavigateToCreate={() => setViewMode('create')}
       onNavigateToEdit={(inst) => alert(`Próximamente HU #15: Editar a ${inst.nombres}`)}
       onDeleteInstructor={(inst) => alert(`Próximamente HU #16: Eliminar a ${inst.nombres}`)}

@@ -10,7 +10,13 @@ export const instructorSchema = z.object({
   email: z.string().min(1, 'El correo es obligatorio').email('Formato de correo inválido'),
   cargo: z.string().min(1, 'El cargo es obligatorio'),
   estado: z.boolean(),
-  username: z.string().optional(),
+  username: z
+    .string()
+    .trim()
+    .regex(
+      /^[A-Za-z0-9._-]{4,50}$/,
+      'El usuario debe tener entre 4 y 50 caracteres (letras, números, . _ -)'
+    ),
 });
 
 export type InstructorFormData = z.infer<typeof instructorSchema>;

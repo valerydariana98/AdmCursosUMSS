@@ -7,6 +7,7 @@ import Toggle from '../../components/Toggle';
 import AlertInfo from '../../components/AlertInfo';
 import Card from '../../components/Card';
 import { CreateInstructorDTO } from '../../types/instructor';
+import { ApiError } from '../../services/api';
 import { instructorSchema } from '../../schemas/instructorSchema';
 
 interface InstructorCreatePageProps {
@@ -30,23 +31,27 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
 
   const [estado, setEstado] = useState(true);
   const [username, setUsername] = useState('');
+  const [usernameTouched, setUsernameTouched] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Autocompleta el usuario con nombres + apellido + año, pero deja de hacerlo
+  // en cuanto el docente lo edita a mano.
   useEffect(() => {
+    if (usernameTouched) return;
+
     const currentYear = new Date().getFullYear();
     const cleanFirst = nombres.trim().split(' ')[0] || '';
     const cleanPaterno = apPaterno.trim() || '';
-    if (cleanFirst || cleanPaterno) {
-      setUsername(`${cleanFirst}${cleanPaterno}${currentYear}`);
-    } else {
-      setUsername('');
-    }
-  }, [nombres, apPaterno]);
+    setUsername(cleanFirst || cleanPaterno ? `${cleanFirst}${cleanPaterno}${currentYear}` : '');
+  }, [nombres, apPaterno, usernameTouched]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    setSubmitError(null);
 
     const finalCargo = selectedCargoOption === 'otro' ? customCargo.trim() : selectedCargoOption;
 
@@ -59,7 +64,7 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
       email: email.trim(),
       cargo: finalCargo,
       estado,
-      username: username.trim() || `${nombres.trim()}${apPaterno.trim()}${new Date().getFullYear()}`,
+      username: username.trim(),
     };
 
     const result = instructorSchema.safeParse(formData);
@@ -80,7 +85,19 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
     try {
       await onSave(result.data as CreateInstructorDTO);
     } catch (error) {
-      console.error('Error guardando instructor:', error);
+      if (error instanceof ApiError) {
+        setSubmitError(error.message);
+        // Si el servidor répondio con errores por campo, se pintan en el formulario.
+        if (error.errors.length > 0) {
+          const fieldErrors: Record<string, string> = {};
+          error.errors.forEach((fieldError) => {
+            fieldErrors[fieldError.path] = fieldError.message;
+          });
+          setErrors(fieldErrors);
+        }
+      } else {
+        setSubmitError('No se pudo guardar el instructor');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -106,6 +123,12 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {submitError && (
+          <div className="rounded-2xl border border-red-500 bg-red-50/90 px-4 py-3 text-sm font-medium text-red-950">
+            {submitError}
+          </div>
+        )}
+
         <Card className="space-y-6">
           <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
             Información general
@@ -192,7 +215,11 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
           <TextField
             label="Nombre de usuario (userName)"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              setUsernameTouched(true);
+            }}
+            error={errors.username}
           />
 
           <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pt-4 pb-3">
@@ -208,17 +235,14 @@ export const InstructorCreatePage: React.FC<InstructorCreatePageProps> = ({
           {/* Bloque de Estado Rediseñado: Armónico, Azul Institucional y Alineado */}
           <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-200 flex items-center justify-between">
             <div className="space-y-0.5">
-              <span className="text-sm font-semibold text-gray-900 block">Estado del instructor</span>
-              <span className="text-xs text-gray-500 block">
-                Define si el docente estará habilitado inmediatamente para asignación de grupos
-              </span>
+              <span className="text-sm font-semibold text-gray-900 block">Estado</span>
             </div>
 
             <div className="flex items-center gap-3">
               <span
                 className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-all duration-200 ${
                   estado
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    ? 'bg-blue-50 text-blue-800 border-blue-800'
                     : 'bg-gray-100 text-gray-500 border-gray-200'
                 }`}
               >

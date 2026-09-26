@@ -4,16 +4,21 @@ import Button from '../../components/Button';
 import TextField from '../../components/TextField';
 import Select from '../../components/Select';
 import Badge from '../../components/Badge';
+import type { InstructorEstadoFilter } from '../../services/instructorService';
 import { Instructor } from '../../types/instructor';
 
 interface InstructorsListPageProps {
   instructors: Instructor[];
   totalCount: number;
+  page: number;
+  totalPages: number;
   loading: boolean;
+  error?: string | null;
   searchTerm: string;
   onSearchChange: (val: string) => void;
-  statusFilter: string;
-  onStatusFilterChange: (val: string) => void;
+  statusFilter: InstructorEstadoFilter;
+  onStatusFilterChange: (val: InstructorEstadoFilter) => void;
+  onPageChange: (page: number) => void;
   onNavigateToCreate?: () => void;
   onNavigateToEdit?: (instructor: Instructor) => void;
   onDeleteInstructor?: (instructor: Instructor) => void;
@@ -22,11 +27,15 @@ interface InstructorsListPageProps {
 export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
   instructors,
   totalCount,
+  page,
+  totalPages,
   loading,
+  error,
   searchTerm,
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  onPageChange,
   onNavigateToCreate,
   onNavigateToEdit,
   onDeleteInstructor,
@@ -68,7 +77,9 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
           <div className="w-full sm:w-56">
             <Select
               value={statusFilter}
-              onChange={(e) => onStatusFilterChange(e.target.value)}
+              onChange={(e) =>
+                onStatusFilterChange(e.target.value as InstructorEstadoFilter)
+              }
               options={[
                 { value: 'todos', label: 'Todos los estados' },
                 { value: 'activo', label: 'Activo' },
@@ -92,7 +103,13 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
-              {loading ? (
+              {error ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-red-600">
+                    {error}
+                  </td>
+                </tr>
+              ) : loading ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-gray-400">
                     Cargando instructores...
@@ -154,12 +171,23 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
         <div className="p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
           <span>
             Mostrando {instructors.length} de {totalCount} instructores
+            {totalPages > 1 && ` (página ${page} de ${totalPages})`}
           </span>
           <div className="flex gap-2">
-            <Button size="sm" variant="secondary" disabled>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={loading || page <= 1}
+              onClick={() => onPageChange(page - 1)}
+            >
               Anterior
             </Button>
-            <Button size="sm" variant="secondary" disabled>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={loading || page >= totalPages}
+              onClick={() => onPageChange(page + 1)}
+            >
               Siguiente
             </Button>
           </div>
