@@ -33,11 +33,10 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
 }) => {
   return (
     <div className="p-8 bg-[#F8FAFC] min-h-screen font-sans">
-      {/* Encabezado Principal */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Instructores</h1>
-          <p className="text-sm text-gray-500">Docentes registrados en el sistema</p>
+          <p className="text-sm text-gray-500">Docentes y auxiliares registrados en el sistema</p>
         </div>
         <Button
           variant="primary"
@@ -52,9 +51,7 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
         </Button>
       </div>
 
-      {/* Tarjeta Contenedora de Tabla y Filtros */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-        {/* Barra de Filtros */}
         <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <TextField
@@ -81,7 +78,6 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
           </div>
         </div>
 
-        {/* Tabla */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -155,7 +151,6 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
           </table>
         </div>
 
-        {/* Paginación / Resumen */}
         <div className="p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
           <span>
             Mostrando {instructors.length} de {totalCount} instructores

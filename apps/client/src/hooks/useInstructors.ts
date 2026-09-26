@@ -1,13 +1,13 @@
 // apps/client/src/hooks/useInstructors.ts
 import { useState, useEffect, useMemo } from 'react';
-import { Instructor } from '../types/instructor';
+import { Instructor, CreateInstructorDTO } from '../types/instructor';
 import { instructorService } from '../services/instructorService';
 
 export const useInstructors = () => {
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('todos'); // 'todos' | 'activo' | 'inactivo'
+  const [statusFilter, setStatusFilter] = useState<string>('todos');
 
   const fetchInstructors = async () => {
     setLoading(true);
@@ -25,7 +25,11 @@ export const useInstructors = () => {
     fetchInstructors();
   }, []);
 
-  // Lógica de filtrado en memoria (Filtra por Nombres, Apellidos, CI y Estado)
+  const addInstructor = async (data: CreateInstructorDTO) => {
+    await instructorService.createInstructor(data);
+    await fetchInstructors();
+  };
+
   const filteredInstructors = useMemo(() => {
     return instructors.filter((item) => {
       const fullName = `${item.nombres} ${item.apPaterno} ${item.apMaterno}`.toLowerCase();
@@ -52,5 +56,6 @@ export const useInstructors = () => {
     statusFilter,
     setStatusFilter,
     refetch: fetchInstructors,
+    addInstructor,
   };
 };

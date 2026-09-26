@@ -1,93 +1,100 @@
 // apps/client/src/services/instructorService.ts
-import { Instructor } from '../types/instructor';
+import { api } from './api';
+import { Instructor, CreateInstructorDTO } from '../types/instructor';
 
-// Datos que emulan el JOIN entre Instructores, Usuarios y Grupos
 let mockInstructors: Instructor[] = [
   {
     id: 1,
     usuario_id: 101,
-    nombres: 'Carlos',
-    apPaterno: 'Mamani',
-    apMaterno: 'Rojas',
+    nombres: 'Carlos Juan',
+    apPaterno: 'Araoz',
+    apMaterno: 'Trigo',
     ci: '8523147',
     telefono: '70012345',
-    cargo: 'Docente Titular',
+    cargo: 'Docente UMSS',
     estado: true,
-    email: 'carlos.mamani@umss.edu.bo',
+    email: 'carlos.araoz@umss.edu.bo',
+    username: 'CarlosAraoz2026',
     gruposAsignadosCount: 2,
   },
   {
     id: 2,
     usuario_id: 102,
-    nombres: 'Ana',
-    apPaterno: 'Quispe',
-    apMaterno: 'Fernández',
+    nombres: 'María René',
+    apPaterno: 'Zeballos',
+    apMaterno: 'Justiniano',
     ci: '6234891',
     telefono: '71234567',
-    cargo: 'Docente Adjunto',
+    cargo: 'Docente Invitado',
     estado: true,
-    email: 'ana.quispe@umss.edu.bo',
+    email: 'marrene.zeballos@umss.edu.bo',
+    username: 'MariaZeballos2026',
     gruposAsignadosCount: 1,
   },
   {
     id: 3,
     usuario_id: 103,
-    nombres: 'Jorge',
-    apPaterno: 'Vargas',
-    apMaterno: 'Salazar',
+    nombres: 'Gabriel Gonzalo',
+    apPaterno: 'Terán',
+    apMaterno: 'Bustamante',
     ci: '7345612',
     telefono: '69876543',
-    cargo: 'Docente Titular',
+    cargo: 'Docente UMSS',
     estado: true,
-    email: 'jorge.vargas@umss.edu.bo',
+    email: 'gabriel.teran@umss.edu.bo',
+    username: 'GabrielTeran2026',
     gruposAsignadosCount: 1,
   },
   {
     id: 4,
     usuario_id: 104,
-    nombres: 'Patricia',
-    apPaterno: 'Soto',
-    apMaterno: 'Ibáñez',
+    nombres: 'Alejandra Beatriz',
+    apPaterno: 'Gutiérrez',
+    apMaterno: 'Soliz',
     ci: '5987234',
     telefono: '72345678',
-    cargo: 'Docente Adjunto',
+    cargo: 'Auxiliar UMSS',
     estado: true,
-    email: 'patricia.soto@umss.edu.bo',
+    email: 'alejandra.gutierrez@umss.edu.bo',
+    username: 'AlejandraGutierrez2026',
     gruposAsignadosCount: 1,
   },
   {
     id: 5,
     usuario_id: 105,
-    nombres: 'Daniela',
-    apPaterno: 'Rojas',
-    apMaterno: 'Peña',
+    nombres: 'Fernando José',
+    apPaterno: 'Montaño',
+    apMaterno: 'Velasco',
     ci: '6412378',
     telefono: '75123456',
-    cargo: 'Docente Invitado',
-    estado: true,
-    email: 'daniela.rojas@umss.edu.bo',
-    gruposAsignadosCount: 1,
-  },
-  {
-    id: 6,
-    usuario_id: 106,
-    nombres: 'Roberto',
-    apPaterno: 'Flores',
-    apMaterno: 'Castro',
-    ci: '4123987',
-    telefono: '73456789',
-    cargo: 'Docente Titular',
+    cargo: 'Auxiliar Invitado',
     estado: false,
-    email: 'roberto.flores@umss.edu.bo',
+    email: 'fernando.montano@umss.edu.bo',
+    username: 'FernandoMontano2026',
     gruposAsignadosCount: 0,
   },
 ];
 
 export const instructorService = {
-  // Futuro: return (await axios.get('/api/instructores')).data;
   getInstructores: async (): Promise<Instructor[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve([...mockInstructors]), 200);
-    });
+    try {
+      return await api.get<Instructor[]>('/instructores');
+    } catch {
+      return mockInstructors;
+    }
+  },
+
+  createInstructor: async (data: CreateInstructorDTO): Promise<Instructor> => {
+    try {
+      return await api.post<Instructor>('/instructores', data);
+    } catch {
+      const newInst: Instructor = {
+        ...data,
+        id: mockInstructors.length + 1,
+        gruposAsignadosCount: 0,
+      };
+      mockInstructors = [newInst, ...mockInstructors];
+      return newInst;
+    }
   },
 };

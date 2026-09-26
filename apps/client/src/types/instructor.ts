@@ -1,3 +1,10 @@
+// apps/client/src/types/instructor.ts
+export interface Usuario {
+  id: number;
+  username: string;
+  email: string;
+  rol: 'ADMIN' | 'DOCENTE';
+}
 
 export interface Instructor {
   id: number;
@@ -9,7 +16,9 @@ export interface Instructor {
   telefono: string;
   ci: string;
   cargo: string;
-  // Campos calculados / Uniones para la UI
   email?: string;
+  username?: string;
   gruposAsignadosCount?: number;
 }
+
+export type CreateInstructorDTO = Omit<Instructor, 'id' | 'gruposAsignadosCount'>;

@@ -1,5 +1,14 @@
 // apps/client/src/services/api.ts
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+import axios, { AxiosError } from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
+
+const axiosInstance = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export interface ApiFieldError {
   path: string;
@@ -18,45 +27,36 @@ export class ApiError extends Error {
   }
 }
 
-const buildError = async (res: Response): Promise<ApiError> => {
-  let message = `Request failed with status ${res.status}`;
-  let errors: ApiFieldError[] = [];
-
-  try {
-    const body = await res.json();
-    if (typeof body?.message === 'string') message = body.message;
-    if (Array.isArray(body?.errors)) errors = body.errors;
-  } catch {
-    // respuesta sin cuerpo JSON: se queda el mensaje por defecto
+// Interceptor para transformar errores de Axios a ApiError
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<{ message?: string; errors?: ApiFieldError[] }>) => {
+    if (error.response) {
+      const status = error.response.status;
+      const message = error.response.data?.message || `Error ${status}: Falló la petición`;
+      const errors = error.response.data?.errors || [];
+      return Promise.reject(new ApiError(status, message, errors));
+    }
+    return Promise.reject(new ApiError(500, error.message || 'Error de conexión con el servidor'));
   }
-
-  return new ApiError(res.status, message, errors);
-};
-
-const jsonRequest = async <T>(method: string, path: string, body?: unknown): Promise<T> => {
-  const res = await fetch(`${API_URL}${path}`, {
-    method,
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-
-  if (!res.ok) throw await buildError(res);
-  if (res.status === 204) return undefined as T;
-  return res.json();
-};
+);
 
 export const api = {
   baseURL: API_URL,
-  get<T>(path: string): Promise<T> {
-    return jsonRequest<T>('GET', path);
+  async get<T>(path: string): Promise<T> {
+    const response = await axiosInstance.get<T>(path);
+    return response.data;
   },
-  post<T>(path: string, body: unknown): Promise<T> {
-    return jsonRequest<T>('POST', path, body);
+  async post<T>(path: string, body?: unknown): Promise<T> {
+    const response = await axiosInstance.post<T>(path, body);
+    return response.data;
   },
-  put<T>(path: string, body: unknown): Promise<T> {
-    return jsonRequest<T>('PUT', path, body);
+  async put<T>(path: string, body?: unknown): Promise<T> {
+    const response = await axiosInstance.put<T>(path, body);
+    return response.data;
   },
-  delete<T>(path: string): Promise<T> {
-    return jsonRequest<T>('DELETE', path);
+  async delete<T>(path: string): Promise<T> {
+    const response = await axiosInstance.delete<T>(path);
+    return response.data;
   },
 };
