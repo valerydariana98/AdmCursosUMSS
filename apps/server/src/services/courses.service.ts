@@ -13,7 +13,7 @@ export const listCourses = async (query: CoursesQuery = {}) => {
 
   const periodFilter =
     view === 'archived'
-      ? and(ne(cursos.periodo, targetPeriod), eq(cursos.estado, false))!
+      ? ne(cursos.periodo, targetPeriod)
       : eq(cursos.periodo, targetPeriod);
 
   const filters: SQL[] = [periodFilter];

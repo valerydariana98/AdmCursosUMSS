@@ -1,49 +1,42 @@
 // apps/client/src/App.tsx
-import { useState } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import Sidebar from './layout/Sidebar';
-import { useInstructors } from './hooks/useInstructors';
-import InstructorsListPage from './pages/instructors/instructorsListPage'
+import ComingSoonPage from './pages/ComingSoonPage';
+import CourseCreatePage from './pages/courses/CourseCreatePage';
+import CourseEditPage from './pages/courses/CourseEditPage';
+import CoursesListPage from './pages/courses/CoursesListPage';
+import InstructorsContainer from './pages/instructors/InstructorsContainer';
+import NotFoundPage from './pages/NotFoundPage';
 import Prueba from './pages/Prueba';
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState('instructores');
-
-  const {
-    instructors,
-    totalCount,
-    loading,
-    searchTerm,
-    setSearchTerm,
-    statusFilter,
-    setStatusFilter,
-  } = useInstructors();
-
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans">
-      {/* Sidebar Fija y Funcional */}
-      <Sidebar
-        currentPath={currentTab}
-        onNavigate={(path) => setCurrentTab(path)}
-      />
+      <Sidebar />
 
-      {/* Renders según opción seleccionada en Sidebar */}
       <main className="flex-1 overflow-y-auto">
-        {currentTab === 'instructores' ? (
-          <InstructorsListPage
-            instructors={instructors}
-            totalCount={totalCount}
-            loading={loading}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            onNavigateToCreate={() => alert('Próximamente: HU #14 Registrar Instructor')}
-            onNavigateToEdit={(inst) => alert(`Próximamente: HU #15 Editar a ${inst.nombres}`)}
-            onDeleteInstructor={(inst) => alert(`Próximamente: HU #16 Eliminar a ${inst.nombres}`)}
-          />
-        ) : (
-          <Prueba />
-        )}
+        <Routes>
+          <Route path="/" element={<Navigate to="/cursos" replace />} />
+
+          {/* Cursos (HU #11, #12, #13, #21) */}
+          <Route path="/cursos" element={<CoursesListPage />} />
+          <Route path="/cursos/nuevo" element={<CourseCreatePage />} />
+          <Route path="/cursos/:id/editar" element={<CourseEditPage />} />
+
+          {/* Instructores (otra HU) */}
+          <Route path="/instructores" element={<InstructorsContainer />} />
+
+          {/* Catálogo de componentes */}
+          <Route path="/prueba" element={<Prueba />} />
+
+          {/* Secciones de otros colaboradores */}
+          <Route path="/dashboard"  element={<Prueba />} />
+          <Route path="/grupos" element={<ComingSoonPage title="Grupos" />} />
+          <Route path="/estudiantes" element={<ComingSoonPage title="Estudiantes" />} />
+          <Route path="/certificados" element={<ComingSoonPage title="Certificados" />} />
+
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
       </main>
     </div>
   );
