@@ -77,6 +77,11 @@ export const useInstructors = () => {
     return updated;
   };
 
+  const deleteInstructor = async (id: number) => {
+    await instructorService.remove(id);
+    await fetchInstructors();
+  };
+
   return {
     instructors,
     total,
@@ -93,5 +98,6 @@ export const useInstructors = () => {
     refetch: fetchInstructors,
     addInstructor,
     updateInstructor,
+    deleteInstructor,
   };
 };

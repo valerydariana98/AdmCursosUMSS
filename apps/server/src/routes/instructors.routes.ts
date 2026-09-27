@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createInstructor,
+  deleteInstructor,
   getInstructor,
   getInstructors,
   updateInstructor,
@@ -20,5 +21,6 @@ router.put(
   validate(createInstructorSchema),
   updateInstructor
 );
+router.delete('/:id', validateParams(idParamsSchema), deleteInstructor);
 
 export default router;
