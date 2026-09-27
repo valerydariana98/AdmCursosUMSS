@@ -214,3 +214,34 @@ export const updateInstructor = async (
     throw error;
   }
 };
+
+export const deleteInstructor = async (id: number) => {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ id: instructores.id, usuarioId: instructores.usuarioId })
+      .from(instructores)
+      .where(eq(instructores.id, id));
+
+    if (!existing) return 'not_found' as const;
+
+    // `grupos.id_instructor` es NOT NULL: un grupo no puede quedar sin docente,
+    // así que el borrado se bloquea en vez de dejar datos colgando.
+    const [group] = await tx
+      .select({ id: grupos.id })
+      .from(grupos)
+      .where(eq(grupos.idInstructor, id))
+      .limit(1);
+
+    if (group) return 'has_groups' as const;
+
+    await tx.delete(instructores).where(eq(instructores.id, id));
+
+    // El docente es dueño de su usuario: se borra también para no dejar una fila
+    // huérfana que bloquee el username y el correo.
+    if (existing.usuarioId) {
+      await tx.delete(usuarios).where(eq(usuarios.id, existing.usuarioId));
+    }
+
+    return 'deleted' as const;
+  });
+};

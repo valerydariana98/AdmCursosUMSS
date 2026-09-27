@@ -41,4 +41,7 @@ export const instructorService = {
   update(id: number, data: CreateInstructorDTO): Promise<Instructor> {
     return api.put<Instructor>(`/api/instructores/${id}`, data);
   },
+  remove(id: number): Promise<void> {
+    return api.delete<void>(`/api/instructores/${id}`);
+  },
 };

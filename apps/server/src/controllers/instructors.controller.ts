@@ -3,6 +3,7 @@ import type { Instructor } from 'shared';
 import type { InstructorsQuery } from '../schemas/instructor.schema.js';
 import {
   createInstructor as createInstructorService,
+  deleteInstructor as deleteInstructorService,
   getInstructorById,
   listInstructors,
   updateInstructor as updateInstructorService,
@@ -86,6 +87,33 @@ export const updateInstructor = async (
     }
 
     res.json(result.instructor);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteInstructor = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = Number(req.params.id);
+    const result = await deleteInstructorService(id);
+
+    if (result === 'not_found') {
+      res.status(404).json({ message: 'Instructor not found' });
+      return;
+    }
+
+    if (result === 'has_groups') {
+      res.status(409).json({
+        message: 'El docente no se puede eliminar porque tiene grupos asignados',
+      });
+      return;
+    }
+
+    res.status(204).send();
   } catch (error) {
     next(error);
   }
