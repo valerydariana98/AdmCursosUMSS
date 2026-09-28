@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import type { GruposQuery } from '../schemas/grupo.schema.js';
 import {
   createGrupo as createGrupoService,
+  deleteGrupo as deleteGrupoService,
   getGrupoById,
   listGruposByCurso,
   updateGrupo as updateGrupoService,
@@ -60,6 +61,28 @@ export const updateGrupo = async (req: Request, res: Response, next: NextFunctio
     }
 
     res.json(result.grupo);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteGrupo = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = Number(req.params.id);
+    const result = await deleteGrupoService(id);
+
+    if (result === 'not_found') {
+      res.status(404).json({ message: 'Grupo not found' });
+      return;
+    }
+    if (result === 'has_enrollments') {
+      res.status(409).json({
+        message: 'El grupo no se puede eliminar porque tiene estudiantes inscritos',
+      });
+      return;
+    }
+
+    res.status(204).send();
   } catch (error) {
     next(error);
   }

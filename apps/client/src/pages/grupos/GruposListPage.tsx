@@ -1,11 +1,15 @@
 // apps/client/src/pages/grupos/GruposListPage.tsx
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
 import Button from '../../components/Button';
 import EstadoBadge from '../../components/EstadoBadge';
+import Modal from '../../components/Modal';
 import { useCurso } from '../../hooks/useCurso';
 import { useGrupos } from '../../hooks/useGrupos';
+import { ApiError } from '../../services/api';
 import type { Modality } from 'shared';
+import type { GroupListItem } from '../../types/group';
 
 const MODALITY_LABELS: Record<Modality, string> = {
   presencial: 'Presencial',
@@ -32,11 +36,54 @@ const PencilIcon = () => (
   </svg>
 );
 
+const TrashIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+    />
+  </svg>
+);
+
 const GruposListPage = () => {
   const { idCurso } = useParams();
   const cursoId = Number(idCurso);
   const { curso, loading: loadingCurso, error: cursoError } = useCurso(cursoId);
-  const { grupos, loading, error } = useGrupos(cursoId);
+  const { grupos, loading, error, deleteGrupo } = useGrupos(cursoId);
+
+  const [grupoToDelete, setGrupoToDelete] = useState<GroupListItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const closeDeleteModal = () => {
+    setGrupoToDelete(null);
+    setDeleteError(null);
+  };
+
+  const handleDelete = async () => {
+    if (!grupoToDelete) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await deleteGrupo(grupoToDelete.id);
+      closeDeleteModal();
+    } catch (caught) {
+      setDeleteError(
+        caught instanceof ApiError ? caught.message : 'No se pudo eliminar el grupo'
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const openDeleteModal = (grupo: GroupListItem) => {
+    setDeleteError(null);
+    setGrupoToDelete(grupo);
+  };
 
   const tableBody = () => {
     if (loading) {
@@ -75,7 +122,7 @@ const GruposListPage = () => {
           <EstadoBadge estado={grupo.estado} />
         </td>
         <td className="py-4 px-6">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-1">
             <Link
               to={`/cursos/${cursoId}/grupos/${grupo.id}/editar`}
               title="Editar grupo"
@@ -84,6 +131,15 @@ const GruposListPage = () => {
             >
               <PencilIcon />
             </Link>
+            <button
+              type="button"
+              onClick={() => openDeleteModal(grupo)}
+              title="Eliminar grupo"
+              aria-label={`Eliminar grupo ${grupo.numGrupo}`}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <TrashIcon />
+            </button>
           </div>
         </td>
       </tr>
@@ -149,6 +205,34 @@ const GruposListPage = () => {
           Mostrando {grupos.length} {grupos.length === 1 ? 'grupo' : 'grupos'} del curso
         </div>
       </div>
+
+      <Modal
+        isOpen={grupoToDelete !== null}
+        title="Eliminar grupo"
+        onClose={closeDeleteModal}
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeDeleteModal} disabled={deleting}>
+              Cancelar
+            </Button>
+            <Button variant="danger" onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Eliminando...' : 'Eliminar'}
+            </Button>
+          </>
+        }
+      >
+        {deleteError ? (
+          <AlertInfo type="warning" title={deleteError} />
+        ) : (
+          <p>
+            ¿Seguro que deseas eliminar el{' '}
+            <span className="font-semibold text-gray-900">
+              grupo {grupoToDelete?.numGrupo}
+            </span>{' '}
+            de {curso?.nombreCurso}? Esta acción no se puede deshacer.
+          </p>
+        )}
+      </Modal>
     </div>
   );
 };

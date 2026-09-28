@@ -15,4 +15,7 @@ export const grupoService = {
   update(id: number, data: UpdateGroupDTO): Promise<Group> {
     return api.put<Group>(`/api/grupos/${id}`, data);
   },
+  remove(id: number): Promise<void> {
+    return api.delete<void>(`/api/grupos/${id}`);
+  },
 };

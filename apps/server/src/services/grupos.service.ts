@@ -21,6 +21,25 @@ export type UpdateGrupoResult =
   | { ok: true; grupo: Group }
   | { ok: false; reason: UpdateGrupoFailure };
 
+export const deleteGrupo = async (id: number) => {
+  const [grupo] = await db.select({ id: grupos.id }).from(grupos).where(eq(grupos.id, id));
+
+  if (!grupo) return 'not_found' as const;
+
+  // Un grupo con estudiantes inscritos no se puede eliminar: rompería el
+  // historial de inscripciones y el conteo de cupos del curso.
+  const [inscrito] = await db
+    .select({ id: inscripciones.id })
+    .from(inscripciones)
+    .where(eq(inscripciones.idGrupo, id))
+    .limit(1);
+
+  if (inscrito) return 'has_enrollments' as const;
+
+  await db.delete(grupos).where(eq(grupos.id, id));
+  return 'deleted' as const;
+};
+
 // Traduce el error 23505 de Postgres al motivo de conflicto que entiende el controller.
 // Drizzle envuelve el error del driver en DrizzleQueryError, por eso se revisa el `cause`.
 const resolveUniqueViolation = (error: unknown): CreateGrupoFailure | null => {

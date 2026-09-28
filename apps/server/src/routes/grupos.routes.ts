@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createGrupo,
+  deleteGrupo,
   getGrupo,
   getGrupos,
   updateGrupo,
@@ -19,5 +20,6 @@ router.get('/', validateQuery(gruposQuerySchema), getGrupos);
 router.get('/:id', validateParams(idParamsSchema), getGrupo);
 router.post('/', validate(createGrupoSchema), createGrupo);
 router.put('/:id', validateParams(idParamsSchema), validate(updateGrupoSchema), updateGrupo);
+router.delete('/:id', validateParams(idParamsSchema), deleteGrupo);
 
 export default router;

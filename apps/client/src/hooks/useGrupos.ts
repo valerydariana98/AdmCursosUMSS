@@ -47,5 +47,18 @@ export const useGrupos = (idCurso: number) => {
     return updated;
   };
 
-  return { grupos, loading, error, addGrupo, updateGrupo, refetch: fetchGrupos };
+  const deleteGrupo = async (id: number) => {
+    await grupoService.remove(id);
+    await fetchGrupos();
+  };
+
+  return {
+    grupos,
+    loading,
+    error,
+    addGrupo,
+    updateGrupo,
+    deleteGrupo,
+    refetch: fetchGrupos,
+  };
 };
