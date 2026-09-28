@@ -3,6 +3,7 @@ import cors from 'cors';
 import healthRouter from './routes/health.routes.js';
 import coursesRouter from './routes/courses.routes.js';
 import instructorsRouter from './routes/instructors.routes.js';
+import gruposRouter from './routes/grupos.routes.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 
 const app = express();
@@ -17,6 +18,7 @@ app.get('/', (_req, res) => {
 app.use('/api/health', healthRouter);
 app.use('/api/courses', coursesRouter);
 app.use('/api/instructores', instructorsRouter);
+app.use('/api/grupos', gruposRouter);
 
 app.use(notFound);
 app.use(errorHandler);

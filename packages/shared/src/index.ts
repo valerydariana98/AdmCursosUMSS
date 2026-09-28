@@ -37,6 +37,17 @@ export interface Group {
   estado: GroupStatus;
 }
 
+// El alta de un grupo no recibe `numGrupo` (se genera correlativamente por curso)
+// ni `estado` (arranca siempre en preinscripcion).
+export type CreateGroup = Omit<Group, 'id' | 'numGrupo' | 'estado'>;
+
+// Fila de grupo enriquecida para el listado: trae el nombre del docente y la
+// cantidad de inscritos, que no viven en `grupos`.
+export interface GroupListItem extends Group {
+  instructorNombre: string;
+  inscritos: number;
+}
+
 export interface Student {
   id: number;
   codSis: string | null;

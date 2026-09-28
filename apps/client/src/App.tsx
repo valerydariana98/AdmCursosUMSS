@@ -5,6 +5,8 @@ import ComingSoonPage from './pages/ComingSoonPage';
 import CourseCreatePage from './pages/courses/CourseCreatePage';
 import CourseEditPage from './pages/courses/CourseEditPage';
 import CoursesListPage from './pages/courses/CoursesListPage';
+import GrupoFormPage from './pages/grupos/GrupoFormPage';
+import GruposListPage from './pages/grupos/GruposListPage';
 import InstructorsContainer from './pages/instructors/InstructorsContainer';
 import NotFoundPage from './pages/NotFoundPage';
 import Prueba from './pages/Prueba';
@@ -22,6 +24,10 @@ export default function App() {
           <Route path="/cursos" element={<CoursesListPage />} />
           <Route path="/cursos/nuevo" element={<CourseCreatePage />} />
           <Route path="/cursos/:id/editar" element={<CourseEditPage />} />
+
+          {/* Grupos de un curso (HU #18) */}
+          <Route path="/cursos/:idCurso/grupos" element={<GruposListPage />} />
+          <Route path="/cursos/:idCurso/grupos/nuevo" element={<GrupoFormPage />} />
 
           {/* Instructores (otra HU) */}
           <Route path="/instructores" element={<InstructorsContainer />} />
