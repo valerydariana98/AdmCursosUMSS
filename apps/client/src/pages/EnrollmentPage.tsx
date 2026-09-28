@@ -1,6 +1,9 @@
 import type { FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PAYMENT_TYPES, PAYMENT_TYPE_LABEL, STUDENT_TYPE_LABEL, type PaymentType } from 'shared';
+import {
+  btnPrimary, btnSecondary, cardCls, inputCls, labelCls, sectionTitleCls,
+} from '../components/formStyles';
 import useEnrollmentForm from '../hooks/useEnrollmentForm';
 
 const EnrollmentPage = () => {
@@ -9,64 +12,118 @@ const EnrollmentPage = () => {
   const { form, setField, types, group, monto, isLoading, isSaving, error, submit } =
     useEnrollmentForm(groupId);
 
+  // Provisional: vuelve a la lista temporal. Cambiar a la ruta definitiva cuando exista la HU #41
+  const listUrl = `/groups/${groupId}/students-temp`;
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (await submit()) navigate(`/groups/${groupId}`);
+    if (await submit()) navigate(listUrl);
   };
 
-  if (isLoading) return <p>Cargando...</p>;
-  if (!group) return <p role="alert">{error ?? 'Grupo no encontrado'}</p>;
+  if (isLoading) return <p className="p-6">Cargando...</p>;
+  if (!group) return <p role="alert" className="p-6">{error ?? 'Grupo no encontrado'}</p>;
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-xl font-semibold">
-        Inscribir en {group.curso.nombreCurso} - Grupo {group.numGrupo}
-      </h1>
+    <form onSubmit={onSubmit} className="mx-auto max-w-5xl p-4">
+      <p className="text-sm text-gray-400">
+        <Link to={listUrl} className="hover:underline">Estudiantes</Link> /{' '}
+        <span className="font-semibold text-gray-600">Inscribir estudiante</span>
+      </p>
 
-      <label className="block">Nombres
-        <input required value={form.nombres} onChange={(e) => setField('nombres', e.target.value)} />
-      </label>
-      <label className="block">Apellido paterno
-        <input required value={form.apPaterno} onChange={(e) => setField('apPaterno', e.target.value)} />
-      </label>
-      <label className="block">Apellido materno
-        <input required value={form.apMaterno} onChange={(e) => setField('apMaterno', e.target.value)} />
-      </label>
-      <label className="block">Código SIS
-        <input required value={form.codSis} onChange={(e) => setField('codSis', e.target.value)} />
-      </label>
-      <label className="block">CI
-        <input required value={form.ci} onChange={(e) => setField('ci', e.target.value)} />
-      </label>
-      <label className="flex items-center gap-2">
-        <input type="checkbox" checked={form.fotocopiaCI} onChange={(e) => setField('fotocopiaCI', e.target.checked)} />
-        Dejó fotocopia de CI
-      </label>
+      <div className="mb-6 mt-2 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Inscribir Estudiante</h1>
+          <p className="text-sm text-gray-500">
+            {group.curso.nombreCurso} · Grupo {group.numGrupo}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link to={listUrl} className={btnSecondary}>Cancelar</Link>
+          <button type="submit" disabled={isSaving} className={btnPrimary}>
+            {isSaving ? 'Inscribiendo...' : 'Inscribir'}
+          </button>
+        </div>
+      </div>
 
-      <label className="block">Tipo de estudiante
-        <select value={form.idTipoEst} onChange={(e) => setField('idTipoEst', Number(e.target.value))}>
-          {types.map((t) => (
-            <option key={t.id} value={t.id}>{STUDENT_TYPE_LABEL[t.nombre]}</option>
-          ))}
-        </select>
-      </label>
+     <div className="space-y-3">
+        <section className={cardCls}>
+          <h2 className={sectionTitleCls}>Datos del estudiante</h2>
+          <div className="mt-4 space-y-4">
+            <label className={labelCls}>
+              Nombres
+              <input className={inputCls} required placeholder="Ej. Ana María"
+                value={form.nombres} onChange={(e) => setField('nombres', e.target.value)} />
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <label className={labelCls}>
+                Apellido paterno
+                <input className={inputCls} required value={form.apPaterno}
+                  onChange={(e) => setField('apPaterno', e.target.value)} />
+              </label>
+              <label className={labelCls}>
+                Apellido materno
+                <input className={inputCls} required value={form.apMaterno}
+                  onChange={(e) => setField('apMaterno', e.target.value)} />
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <label className={labelCls}>
+                CI
+                <input className={inputCls} required placeholder="Ej. 8945612"
+                  value={form.ci} onChange={(e) => setField('ci', e.target.value)} />
+              </label>
+              <label className={labelCls}>
+                Código SIS
+                <input className={inputCls} required placeholder="Ej. 201812345"
+                  value={form.codSis} onChange={(e) => setField('codSis', e.target.value)} />
+              </label>
+            </div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <input type="checkbox" checked={form.fotocopiaCI}
+                onChange={(e) => setField('fotocopiaCI', e.target.checked)} />
+              Dejó fotocopia de CI
+            </label>
+          </div>
+        </section>
 
-      <label className="block">Tipo de pago
-        <select value={form.tipoPago} onChange={(e) => setField('tipoPago', e.target.value as PaymentType)}>
-          {PAYMENT_TYPES.map((p) => (
-            <option key={p} value={p}>{PAYMENT_TYPE_LABEL[p]}</option>
-          ))}
-        </select>
-      </label>
+        <section className={cardCls}>
+          <h2 className={sectionTitleCls}>Tipo y pago</h2>
+          <p className="text-xs text-gray-500">Los montos están en bolivianos (Bs.)</p>
+          <div className="mt-4 grid grid-cols-3 gap-4">
+            <label className={labelCls}>
+              Tipo de estudiante
+              <select className={inputCls} value={form.idTipoEst}
+                onChange={(e) => setField('idTipoEst', Number(e.target.value))}>
+                {types.map((t) => (
+                  <option key={t.id} value={t.id}>{STUDENT_TYPE_LABEL[t.nombre]}</option>
+                ))}
+              </select>
+            </label>
+            <label className={labelCls}>
+              Tipo de pago
+              <select className={inputCls} value={form.tipoPago}
+                onChange={(e) => setField('tipoPago', e.target.value as PaymentType)}>
+                {PAYMENT_TYPES.map((p) => (
+                  <option key={p} value={p}>{PAYMENT_TYPE_LABEL[p]}</option>
+                ))}
+              </select>
+            </label>
+            <div className={labelCls}>
+              Monto a cobrar
+              <p className={`${inputCls} bg-gray-50 font-semibold`}>Bs {monto}</p>
+            </div>
+          </div>
+        </section>
 
-      <p className="font-semibold">Monto a cobrar: Bs {monto}</p>
+        <section className={cardCls}>
+          <h2 className={sectionTitleCls}>Observaciones</h2>
+          <textarea className={inputCls} rows={3} placeholder="Opcional"
+            value={form.observaciones}
+            onChange={(e) => setField('observaciones', e.target.value)} />
+        </section>
 
-      <label className="block">Observaciones
-        <textarea value={form.observaciones} onChange={(e) => setField('observaciones', e.target.value)} />
-      </label>
-
-      {error && <p role="alert" className="text-red-600">{error}</p>}
-      <button type="submit" disabled={isSaving}>{isSaving ? 'Inscribiendo...' : 'Inscribir'}</button>
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      </div>
     </form>
   );
 };

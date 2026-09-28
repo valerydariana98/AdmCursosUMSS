@@ -5,7 +5,7 @@
 export type Modality = 'presencial' | 'virtual' | 'hibrida';
 export type GroupStatus = 'preinscripcion' | 'habilitado' | 'inhabilitado' | 'finalizado';
 export type EvaluationType = 'asistencia' | 'eval' | 'trabajo';
-
+export type UpdateEnrollment = Partial<CreateEnrollment>;
 export interface Course {
   id: number;
   nombreCurso: string;
@@ -60,6 +60,8 @@ export interface Instructor {
   email: string | null; // vive en usuarios.email
   username: string | null; // vive en usuarios.username
   gruposAsignadosCount: number;
+
+
 }
 
 export type CreateInstructor = Omit<

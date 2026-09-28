@@ -3,6 +3,7 @@ import {
   createEnrollment as createEnrollmentService,
   listEnrollments as listEnrollmentsService,
   listStudentTypes as listStudentTypesService,
+  updateEnrollment as updateEnrollmentService,
 } from "../services/enrollments.service.js";
 
 const ERRORS = {
@@ -14,6 +15,8 @@ const ERRORS = {
     status: 409,
     message: "El estudiante ya está inscrito en este grupo",
   },
+  enrollment_not_found: { status: 404, message: "Inscripción no encontrada" },
+  ci_taken: { status: 409, message: "Ese CI ya pertenece a otro estudiante" },
 } as const;
 
 export const createEnrollment = async (
@@ -65,6 +68,28 @@ export const getStudentTypes = async (
 ) => {
   try {
     res.json(await listStudentTypesService());
+  } catch (error) {
+    next(error);
+  }
+};
+export const updateEnrollment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await updateEnrollmentService(
+      Number(req.params.id),
+      Number(req.params.enrollmentId),
+      req.body,
+    );
+    const errorCode = "error" in result ? result.error : undefined;
+    if (typeof errorCode === "string" && errorCode in ERRORS) {
+      const { status, message } = ERRORS[errorCode as keyof typeof ERRORS];
+      res.status(status).json({ message });
+      return;
+    }
+    if ("data" in result) {
+      res.json(result.data);
+      return;
+    }
+    next(new Error("Respuesta inesperada al editar la inscripción"));
   } catch (error) {
     next(error);
   }
