@@ -63,7 +63,7 @@ export const estudiantes = pgTable('estudiantes', {
   nombres: varchar('nombres', { length: 255 }).notNull(),
   apPaterno: varchar('ap_paterno', { length: 255 }).notNull(),
   apMaterno: varchar('ap_materno', { length: 255 }).notNull(),
-  celular: varchar('celular', { length: 50 }).notNull(),
+  celular: varchar('celular', { length: 50 }),
 });
 
 // 4. Cursos

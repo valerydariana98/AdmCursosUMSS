@@ -44,7 +44,7 @@ export interface Student {
   nombres: string;
   apPaterno: string;
   apMaterno: string;
-  celular: string;
+  celular: string | null;
 }
 
 export interface Instructor {
@@ -80,8 +80,54 @@ export interface Enrollment {
   idEst: number;
   idGrupo: number;
   monto: number;
-  tipoPago: string;
+  tipoPago: PaymentType;
   idTipoEst: number;
   fotocopiaCI: boolean;
   observaciones: string | null;
 }
+
+// ---- Inscripciones ----
+export const PAYMENT_TYPES = ['efectivo', 'qr'] as const;
+export type PaymentType = (typeof PAYMENT_TYPES)[number];
+
+export type StudentTypeName = 'externo' | 'umss' | 'aux'; // valores de db:seed
+
+export const STUDENT_TYPE_LABEL: Record<StudentTypeName, string> = {
+  umss: 'Estudiante UMSS',
+  aux: 'Auxiliar UMSS',
+  externo: 'EXTERNO',
+};
+
+export const PAYMENT_TYPE_LABEL: Record<PaymentType, string> = {
+  efectivo: 'Efectivo',
+  qr: 'QR',
+};
+
+export interface StudentType {
+  id: number;
+  nombre: StudentTypeName;
+}
+
+export interface CreateEnrollment {
+  nombres: string;
+  apPaterno: string;
+  apMaterno: string;
+  codSis: string;
+  ci: string;
+  fotocopiaCI: boolean;
+  idTipoEst: number;
+  tipoPago: PaymentType;
+  observaciones?: string;
+}
+
+export interface EnrolledStudent extends Enrollment {
+  estudiante: Pick<Student, 'nombres' | 'apPaterno' | 'apMaterno' | 'ci' | 'codSis'>;
+}
+
+export type GroupWithCount = Group & { inscritosCount: number };
+export type GroupWithCourse = Group & { curso: Course };
+
+export const calcularMonto = (
+  tipo: StudentTypeName,
+  c: Pick<Course, 'costoUmss' | 'costoAux' | 'costoExterno'>,
+): number => ({ externo: c.costoExterno, umss: c.costoUmss, aux: c.costoAux })[tipo];
