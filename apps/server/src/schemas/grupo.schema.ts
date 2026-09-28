@@ -83,9 +83,10 @@ export const cambiarEstadoGrupoSchema = z.object({
 
 export const gruposQuerySchema = z.object({
   idCurso: z.coerce
-    .number({ error: 'El curso es obligatorio' })
+    .number({ error: 'El curso debe ser un número' })
     .int('El curso debe ser un número')
-    .positive('El curso es obligatorio'),
+    .positive('El curso debe ser un número')
+    .optional(),
 });
 
 export type CreateGrupoInput = z.infer<typeof createGrupoSchema>;

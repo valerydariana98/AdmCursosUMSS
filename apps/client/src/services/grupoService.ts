@@ -9,8 +9,9 @@ import type {
 } from '../types/group';
 
 export const grupoService = {
-  listByCurso(idCurso: number): Promise<GroupListItem[]> {
-    return api.get<GroupListItem[]>(`/api/grupos?idCurso=${idCurso}`);
+  listByCurso(idCurso?: number): Promise<GroupListItem[]> {
+    const query = idCurso !== undefined ? `?idCurso=${idCurso}` : '';
+    return api.get<GroupListItem[]>(`/api/grupos${query}`);
   },
   getById(id: number): Promise<Group> {
     return api.get<Group>(`/api/grupos/${id}`);

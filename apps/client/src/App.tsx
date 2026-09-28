@@ -7,6 +7,7 @@ import CourseEditPage from './pages/courses/CourseEditPage';
 import CoursesListPage from './pages/courses/CoursesListPage';
 import GrupoCreatePage from './pages/grupos/GrupoCreatePage';
 import GrupoEditPage from './pages/grupos/GrupoEditPage';
+import GruposPage from './pages/grupos/GruposPage';
 import GruposListPage from './pages/grupos/GruposListPage';
 import InstructorsContainer from './pages/instructors/InstructorsContainer';
 import NotFoundPage from './pages/NotFoundPage';
@@ -42,7 +43,7 @@ export default function App() {
 
           {/* Secciones de otros colaboradores */}
           <Route path="/dashboard"  element={<Prueba />} />
-          <Route path="/grupos" element={<ComingSoonPage title="Grupos" />} />
+          <Route path="/grupos" element={<GruposPage />} />
           <Route path="/estudiantes" element={<ComingSoonPage title="Estudiantes" />} />
           <Route path="/certificados" element={<ComingSoonPage title="Certificados" />} />
 

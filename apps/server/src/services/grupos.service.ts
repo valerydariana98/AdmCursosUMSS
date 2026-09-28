@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, max, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, max, sql, type SQL } from 'drizzle-orm';
 import type { Group, GroupListItem } from 'shared';
 import { db } from '../db/index.js';
 import { cursos, grupos, instructores, inscripciones } from '../db/schema.js';
@@ -114,19 +114,22 @@ const resolveUniqueViolation = (error: unknown): CreateGrupoFailure | null => {
 // inscritos. Se evalua al listar para que el estado quede al dia sin depender del
 // endpoint de inscripcion, que todavia no existe; el modulo de inscripciones puede
 // llamar a esta misma funcion tras crear una inscripcion para aplicarlo al instante.
-const habilitarGruposQueCumplenMinimo = async (idCurso: number) => {
+const habilitarGruposQueCumplenMinimo = async (idCurso?: number) => {
   const [curso] = await db
     .select({ preinscripcionFinalizada: cursos.preinscripcionFinalizada })
     .from(cursos)
-    .where(eq(cursos.id, idCurso));
+    .where(eq(cursos.id, idCurso ?? -1));
 
-  if (curso?.preinscripcionFinalizada) return;
+  if (idCurso !== undefined && curso?.preinscripcionFinalizada) return;
+
+  const condiciones: SQL[] = [eq(grupos.estado, 'preinscripcion')];
+  if (idCurso !== undefined) condiciones.push(eq(grupos.idCurso, idCurso));
 
   const candidatos = await db
     .select({ id: grupos.id, minimEst: grupos.minimEst, inscritos: count(inscripciones.id) })
     .from(grupos)
     .leftJoin(inscripciones, eq(grupos.id, inscripciones.idGrupo))
-    .where(and(eq(grupos.idCurso, idCurso), eq(grupos.estado, 'preinscripcion')))
+    .where(and(...condiciones))
     .groupBy(grupos.id);
 
   const listos = candidatos.filter((grupo) => Number(grupo.inscritos) >= grupo.minimEst);
@@ -144,8 +147,11 @@ const habilitarGruposQueCumplenMinimo = async (idCurso: number) => {
     );
 };
 
-export const listGruposByCurso = async (idCurso: number): Promise<GroupListItem[]> => {
+export const listGruposByCurso = async (idCurso?: number): Promise<GroupListItem[]> => {
   await habilitarGruposQueCumplenMinimo(idCurso);
+
+  const condiciones: SQL[] = [];
+  if (idCurso !== undefined) condiciones.push(eq(grupos.idCurso, idCurso));
 
   const rows = await db
     .select({
@@ -166,9 +172,9 @@ export const listGruposByCurso = async (idCurso: number): Promise<GroupListItem[
     .from(grupos)
     .innerJoin(instructores, eq(grupos.idInstructor, instructores.id))
     .leftJoin(inscripciones, eq(grupos.id, inscripciones.idGrupo))
-    .where(eq(grupos.idCurso, idCurso))
+    .where(condiciones.length > 0 ? and(...condiciones) : undefined)
     .groupBy(grupos.id, instructores.nombres, instructores.apPaterno)
-    .orderBy(grupos.numGrupo);
+    .orderBy(grupos.idCurso, grupos.numGrupo);
 
   return rows as GroupListItem[];
 };
