@@ -32,24 +32,28 @@ export const tipoEvalEnum = pgEnum('tipo_eval_enum', ['asistencia', 'eval', 'tra
 // 1. Usuarios
 export const usuarios = pgTable('usuarios', {
   id: serial('id').primaryKey(),
-  username: varchar('username', { length: 255 }).notNull(),
+  username: varchar('username', { length: 255 }).notNull().unique(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
   rol: rolEnum('rol').notNull(),
 });
 
 // 2. Instructores
-export const instructores = pgTable('instructores', {
-  id: serial('id').primaryKey(),
-  usuarioId: integer('usuario_id').references(() => usuarios.id).unique(), // FK opcional, 1:1
-  nombres: varchar('nombres', { length: 255 }).notNull(),
-  apPaterno: varchar('ap_paterno', { length: 255 }).notNull(),
-  apMaterno: varchar('ap_materno', { length: 255 }).notNull(),
-  estado: boolean('estado').notNull(),
-  telefono: varchar('telefono', { length: 50 }).notNull(),
-  ci: varchar('ci', { length: 50 }).notNull(),
-  cargo: varchar('cargo', { length: 100 }).notNull(),
-});
+export const instructores = pgTable(
+  'instructores',
+  {
+    id: serial('id').primaryKey(),
+    usuarioId: integer('usuario_id').references(() => usuarios.id).unique(), // FK opcional, 1:1
+    nombres: varchar('nombres', { length: 255 }).notNull(),
+    apPaterno: varchar('ap_paterno', { length: 255 }).notNull(),
+    apMaterno: varchar('ap_materno', { length: 255 }).notNull(),
+    estado: boolean('estado').notNull(),
+    telefono: varchar('telefono', { length: 50 }).notNull(),
+    ci: varchar('ci', { length: 50 }).notNull(),
+    cargo: varchar('cargo', { length: 100 }).notNull(),
+  },
+  (table) => [uniqueIndex('instructores_ci_unico').on(table.ci)]
+);
 
 // 3. Estudiantes
 export const estudiantes = pgTable('estudiantes', {
@@ -59,7 +63,7 @@ export const estudiantes = pgTable('estudiantes', {
   nombres: varchar('nombres', { length: 255 }).notNull(),
   apPaterno: varchar('ap_paterno', { length: 255 }).notNull(),
   apMaterno: varchar('ap_materno', { length: 255 }).notNull(),
-  celular: varchar('celular', { length: 50 }).notNull(),
+  celular: varchar('celular', { length: 50 }),
 });
 
 // 4. Cursos
