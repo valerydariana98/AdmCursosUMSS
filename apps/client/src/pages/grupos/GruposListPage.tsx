@@ -13,11 +13,22 @@ const MODALITY_LABELS: Record<Modality, string> = {
   hibrida: 'Híbrida',
 };
 
-const COLUMN_COUNT = 7;
+const COLUMN_COUNT = 8;
 
 const PlusIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+  </svg>
+);
+
+const PencilIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+    />
   </svg>
 );
 
@@ -62,6 +73,18 @@ const GruposListPage = () => {
         </td>
         <td className="py-4 px-4">
           <EstadoBadge estado={grupo.estado} />
+        </td>
+        <td className="py-4 px-6">
+          <div className="flex justify-end">
+            <Link
+              to={`/cursos/${cursoId}/grupos/${grupo.id}/editar`}
+              title="Editar grupo"
+              aria-label={`Editar grupo ${grupo.numGrupo}`}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              <PencilIcon />
+            </Link>
+          </div>
         </td>
       </tr>
     ));
@@ -115,6 +138,7 @@ const GruposListPage = () => {
                 <th className="py-3.5 px-4">Aula</th>
                 <th className="py-3.5 px-4">Mín / Máx</th>
                 <th className="py-3.5 px-4">Estado</th>
+                <th className="py-3.5 px-6 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">{tableBody()}</tbody>

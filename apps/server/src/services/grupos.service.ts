@@ -2,7 +2,7 @@ import { count, eq, max, sql } from 'drizzle-orm';
 import type { Group, GroupListItem } from 'shared';
 import { db } from '../db/index.js';
 import { cursos, grupos, instructores, inscripciones } from '../db/schema.js';
-import type { CreateGrupoInput } from '../schemas/grupo.schema.js';
+import type { CreateGrupoInput, UpdateGrupoInput } from '../schemas/grupo.schema.js';
 
 const PG_UNIQUE_VIOLATION = '23505';
 
@@ -14,6 +14,12 @@ export type CreateGrupoFailure =
 export type CreateGrupoResult =
   | { ok: true; grupo: Group }
   | { ok: false; reason: CreateGrupoFailure };
+
+export type UpdateGrupoFailure = 'grupo_not_found' | 'instructor_not_found';
+
+export type UpdateGrupoResult =
+  | { ok: true; grupo: Group }
+  | { ok: false; reason: UpdateGrupoFailure };
 
 // Traduce el error 23505 de Postgres al motivo de conflicto que entiende el controller.
 // Drizzle envuelve el error del driver en DrizzleQueryError, por eso se revisa el `cause`.
@@ -56,6 +62,50 @@ export const listGruposByCurso = async (idCurso: number): Promise<GroupListItem[
     .orderBy(grupos.numGrupo);
 
   return rows as GroupListItem[];
+};
+
+export const getGrupoById = async (id: number): Promise<Group | null> => {
+  const [grupo] = await db.select().from(grupos).where(eq(grupos.id, id));
+  return grupo ?? null;
+};
+
+export const updateGrupo = async (
+  id: number,
+  data: UpdateGrupoInput
+): Promise<UpdateGrupoResult> => {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ id: grupos.id })
+      .from(grupos)
+      .where(eq(grupos.id, id));
+
+    if (!existing) return { ok: false as const, reason: 'grupo_not_found' as const };
+
+    const [instructor] = await tx
+      .select({ id: instructores.id })
+      .from(instructores)
+      .where(eq(instructores.id, data.idInstructor));
+
+    if (!instructor) return { ok: false as const, reason: 'instructor_not_found' as const };
+
+    // `numGrupo` y `estado` no se tocan: el número es correlativo del curso y el
+    // estado se gobierna aparte (habilitado / inhabilitado / finalizado).
+    const [grupo] = await tx
+      .update(grupos)
+      .set({
+        idInstructor: data.idInstructor,
+        horaIni: data.horaIni,
+        horaFin: data.horaFin,
+        modalidad: data.modalidad,
+        aula: data.modalidad === 'virtual' ? null : data.aula,
+        minimEst: data.minimEst,
+        maxEst: data.maxEst,
+      })
+      .where(eq(grupos.id, id))
+      .returning();
+
+    return { ok: true as const, grupo };
+  });
 };
 
 export const createGrupo = async (data: CreateGrupoInput): Promise<CreateGrupoResult> => {

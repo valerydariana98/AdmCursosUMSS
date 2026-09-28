@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../services/api';
 import { grupoService } from '../services/grupoService';
-import type { CreateGroupDTO, GroupListItem } from '../types/group';
+import type { CreateGroupDTO, GroupListItem, UpdateGroupDTO } from '../types/group';
 
 export const useGrupos = (idCurso: number) => {
   const [grupos, setGrupos] = useState<GroupListItem[]>([]);
@@ -41,5 +41,11 @@ export const useGrupos = (idCurso: number) => {
     return created;
   };
 
-  return { grupos, loading, error, addGrupo, refetch: fetchGrupos };
+  const updateGrupo = async (id: number, data: UpdateGroupDTO) => {
+    const updated = await grupoService.update(id, data);
+    await fetchGrupos();
+    return updated;
+  };
+
+  return { grupos, loading, error, addGrupo, updateGrupo, refetch: fetchGrupos };
 };

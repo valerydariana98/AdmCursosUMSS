@@ -4,6 +4,7 @@ import type { Group, GroupListItem, Modality } from 'shared';
 export type { Group, GroupListItem };
 
 export type CreateGroupDTO = Omit<Group, 'id' | 'numGrupo' | 'estado'>;
+export type UpdateGroupDTO = Omit<Group, 'id' | 'numGrupo' | 'estado' | 'idCurso'>;
 
 export const MODALITY_OPTIONS: Array<{ value: Modality; label: string; description: string }> = [
   { value: 'presencial', label: 'Presencial', description: 'El grupo se dicta en un aula física' },

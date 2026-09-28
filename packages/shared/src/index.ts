@@ -41,6 +41,9 @@ export interface Group {
 // ni `estado` (arranca siempre en preinscripcion).
 export type CreateGroup = Omit<Group, 'id' | 'numGrupo' | 'estado'>;
 
+// En la edición el grupo no cambia de curso: solo se corrigen sus datos y su cupo.
+export type UpdateGroup = Omit<Group, 'id' | 'numGrupo' | 'estado' | 'idCurso'>;
+
 // Fila de grupo enriquecida para el listado: trae el nombre del docente y la
 // cantidad de inscritos, que no viven en `grupos`.
 export interface GroupListItem extends Group {
