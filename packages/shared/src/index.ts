@@ -17,8 +17,11 @@ export interface Course {
   costoExterno: number;
   notaMin: number;
   maxFaltas: number;
-  periodo: string;
-  estado: boolean;
+periodo: string;
+estado: boolean;
+// true cuando el administrador cerro la preinscripcion: ya no se pueden crear,
+// editar, eliminar ni cambiar el estado de los grupos del curso.
+preinscripcionFinalizada: boolean;
 }
 
 export type CreateCourse = Omit<Course, 'id'>;

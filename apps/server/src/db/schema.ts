@@ -78,8 +78,11 @@ export const cursos = pgTable('cursos', {
   costoExterno: integer('costo_externo').notNull(),
   notaMin: integer('nota_min').notNull(),
   maxFaltas: integer('max_faltas').notNull(),
-  periodo: varchar('periodo', { length: 50 }).notNull(), // Ej: "1-2026"
-  estado: boolean('estado').notNull(), // true: activo, false: finalizado
+periodo: varchar('periodo', { length: 50 }).notNull(), // Ej: "1-2026"
+estado: boolean('estado').notNull(), // true: activo, false: finalizado
+preinscripcionFinalizada: boolean('preinscripcion_finalizada')
+  .notNull()
+  .default(false),
 });
 
 // 5. Grupos

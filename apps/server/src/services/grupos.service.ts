@@ -13,7 +13,8 @@ const PG_UNIQUE_VIOLATION = '23505';
 export type CreateGrupoFailure =
   | 'curso_not_found'
   | 'instructor_not_found'
-  | 'num_grupo_taken';
+  | 'num_grupo_taken'
+  | 'preinscripcion_finalizada';
 
 export type CreateGrupoResult =
   | { ok: true; grupo: Group }
@@ -22,11 +23,25 @@ export type CreateGrupoResult =
 export type UpdateGrupoFailure =
   | 'grupo_not_found'
   | 'grupo_finalizado'
-  | 'instructor_not_found';
+  | 'instructor_not_found'
+  | 'preinscripcion_finalizada';
 
 export type UpdateGrupoResult =
   | { ok: true; grupo: Group }
   | { ok: false; reason: UpdateGrupoFailure };
+
+// Cerrada la preinscripcion del curso, sus grupos quedan congelados: no se
+// crean, editan, eliminan ni cambian de estado, y tampoco se auto-habilitan.
+const assertPreinscripcionAbierta = async (
+  idCurso: number
+): Promise<boolean> => {
+  const [curso] = await db
+    .select({ preinscripcionFinalizada: cursos.preinscripcionFinalizada })
+    .from(cursos)
+    .where(eq(cursos.id, idCurso));
+
+  return curso ? !curso.preinscripcionFinalizada : false;
+};
 
 export const cambiarEstadoGrupo = async (
   id: number,
@@ -41,6 +56,10 @@ export const cambiarEstadoGrupo = async (
     return { ok: false, reason: 'grupo_finalizado' };
   }
 
+  if (!(await assertPreinscripcionAbierta(grupo.idCurso))) {
+    return { ok: false, reason: 'preinscripcion_finalizada' };
+  }
+
   const [actualizado] = await db
     .update(grupos)
     .set({ estado: data.estado })
@@ -50,10 +69,16 @@ export const cambiarEstadoGrupo = async (
   return { ok: true, grupo: actualizado };
 };
 
-export const deleteGrupo = async (id: number) => {
-  const [grupo] = await db.select({ id: grupos.id }).from(grupos).where(eq(grupos.id, id));
+export type DeleteGrupoFailure = 'not_found' | 'has_enrollments' | 'preinscripcion_finalizada';
+
+export const deleteGrupo = async (id: number): Promise<DeleteGrupoFailure | 'deleted'> => {
+  const [grupo] = await db.select().from(grupos).where(eq(grupos.id, id));
 
   if (!grupo) return 'not_found' as const;
+
+  if (!(await assertPreinscripcionAbierta(grupo.idCurso))) {
+    return 'preinscripcion_finalizada' as const;
+  }
 
   // Un grupo con estudiantes inscritos no se puede eliminar: rompería el
   // historial de inscripciones y el conteo de cupos del curso.
@@ -90,6 +115,13 @@ const resolveUniqueViolation = (error: unknown): CreateGrupoFailure | null => {
 // endpoint de inscripcion, que todavia no existe; el modulo de inscripciones puede
 // llamar a esta misma funcion tras crear una inscripcion para aplicarlo al instante.
 const habilitarGruposQueCumplenMinimo = async (idCurso: number) => {
+  const [curso] = await db
+    .select({ preinscripcionFinalizada: cursos.preinscripcionFinalizada })
+    .from(cursos)
+    .where(eq(cursos.id, idCurso));
+
+  if (curso?.preinscripcionFinalizada) return;
+
   const candidatos = await db
     .select({ id: grupos.id, minimEst: grupos.minimEst, inscritos: count(inscripciones.id) })
     .from(grupos)
@@ -158,6 +190,15 @@ export const updateGrupo = async (
 
     if (!existing) return { ok: false as const, reason: 'grupo_not_found' as const };
 
+    const [grupoCompleto] = await tx.select().from(grupos).where(eq(grupos.id, id));
+
+    if (
+      grupoCompleto &&
+      !(await assertPreinscripcionAbierta(grupoCompleto.idCurso))
+    ) {
+      return { ok: false as const, reason: 'preinscripcion_finalizada' as const };
+    }
+
     const [instructor] = await tx
       .select({ id: instructores.id })
       .from(instructores)
@@ -189,11 +230,15 @@ export const createGrupo = async (data: CreateGrupoInput): Promise<CreateGrupoRe
   try {
     return await db.transaction(async (tx) => {
       const [curso] = await tx
-        .select({ id: cursos.id })
+        .select({ id: cursos.id, preinscripcionFinalizada: cursos.preinscripcionFinalizada })
         .from(cursos)
         .where(eq(cursos.id, data.idCurso));
 
       if (!curso) return { ok: false as const, reason: 'curso_not_found' as const };
+
+      if (curso.preinscripcionFinalizada) {
+        return { ok: false as const, reason: 'preinscripcion_finalizada' as const };
+      }
 
       const [instructor] = await tx
         .select({ id: instructores.id })
