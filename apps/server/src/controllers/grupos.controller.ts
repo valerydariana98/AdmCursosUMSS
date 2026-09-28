@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import type { GruposQuery } from '../schemas/grupo.schema.js';
 import {
+  cambiarEstadoGrupo as cambiarEstadoGrupoService,
   createGrupo as createGrupoService,
   deleteGrupo as deleteGrupoService,
   getGrupoById,
@@ -16,6 +17,7 @@ const FAILURE_MESSAGES = {
 
 const UPDATE_FAILURE_MESSAGES = {
   grupo_not_found: 'Grupo not found',
+  grupo_finalizado: 'Un grupo finalizado no se puede habilitar ni inhabilitar',
   instructor_not_found: 'El instructor seleccionado no existe',
 } as const;
 
@@ -57,6 +59,28 @@ export const updateGrupo = async (req: Request, res: Response, next: NextFunctio
       }
 
       res.status(409).json({ message: UPDATE_FAILURE_MESSAGES[result.reason] });
+      return;
+    }
+
+    res.json(result.grupo);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const cambiarEstadoGrupo = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = Number(req.params.id);
+    const result = await cambiarEstadoGrupoService(id, req.body);
+
+    if (!result.ok) {
+      res.status(result.reason === 'grupo_not_found' ? 404 : 409).json({
+        message: UPDATE_FAILURE_MESSAGES[result.reason],
+      });
       return;
     }
 

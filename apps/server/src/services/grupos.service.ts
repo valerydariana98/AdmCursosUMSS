@@ -1,8 +1,12 @@
-import { count, eq, max, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, max, sql } from 'drizzle-orm';
 import type { Group, GroupListItem } from 'shared';
 import { db } from '../db/index.js';
 import { cursos, grupos, instructores, inscripciones } from '../db/schema.js';
-import type { CreateGrupoInput, UpdateGrupoInput } from '../schemas/grupo.schema.js';
+import type {
+  CambiarEstadoGrupoInput,
+  CreateGrupoInput,
+  UpdateGrupoInput,
+} from '../schemas/grupo.schema.js';
 
 const PG_UNIQUE_VIOLATION = '23505';
 
@@ -15,11 +19,36 @@ export type CreateGrupoResult =
   | { ok: true; grupo: Group }
   | { ok: false; reason: CreateGrupoFailure };
 
-export type UpdateGrupoFailure = 'grupo_not_found' | 'instructor_not_found';
+export type UpdateGrupoFailure =
+  | 'grupo_not_found'
+  | 'grupo_finalizado'
+  | 'instructor_not_found';
 
 export type UpdateGrupoResult =
   | { ok: true; grupo: Group }
   | { ok: false; reason: UpdateGrupoFailure };
+
+export const cambiarEstadoGrupo = async (
+  id: number,
+  data: CambiarEstadoGrupoInput
+): Promise<UpdateGrupoResult> => {
+  const [grupo] = await db.select().from(grupos).where(eq(grupos.id, id));
+
+  if (!grupo) return { ok: false, reason: 'grupo_not_found' };
+
+  // Finalizado cierra el ciclo de vida del grupo: no vuelve a habilitarse.
+  if (grupo.estado === 'finalizado') {
+    return { ok: false, reason: 'grupo_finalizado' };
+  }
+
+  const [actualizado] = await db
+    .update(grupos)
+    .set({ estado: data.estado })
+    .where(eq(grupos.id, id))
+    .returning();
+
+  return { ok: true, grupo: actualizado };
+};
 
 export const deleteGrupo = async (id: number) => {
   const [grupo] = await db.select({ id: grupos.id }).from(grupos).where(eq(grupos.id, id));
@@ -56,7 +85,36 @@ const resolveUniqueViolation = (error: unknown): CreateGrupoFailure | null => {
   return null;
 };
 
+// Un grupo en preinscripcion pasa a habilitado cuando alcanza el minimo de
+// inscritos. Se evalua al listar para que el estado quede al dia sin depender del
+// endpoint de inscripcion, que todavia no existe; el modulo de inscripciones puede
+// llamar a esta misma funcion tras crear una inscripcion para aplicarlo al instante.
+const habilitarGruposQueCumplenMinimo = async (idCurso: number) => {
+  const candidatos = await db
+    .select({ id: grupos.id, minimEst: grupos.minimEst, inscritos: count(inscripciones.id) })
+    .from(grupos)
+    .leftJoin(inscripciones, eq(grupos.id, inscripciones.idGrupo))
+    .where(and(eq(grupos.idCurso, idCurso), eq(grupos.estado, 'preinscripcion')))
+    .groupBy(grupos.id);
+
+  const listos = candidatos.filter((grupo) => Number(grupo.inscritos) >= grupo.minimEst);
+
+  if (listos.length === 0) return;
+
+  await db
+    .update(grupos)
+    .set({ estado: 'habilitado' })
+    .where(
+      inArray(
+        grupos.id,
+        listos.map((grupo) => grupo.id)
+      )
+    );
+};
+
 export const listGruposByCurso = async (idCurso: number): Promise<GroupListItem[]> => {
+  await habilitarGruposQueCumplenMinimo(idCurso);
+
   const rows = await db
     .select({
       id: grupos.id,

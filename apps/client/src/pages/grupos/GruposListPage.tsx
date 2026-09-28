@@ -5,11 +5,12 @@ import AlertInfo from '../../components/AlertInfo';
 import Button from '../../components/Button';
 import EstadoBadge from '../../components/EstadoBadge';
 import Modal from '../../components/Modal';
+import Toggle from '../../components/Toggle';
 import { useCurso } from '../../hooks/useCurso';
 import { useGrupos } from '../../hooks/useGrupos';
 import { ApiError } from '../../services/api';
 import type { Modality } from 'shared';
-import type { GroupListItem } from '../../types/group';
+import { TOGGLEABLE_STATES, type GroupListItem, type GroupStatus } from '../../types/group';
 
 const MODALITY_LABELS: Record<Modality, string> = {
   presencial: 'Presencial',
@@ -17,7 +18,7 @@ const MODALITY_LABELS: Record<Modality, string> = {
   hibrida: 'Híbrida',
 };
 
-const COLUMN_COUNT = 8;
+const COLUMN_COUNT = 9;
 
 const PlusIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,15 +48,32 @@ const TrashIcon = () => (
   </svg>
 );
 
+const ToggleIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      d="M7 7h10a3 3 0 010 6H7a3 3 0 010-6zM7 7l-3 5 3 5M7 7l3 5-3 5"
+    />
+  </svg>
+);
+
+const isToggleable = (estado: GroupStatus) => TOGGLEABLE_STATES.includes(estado);
+
 const GruposListPage = () => {
   const { idCurso } = useParams();
   const cursoId = Number(idCurso);
   const { curso, loading: loadingCurso, error: cursoError } = useCurso(cursoId);
-  const { grupos, loading, error, deleteGrupo } = useGrupos(cursoId);
+  const { grupos, loading, error, deleteGrupo, cambiarEstado } = useGrupos(cursoId);
 
   const [grupoToDelete, setGrupoToDelete] = useState<GroupListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const [grupoToToggle, setGrupoToToggle] = useState<GroupListItem | null>(null);
+  const [savingEstado, setSavingEstado] = useState(false);
+  const [estadoError, setEstadoError] = useState<string | null>(null);
 
   const closeDeleteModal = () => {
     setGrupoToDelete(null);
@@ -83,6 +101,38 @@ const GruposListPage = () => {
   const openDeleteModal = (grupo: GroupListItem) => {
     setDeleteError(null);
     setGrupoToDelete(grupo);
+  };
+
+  const closeEstadoModal = () => {
+    setGrupoToToggle(null);
+    setEstadoError(null);
+  };
+
+  const openEstadoModal = (grupo: GroupListItem) => {
+    setEstadoError(null);
+    setGrupoToToggle(grupo);
+  };
+
+  // Desde esta vista el grupo alterna entre habilitado e inhabilitado; si esta en
+  // preinscripcion la accion lo habilita.
+  const handleEstadoChange = async (habilitado: boolean) => {
+    if (!grupoToToggle) return;
+
+    const estado: GroupStatus = habilitado ? 'habilitado' : 'inhabilitado';
+
+    setSavingEstado(true);
+    setEstadoError(null);
+
+    try {
+      await cambiarEstado(grupoToToggle.id, estado);
+      closeEstadoModal();
+    } catch (caught) {
+      setEstadoError(
+        caught instanceof ApiError ? caught.message : 'No se pudo cambiar el estado del grupo'
+      );
+    } finally {
+      setSavingEstado(false);
+    }
   };
 
   const tableBody = () => {
@@ -118,11 +168,24 @@ const GruposListPage = () => {
         <td className="py-4 px-4 text-gray-600 whitespace-nowrap">
           {grupo.minimEst} / {grupo.maxEst}
         </td>
+        <td className="py-4 px-4 text-gray-600 whitespace-nowrap">
+          {grupo.inscritos} / {grupo.maxEst}
+        </td>
         <td className="py-4 px-4">
           <EstadoBadge estado={grupo.estado} />
         </td>
         <td className="py-4 px-6">
           <div className="flex justify-end gap-1">
+            <button
+              type="button"
+              onClick={() => openEstadoModal(grupo)}
+              title="Cambiar estado"
+              aria-label={`Cambiar estado del grupo ${grupo.numGrupo}`}
+              disabled={!isToggleable(grupo.estado)}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            >
+              <ToggleIcon />
+            </button>
             <Link
               to={`/cursos/${cursoId}/grupos/${grupo.id}/editar`}
               title="Editar grupo"
@@ -193,6 +256,7 @@ const GruposListPage = () => {
                 <th className="py-3.5 px-4">Modalidad</th>
                 <th className="py-3.5 px-4">Aula</th>
                 <th className="py-3.5 px-4">Mín / Máx</th>
+                <th className="py-3.5 px-4">Cupo</th>
                 <th className="py-3.5 px-4">Estado</th>
                 <th className="py-3.5 px-6 text-right">Acciones</th>
               </tr>
@@ -205,6 +269,55 @@ const GruposListPage = () => {
           Mostrando {grupos.length} {grupos.length === 1 ? 'grupo' : 'grupos'} del curso
         </div>
       </div>
+
+      <Modal
+        isOpen={grupoToToggle !== null}
+        title={grupoToToggle?.estado === 'inhabilitado' ? 'Habilitar grupo' : 'Inhabilitar grupo'}
+        onClose={closeEstadoModal}
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeEstadoModal} disabled={savingEstado}>
+              Cancelar
+            </Button>
+            <Button
+              variant={grupoToToggle?.estado === 'inhabilitado' ? 'primary' : 'danger'}
+              onClick={() =>
+                handleEstadoChange(grupoToToggle?.estado !== 'inhabilitado')
+              }
+              disabled={savingEstado}
+            >
+              {savingEstado
+                ? 'Guardando...'
+                : grupoToToggle?.estado === 'inhabilitado'
+                  ? 'Habilitar'
+                  : 'Inhabilitar'}
+            </Button>
+          </>
+        }
+      >
+        {estadoError ? (
+          <AlertInfo type="warning" title={estadoError} />
+        ) : (
+          <div className="space-y-4">
+            <Toggle
+              label="Grupo habilitado"
+              description={`Grupo ${grupoToToggle?.numGrupo} de ${curso?.nombreCurso ?? 'este curso'}`}
+              checked={grupoToToggle?.estado === 'habilitado'}
+              onChange={handleEstadoChange}
+              disabled={savingEstado}
+            />
+            <AlertInfo
+              type="warning"
+              title={
+                grupoToToggle?.estado === 'inhabilitado'
+                  ? 'Al habilitar el grupo los estudiantes podrán verlo e inscribirse en el'
+                  : 'Al inhabilitar el grupo los estudiantes no podrán asumir más inscripciones'
+              }
+              subtitle="Esta acción no se puede deshacer desde esta vista"
+            />
+          </div>
+        )}
+      </Modal>
 
       <Modal
         isOpen={grupoToDelete !== null}

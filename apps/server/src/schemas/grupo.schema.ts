@@ -73,6 +73,14 @@ export const createGrupoSchema = grupoCamposSchema
 // En la edición el curso no cambia: el grupo ya pertenece a uno.
 export const updateGrupoSchema = grupoCamposSchema.superRefine(validarGrupo);
 
+// El administrador solo alterna entre habilitado e inhabilitado desde la lista;
+// preinscripcion y finalizado se gobiernan solos.
+export const cambiarEstadoGrupoSchema = z.object({
+  estado: z.enum(['habilitado', 'inhabilitado'], {
+    error: 'El estado debe ser habilitado o inhabilitado',
+  }),
+});
+
 export const gruposQuerySchema = z.object({
   idCurso: z.coerce
     .number({ error: 'El curso es obligatorio' })
@@ -82,4 +90,5 @@ export const gruposQuerySchema = z.object({
 
 export type CreateGrupoInput = z.infer<typeof createGrupoSchema>;
 export type UpdateGrupoInput = z.infer<typeof updateGrupoSchema>;
+export type CambiarEstadoGrupoInput = z.infer<typeof cambiarEstadoGrupoSchema>;
 export type GruposQuery = z.infer<typeof gruposQuerySchema>;

@@ -1,7 +1,10 @@
 // apps/client/src/types/group.ts
-import type { Group, GroupListItem, Modality } from 'shared';
+import type { Group, GroupListItem, GroupStatus, Modality } from 'shared';
 
-export type { Group, GroupListItem };
+export type { Group, GroupListItem, GroupStatus };
+
+// El administrador solo alterna entre estos dos estados desde la lista.
+export const TOGGLEABLE_STATES: GroupStatus[] = ['habilitado', 'inhabilitado'];
 
 export type CreateGroupDTO = Omit<Group, 'id' | 'numGrupo' | 'estado'>;
 export type UpdateGroupDTO = Omit<Group, 'id' | 'numGrupo' | 'estado' | 'idCurso'>;
