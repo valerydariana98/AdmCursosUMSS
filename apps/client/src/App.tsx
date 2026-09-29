@@ -22,7 +22,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/cursos" replace />} />
 
-          {/* Cursos (HU #11, #12, #13, #21) */}
+          {/* Cursos */}
           <Route path="/cursos" element={<CoursesListPage />} />
           <Route path="/cursos/nuevo" element={<CourseCreatePage />} />
           <Route path="/cursos/:id/editar" element={<CourseEditPage />} />
@@ -38,7 +38,7 @@ export default function App() {
           {/* Instructores (otra HU) */}
           <Route path="/instructores" element={<InstructorsContainer />} />
 
-          {/* Catálogo de componentes */}
+          {/* Catálogo de componentes y secciones generales */}
           <Route path="/prueba" element={<Prueba />} />
 
           {/* Secciones de otros colaboradores */}
@@ -47,7 +47,11 @@ export default function App() {
           <Route path="/estudiantes" element={<ComingSoonPage title="Estudiantes" />} />
           <Route path="/certificados" element={<ComingSoonPage title="Certificados" />} />
 
-          <Route path="*" element={<NotFoundPage />} />
+          {/* Rutas de Estudiantes por Grupo (coincidentes con TempStudentsPage) */}
+          <Route path="/groups/:groupId/students-temp" element={<TempStudentsPage />} />
+          <Route path="/groups/:groupId/enroll" element={<EnrollmentPage />} />
+          <Route path="/groups/:groupId/enrollments/:enrollmentId/edit" element={<EditEnrollmentPage />} />
+
         </Routes>
       </main>
     </div>
