@@ -11,8 +11,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get('/', (_req, res) => {
-  res.json({ message: 'Server is running correctly' });
+app.use("/api/groups", groupsRouter);
+app.use("/api/groups", enrollmentsRouter);
+app.use("/api/student-types", studentTypesRouter);
+
+app.get("/", (_req, res) => {
+  res.json({ message: "Server is running correctly" });
 });
 
 app.use('/api/health', healthRouter);
@@ -24,3 +28,9 @@ app.use(notFound);
 app.use(errorHandler);
 
 export { app };
+
+export const getGroupWithCourse = (id: number) =>
+  db.query.grupos.findFirst({
+    where: eq(grupos.id, id),
+    with: { curso: true },
+  });
