@@ -9,8 +9,10 @@ import Toggle from '../../components/Toggle';
 import { useCurso } from '../../hooks/useCurso';
 import { useGrupos } from '../../hooks/useGrupos';
 import { ApiError } from '../../services/api';
+import { courseService } from '../../services/courseService';
 import type { Modality } from 'shared';
 import { TOGGLEABLE_STATES, type GroupListItem, type GroupStatus } from '../../types/group';
+import type { ValidacionFinalizacion } from '../../services/courseService';
 
 const MODALITY_LABELS: Record<Modality, string> = {
   presencial: 'Presencial',
@@ -64,8 +66,11 @@ const isToggleable = (estado: GroupStatus) => TOGGLEABLE_STATES.includes(estado)
 const GruposListPage = () => {
   const { idCurso } = useParams();
   const cursoId = Number(idCurso);
-  const { curso, loading: loadingCurso, error: cursoError } = useCurso(cursoId);
+  const { curso, loading: loadingCurso, error: cursoError, refetch: refetchCurso } =
+    useCurso(cursoId);
   const { grupos, loading, error, deleteGrupo, cambiarEstado } = useGrupos(cursoId);
+
+  const finalizada = !!curso?.preinscripcionFinalizada;
 
   const [grupoToDelete, setGrupoToDelete] = useState<GroupListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -74,6 +79,11 @@ const GruposListPage = () => {
   const [grupoToToggle, setGrupoToToggle] = useState<GroupListItem | null>(null);
   const [savingEstado, setSavingEstado] = useState(false);
   const [estadoError, setEstadoError] = useState<string | null>(null);
+
+  const [validacion, setValidacion] = useState<ValidacionFinalizacion | null>(null);
+  const [loadingValidacion, setLoadingValidacion] = useState(false);
+  const [finalizando, setFinalizando] = useState(false);
+  const [finalizacionError, setFinalizacionError] = useState<string | null>(null);
 
   const closeDeleteModal = () => {
     setGrupoToDelete(null);
@@ -101,6 +111,44 @@ const GruposListPage = () => {
   const openDeleteModal = (grupo: GroupListItem) => {
     setDeleteError(null);
     setGrupoToDelete(grupo);
+  };
+
+  const closeFinalizacionModal = () => {
+    setValidacion(null);
+    setFinalizacionError(null);
+  };
+
+  const openFinalizacionModal = async () => {
+    setFinalizacionError(null);
+    setLoadingValidacion(true);
+
+    try {
+      setValidacion(await courseService.previsualizarFinalizacion(cursoId));
+    } catch (caught) {
+      setValidacion(null);
+      setFinalizacionError(
+        caught instanceof ApiError ? caught.message : 'No se pudo validar la preinscripción'
+      );
+    } finally {
+      setLoadingValidacion(false);
+    }
+  };
+
+  const handleFinalizar = async () => {
+    setFinalizando(true);
+    setFinalizacionError(null);
+
+    try {
+      await courseService.finalizarPreinscripcion(cursoId);
+      closeFinalizacionModal();
+      await refetchCurso();
+    } catch (caught) {
+      setFinalizacionError(
+        caught instanceof ApiError ? caught.message : 'No se pudo finalizar la preinscripción'
+      );
+    } finally {
+      setFinalizando(false);
+    }
   };
 
   const closeEstadoModal = () => {
@@ -181,7 +229,7 @@ const GruposListPage = () => {
               onClick={() => openEstadoModal(grupo)}
               title="Cambiar estado"
               aria-label={`Cambiar estado del grupo ${grupo.numGrupo}`}
-              disabled={!isToggleable(grupo.estado)}
+              disabled={finalizada || !isToggleable(grupo.estado)}
               className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <ToggleIcon />
@@ -190,7 +238,12 @@ const GruposListPage = () => {
               to={`/cursos/${cursoId}/grupos/${grupo.id}/editar`}
               title="Editar grupo"
               aria-label={`Editar grupo ${grupo.numGrupo}`}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              onClick={finalizada ? (e) => e.preventDefault() : undefined}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                finalizada
+                  ? 'text-gray-300 cursor-not-allowed'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+              }`}
             >
               <PencilIcon />
             </Link>
@@ -199,7 +252,8 @@ const GruposListPage = () => {
               onClick={() => openDeleteModal(grupo)}
               title="Eliminar grupo"
               aria-label={`Eliminar grupo ${grupo.numGrupo}`}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+              disabled={finalizada}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <TrashIcon />
             </button>
@@ -226,12 +280,37 @@ const GruposListPage = () => {
           </h1>
           {curso && <p className="text-sm text-gray-500">Grupos ofertados para este curso</p>}
         </div>
-        <Link to={`/cursos/${cursoId}/grupos/nuevo`}>
-          <Button variant="primary" icon={<PlusIcon />} disabled={!curso}>
-            Nuevo Grupo
-          </Button>
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-2">
+          {!curso?.preinscripcionFinalizada && (
+            <Button
+              variant="secondary"
+              onClick={openFinalizacionModal}
+              disabled={!curso || loadingValidacion}
+            >
+              {loadingValidacion ? 'Validando...' : 'Finalizar preinscripción'}
+            </Button>
+          )}
+          <Link to={`/cursos/${cursoId}/grupos/nuevo`}>
+            <Button
+              variant="primary"
+              icon={<PlusIcon />}
+              disabled={!curso || curso.preinscripcionFinalizada}
+            >
+              Nuevo Grupo
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      {curso?.preinscripcionFinalizada && (
+        <div className="mb-4">
+          <AlertInfo
+            type="info"
+            title="La preinscripción de este curso fue finalizada"
+            subtitle="Los grupos ya no se pueden crear, editar, eliminar ni cambiar de estado"
+          />
+        </div>
+      )}
 
       {cursoError && (
         <div className="mb-4">
@@ -315,6 +394,84 @@ const GruposListPage = () => {
               }
               subtitle="Esta acción no se puede deshacer desde esta vista"
             />
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={validacion !== null || loadingValidacion}
+        title="Finalizar preinscripción"
+        onClose={closeFinalizacionModal}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={closeFinalizacionModal}
+              disabled={finalizando || loadingValidacion}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleFinalizar}
+              disabled={
+                finalizando ||
+                loadingValidacion ||
+                !validacion ||
+                validacion.gruposPreinscripcion.length > 0 ||
+                validacion.inhabilitadosConInscritos.length > 0
+              }
+            >
+              {finalizando ? 'Finalizando...' : 'Finalizar preinscripción'}
+            </Button>
+          </>
+        }
+      >
+        {finalizacionError ? (
+          <AlertInfo type="warning" title={finalizacionError} />
+        ) : loadingValidacion || !validacion ? (
+          <p className="text-sm text-gray-500">Validando los grupos del curso...</p>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Al finalizar la preinscripción de{' '}
+              <span className="font-semibold text-gray-900">{curso?.nombreCurso}</span> los
+              grupos quedan congelados: no se podrán crear, editar, eliminar ni cambiar de
+              estado.
+            </p>
+
+            {validacion.gruposPreinscripcion.length > 0 && (
+              <AlertInfo
+                type="error"
+                title="Hay grupos en preinscripción"
+                subtitle={`Los grupos ${validacion.gruposPreinscripcion.join(', ')} deben cambiar de estado a habilitado o inhabilitado antes de finalizar`}
+              />
+            )}
+
+            {validacion.inhabilitadosConInscritos.length > 0 && (
+              <AlertInfo
+                type="error"
+                title="Hay grupos inhabilitados con estudiantes inscritos"
+                subtitle={`Los grupos ${validacion.inhabilitadosConInscritos.join(', ')} tienen estudiantes inscritos: debes cambiarlos de grupo antes de finalizar`}
+              />
+            )}
+
+            {validacion.habilitadosSinMinimo.length > 0 && (
+              <AlertInfo
+                type="warning"
+                title="Grupos habilitados que no alcanzaron el mínimo de inscritos"
+                subtitle={`Los grupos ${validacion.habilitadosSinMinimo.join(', ')} quedaron habilitados por debajo del mínimo; puedes finalizar, pero conviene revisarlos`}
+              />
+            )}
+
+            {validacion.gruposPreinscripcion.length === 0 &&
+              validacion.inhabilitadosConInscritos.length === 0 && (
+                <AlertInfo
+                  type="info"
+                  title="Todo listo para finalizar"
+                  subtitle="Ningún grupo queda en preinscripción ni inhabilitado con inscritos"
+                />
+              )}
           </div>
         )}
       </Modal>

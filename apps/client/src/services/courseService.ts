@@ -2,6 +2,12 @@
 import { api } from './api';
 import type { Course, CoursePayload, PaginatedCourses } from '../types/course';
 
+export interface ValidacionFinalizacion {
+  gruposPreinscripcion: number[];
+  inhabilitadosConInscritos: number[];
+  habilitadosSinMinimo: number[];
+}
+
 export type CourseView = 'current' | 'archived';
 
 export interface ListCoursesParams {
@@ -38,5 +44,13 @@ export const courseService = {
   },
   remove(id: number): Promise<void> {
     return api.delete<void>(`/api/courses/${id}`);
+  },
+  previsualizarFinalizacion(id: number): Promise<ValidacionFinalizacion> {
+    return api.get<ValidacionFinalizacion>(`/api/courses/${id}/finalizar-preinscripcion`);
+  },
+  finalizarPreinscripcion(id: number): Promise<{ advertencias: number[] }> {
+    return api.post<{ advertencias: number[] }>(
+      `/api/courses/${id}/finalizar-preinscripcion`
+    );
   },
 };

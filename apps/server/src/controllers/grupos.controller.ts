@@ -13,12 +13,16 @@ const FAILURE_MESSAGES = {
   curso_not_found: 'El curso seleccionado no existe',
   instructor_not_found: 'El instructor seleccionado no existe',
   num_grupo_taken: 'Ya existe un grupo con ese número en el curso, intenta de nuevo',
+  preinscripcion_finalizada:
+    'La preinscripción de este curso ya fue finalizada: no se pueden crear más grupos',
 } as const;
 
 const UPDATE_FAILURE_MESSAGES = {
   grupo_not_found: 'Grupo not found',
   grupo_finalizado: 'Un grupo finalizado no se puede habilitar ni inhabilitar',
   instructor_not_found: 'El instructor seleccionado no existe',
+  preinscripcion_finalizada:
+    'La preinscripción de este curso ya fue finalizada: el grupo no se puede modificar',
 } as const;
 
 export const getGrupos = async (req: Request, res: Response, next: NextFunction) => {
@@ -102,6 +106,13 @@ export const deleteGrupo = async (req: Request, res: Response, next: NextFunctio
     if (result === 'has_enrollments') {
       res.status(409).json({
         message: 'El grupo no se puede eliminar porque tiene estudiantes inscritos',
+      });
+      return;
+    }
+    if (result === 'preinscripcion_finalizada') {
+      res.status(409).json({
+        message:
+          'La preinscripción de este curso ya fue finalizada: el grupo no se puede eliminar',
       });
       return;
     }
