@@ -3,9 +3,9 @@ import React from 'react';
 interface TextFieldProps {
   label?: string;
   value?: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
-  type?: 'text' | 'password' | 'email' | 'number' | 'date';
+  type?: 'text' | 'password' | 'email' | 'number' | 'date' | 'time';
   error?: string;
   maxLength?: number;
   className?: string;

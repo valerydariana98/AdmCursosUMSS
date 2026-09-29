@@ -1,17 +1,16 @@
 // apps/client/src/App.tsx
-import { Navigate, Route, Routes } from "react-router-dom";
-import Sidebar from "./layout/Sidebar";
-import ComingSoonPage from "./pages/ComingSoonPage";
-import CourseCreatePage from "./pages/courses/CourseCreatePage";
-import CourseEditPage from "./pages/courses/CourseEditPage";
-import CoursesListPage from "./pages/courses/CoursesListPage";
-import InstructorsContainer from "./pages/instructors/InstructorsContainer";
-import NotFoundPage from "./pages/NotFoundPage";
-import Prueba from "./pages/Prueba";
-import GroupPage from "./pages/GroupPage";
-import TempStudentsPage from "./pages/TempStudentsPage";
-import EnrollmentPage from "./pages/EnrollmentPage";
-import EditEnrollmentPage from "./pages/EditEnrollmentPage";
+import { Navigate, Route, Routes } from 'react-router-dom';
+import Sidebar from './layout/Sidebar';
+import ComingSoonPage from './pages/ComingSoonPage';
+import CourseCreatePage from './pages/courses/CourseCreatePage';
+import CourseEditPage from './pages/courses/CourseEditPage';
+import CoursesListPage from './pages/courses/CoursesListPage';
+import GrupoCreatePage from './pages/grupos/GrupoCreatePage';
+import GrupoEditPage from './pages/grupos/GrupoEditPage';
+import GruposListPage from './pages/grupos/GruposListPage';
+import InstructorsContainer from './pages/instructors/InstructorsContainer';
+import NotFoundPage from './pages/NotFoundPage';
+import Prueba from './pages/Prueba';
 
 export default function App() {
   return (
@@ -27,7 +26,15 @@ export default function App() {
           <Route path="/cursos/nuevo" element={<CourseCreatePage />} />
           <Route path="/cursos/:id/editar" element={<CourseEditPage />} />
 
-          {/* Instructores */}
+          {/* Grupos de un curso (HU #18, #19) */}
+          <Route path="/cursos/:idCurso/grupos" element={<GruposListPage />} />
+          <Route path="/cursos/:idCurso/grupos/nuevo" element={<GrupoCreatePage />} />
+          <Route
+            path="/cursos/:idCurso/grupos/:idGrupo/editar"
+            element={<GrupoEditPage />}
+          />
+
+          {/* Instructores (otra HU) */}
           <Route path="/instructores" element={<InstructorsContainer />} />
 
           {/* Catálogo de componentes y secciones generales */}
