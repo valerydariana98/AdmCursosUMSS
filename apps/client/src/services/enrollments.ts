@@ -41,3 +41,23 @@ export const updateEnrollment = (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   }).then(handle);
+
+export const deleteEnrollment = (groupId: number, enrollmentId: number) =>
+  fetch(`${API}/api/groups/${groupId}/enrollments/${enrollmentId}`, {
+    method: "DELETE",
+  }).then((res) => {
+    if (!res.ok) throw new Error("No se pudo eliminar la inscripción");
+  });
+
+// Reubica al estudiante en otro grupo del mismo curso. El grupo destino lo elige
+// el administrador; el sistema no asigna ningun horario por su cuenta.
+export const moveEnrollment = (
+  groupId: number,
+  enrollmentId: number,
+  idGrupoDestino: number,
+) =>
+  fetch(`${API}/api/groups/${groupId}/enrollments/${enrollmentId}/grupo`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idGrupoDestino }),
+  }).then(handle);

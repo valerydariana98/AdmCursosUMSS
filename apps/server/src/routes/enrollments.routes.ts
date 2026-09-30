@@ -1,12 +1,17 @@
 import { Router } from "express";
 import {
   createEnrollment,
+  deleteEnrollment,
   getEnrollments,
+  moveEnrollment,
   updateEnrollment,
 } from "../controllers/enrollments.controller.js";
 import { validate, validateParams } from "../middlewares/validate.js";
-import { createEnrollmentSchema } from "../schemas/enrollment.schema.js";
-import { idParamsSchema } from "../schemas/params.schema.js";
+import {
+  createEnrollmentSchema,
+  moveEnrollmentSchema,
+} from "../schemas/enrollment.schema.js";
+import { enrollmentParamsSchema, idParamsSchema } from "../schemas/params.schema.js";
 
 const router = Router();
 
@@ -20,8 +25,21 @@ router.post(
 
 router.patch(
   "/:id/enrollments/:enrollmentId",
-  validateParams(idParamsSchema),
+  validateParams(enrollmentParamsSchema),
   updateEnrollment,
+);
+
+router.delete(
+  "/:id/enrollments/:enrollmentId",
+  validateParams(enrollmentParamsSchema),
+  deleteEnrollment,
+);
+
+router.patch(
+  "/:id/enrollments/:enrollmentId/grupo",
+  validateParams(enrollmentParamsSchema),
+  validate(moveEnrollmentSchema),
+  moveEnrollment,
 );
 
 export default router;

@@ -4,7 +4,11 @@ import healthRouter from './routes/health.routes.js';
 import coursesRouter from './routes/courses.routes.js';
 import instructorsRouter from './routes/instructors.routes.js';
 import gruposRouter from './routes/grupos.routes.js';
+import groupsRouter from './routes/groups.routes.js';
+import enrollmentsRouter from './routes/enrollments.routes.js';
+import studentTypesRouter from './routes/studentTypes.routes.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
+
 
 const app = express();
 
@@ -29,8 +33,3 @@ app.use(errorHandler);
 
 export { app };
 
-export const getGroupWithCourse = (id: number) =>
-  db.query.grupos.findFirst({
-    where: eq(grupos.id, id),
-    with: { curso: true },
-  });

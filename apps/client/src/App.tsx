@@ -1,17 +1,21 @@
 // apps/client/src/App.tsx
-import { Navigate, Route, Routes } from 'react-router-dom';
-import Sidebar from './layout/Sidebar';
-import ComingSoonPage from './pages/ComingSoonPage';
-import CourseCreatePage from './pages/courses/CourseCreatePage';
-import CourseEditPage from './pages/courses/CourseEditPage';
-import CoursesListPage from './pages/courses/CoursesListPage';
-import GrupoCreatePage from './pages/grupos/GrupoCreatePage';
-import GrupoEditPage from './pages/grupos/GrupoEditPage';
-import GruposPage from './pages/grupos/GruposPage';
-import GruposListPage from './pages/grupos/GruposListPage';
-import InstructorsContainer from './pages/instructors/InstructorsContainer';
-import NotFoundPage from './pages/NotFoundPage';
-import Prueba from './pages/Prueba';
+import { Navigate, Route, Routes } from "react-router-dom";
+import Sidebar from "./layout/Sidebar";
+import ComingSoonPage from "./pages/ComingSoonPage";
+import CourseCreatePage from "./pages/courses/CourseCreatePage";
+import CourseEditPage from "./pages/courses/CourseEditPage";
+import CoursesListPage from "./pages/courses/CoursesListPage";
+import GrupoCreatePage from "./pages/grupos/GrupoCreatePage";
+import GrupoEditPage from "./pages/grupos/GrupoEditPage";
+import GruposPage from "./pages/grupos/GruposPage";
+import GruposListPage from "./pages/grupos/GruposListPage";
+import GrupoStudentsPage from "./pages/grupos/GrupoStudentsPage";
+import TempStudentsRedirect from "./pages/grupos/TempStudentsRedirect";
+import InstructorsContainer from "./pages/instructors/InstructorsContainer";
+import EditEnrollmentPage from "./pages/EditEnrollmentPage";
+import EnrollmentPage from "./pages/EnrollmentPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import Prueba from "./pages/Prueba";
 
 export default function App() {
   return (
@@ -29,10 +33,23 @@ export default function App() {
 
           {/* Grupos de un curso (HU #18, #19) */}
           <Route path="/cursos/:idCurso/grupos" element={<GruposListPage />} />
-          <Route path="/cursos/:idCurso/grupos/nuevo" element={<GrupoCreatePage />} />
+          <Route
+            path="/cursos/:idCurso/grupos/nuevo"
+            element={<GrupoCreatePage />}
+          />
           <Route
             path="/cursos/:idCurso/grupos/:idGrupo/editar"
             element={<GrupoEditPage />}
+          />
+
+          {/* Estudiantes inscritos por grupo */}
+          <Route
+            path="/cursos/:idCurso/estudiantes"
+            element={<GrupoStudentsPage />}
+          />
+          <Route
+            path="/groups/:groupId/students-temp"
+            element={<TempStudentsRedirect />}
           />
 
           {/* Instructores (otra HU) */}
@@ -42,16 +59,25 @@ export default function App() {
           <Route path="/prueba" element={<Prueba />} />
 
           {/* Secciones de otros colaboradores */}
-          <Route path="/dashboard"  element={<Prueba />} />
+          <Route path="/dashboard" element={<Prueba />} />
           <Route path="/grupos" element={<GruposPage />} />
-          <Route path="/estudiantes" element={<ComingSoonPage title="Estudiantes" />} />
-          <Route path="/certificados" element={<ComingSoonPage title="Certificados" />} />
+          <Route
+            path="/estudiantes"
+            element={<ComingSoonPage title="Estudiantes" />}
+          />
+          <Route
+            path="/certificados"
+            element={<ComingSoonPage title="Certificados" />}
+          />
 
-          {/* Rutas de Estudiantes por Grupo (coincidentes con TempStudentsPage) */}
-          <Route path="/groups/:groupId/students-temp" element={<TempStudentsPage />} />
+          {/* Rutas de Estudiantes por Grupo */}
           <Route path="/groups/:groupId/enroll" element={<EnrollmentPage />} />
-          <Route path="/groups/:groupId/enrollments/:enrollmentId/edit" element={<EditEnrollmentPage />} />
+          <Route
+            path="/groups/:groupId/enrollments/:enrollmentId/edit"
+            element={<EditEnrollmentPage />}
+          />
 
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
     </div>
