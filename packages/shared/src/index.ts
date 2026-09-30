@@ -140,7 +140,15 @@ export interface CreateEnrollment {
 }
 
 export interface EnrolledStudent extends Enrollment {
-  estudiante: Pick<Student, 'nombres' | 'apPaterno' | 'apMaterno' | 'ci' | 'codSis'>;
+  estudiante: Pick<
+    Student,
+    'nombres' | 'apPaterno' | 'apMaterno' | 'ci' | 'codSis' | 'celular'
+  >;
+}
+
+// Un estudiante se reubica dentro del mismo curso: el cuerpo solo lleva el grupo destino.
+export interface MoveEnrollment {
+  idGrupoDestino: number;
 }
 
 export type GroupWithCount = Group & { inscritosCount: number };

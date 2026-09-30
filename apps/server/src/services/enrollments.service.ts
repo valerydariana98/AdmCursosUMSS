@@ -71,9 +71,17 @@ export const createEnrollment = (idGrupo: number, input: CreateEnrollment) =>
 export const listEnrollments = (idGrupo: number) =>
   db.query.inscripciones.findMany({
     where: eq(inscripciones.idGrupo, idGrupo),
+    orderBy: (insc, { asc }) => [asc(insc.id)],
     with: {
       estudiante: {
-        columns: { nombres: true, apPaterno: true, apMaterno: true, ci: true, codSis: true },
+        columns: {
+          nombres: true,
+          apPaterno: true,
+          apMaterno: true,
+          ci: true,
+          codSis: true,
+          celular: true,
+        },
       },
     },
   });
@@ -140,12 +148,90 @@ export const updateEnrollment = (
     return { data: actualizada } as const;
   });
 
-  export const deleteEnrollment = async (groupId: number, enrollmentId: number): Promise<void> => {
-  const response = await fetch(`/api/groups/${groupId}/enrollments/${enrollmentId}`, {
-    method: 'DELETE',
+export type DeleteEnrollmentFailure = 'enrollment_not_found';
+
+// Eliminar la inscripcion no borra al estudiante: queda en `estudiantes` para que
+// un reinscribe futuro lo reutilice por CI, igual que hace createEnrollment.
+export const deleteEnrollment = async (
+  idGrupo: number,
+  idInscripcion: number,
+): Promise<{ ok: true } | { ok: false; reason: DeleteEnrollmentFailure }> =>
+  db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ id: inscripciones.id })
+      .from(inscripciones)
+      .where(and(eq(inscripciones.id, idInscripcion), eq(inscripciones.idGrupo, idGrupo)));
+
+    if (!row) return { ok: false as const, reason: 'enrollment_not_found' as const };
+
+    await tx.delete(inscripciones).where(eq(inscripciones.id, idInscripcion));
+
+    return { ok: true as const };
   });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Error al eliminar la inscripción');
-  }
-};
+
+export type MoveEnrollmentFailure =
+  | 'enrollment_not_found'
+  | 'group_not_found'
+  | 'same_group'
+  | 'different_course'
+  | 'group_closed'
+  | 'group_full'
+  | 'already_enrolled';
+
+// Reubica al estudiante en otro grupo del MISMO curso. No se recalcula el monto
+// porque el curso no cambia, y no se asigna ningun horario: el destino lo elige
+// el administrador de forma explicita.
+export const moveEnrollment = async (
+  idGrupoOrigen: number,
+  idInscripcion: number,
+  idGrupoDestino: number,
+) =>
+  db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({
+        idEst: inscripciones.idEst,
+        idGrupo: inscripciones.idGrupo,
+        idCurso: grupos.idCurso,
+      })
+      .from(inscripciones)
+      .innerJoin(grupos, eq(inscripciones.idGrupo, grupos.id))
+      .where(and(eq(inscripciones.id, idInscripcion), eq(inscripciones.idGrupo, idGrupoOrigen)));
+
+    if (!row) return { error: 'enrollment_not_found' } as const;
+
+    if (row.idGrupo === idGrupoDestino) return { error: 'same_group' } as const;
+
+    const [destino] = await tx.select().from(grupos).where(eq(grupos.id, idGrupoDestino));
+    if (!destino) return { error: 'group_not_found' } as const;
+
+    // Solo se permite moverse dentro del curso en el que se inscribio originalmente.
+    if (destino.idCurso !== row.idCurso) return { error: 'different_course' } as const;
+
+    if (destino.estado !== 'preinscripcion' && destino.estado !== 'habilitado') {
+      return { error: 'group_closed' } as const;
+    }
+
+    // Se bloquea la fila del destino para que dos traslados simultaneos no lo llenen.
+    await tx.select({ id: grupos.id }).from(grupos).where(eq(grupos.id, idGrupoDestino)).for('update');
+
+    const [{ total }] = await tx
+      .select({ total: count() })
+      .from(inscripciones)
+      .where(eq(inscripciones.idGrupo, idGrupoDestino));
+
+    if (total >= destino.maxEst) return { error: 'group_full' } as const;
+
+    const [dup] = await tx
+      .select({ id: inscripciones.id })
+      .from(inscripciones)
+      .where(and(eq(inscripciones.idEst, row.idEst), eq(inscripciones.idGrupo, idGrupoDestino)));
+    if (dup) return { error: 'already_enrolled' } as const;
+
+    const [movida] = await tx
+      .update(inscripciones)
+      .set({ idGrupo: idGrupoDestino })
+      .where(eq(inscripciones.id, idInscripcion))
+      .returning();
+
+    return { data: movida } as const;
+  });

@@ -13,3 +13,8 @@ export const createEnrollmentSchema = z.object({
   observaciones: z.string().trim().optional(),
 });
 export const updateEnrollmentSchema = createEnrollmentSchema.partial();
+
+// Reubicacion dentro del mismo curso: solo se indica el grupo destino.
+export const moveEnrollmentSchema = z.object({
+  idGrupoDestino: z.number().int().positive('Requerido'),
+});

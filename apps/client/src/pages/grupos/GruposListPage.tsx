@@ -63,6 +63,16 @@ const ToggleIcon = () => (
 
 const isToggleable = (estado: GroupStatus) => TOGGLEABLE_STATES.includes(estado);
 
+const UserPlusIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM19 8v6M22 11h-6"
+    />
+  </svg>
+);
 const GruposListPage = () => {
   const { idCurso } = useParams();
   const cursoId = Number(idCurso);
@@ -290,6 +300,11 @@ const GruposListPage = () => {
               {loadingValidacion ? 'Validando...' : 'Finalizar preinscripción'}
             </Button>
           )}
+          <Link to={`/cursos/${cursoId}/estudiantes`}>
+            <Button variant="secondary" icon={<UserPlusIcon />} disabled={!curso}>
+              Inscribir
+            </Button>
+          </Link>
           <Link to={`/cursos/${cursoId}/grupos/nuevo`}>
             <Button
               variant="primary"
