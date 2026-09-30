@@ -139,3 +139,13 @@ export const updateEnrollment = (
       .returning();
     return { data: actualizada } as const;
   });
+
+  export const deleteEnrollment = async (groupId: number, enrollmentId: number): Promise<void> => {
+  const response = await fetch(`/api/groups/${groupId}/enrollments/${enrollmentId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Error al eliminar la inscripción');
+  }
+};
