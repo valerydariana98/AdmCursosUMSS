@@ -17,8 +17,11 @@ export interface Course {
   costoExterno: number;
   notaMin: number;
   maxFaltas: number;
-  periodo: string;
-  estado: boolean;
+periodo: string;
+estado: boolean;
+// true cuando el administrador cerro la preinscripcion: ya no se pueden crear,
+// editar, eliminar ni cambiar el estado de los grupos del curso.
+preinscripcionFinalizada: boolean;
 }
 
 export type CreateCourse = Omit<Course, 'id'>;
@@ -35,6 +38,20 @@ export interface Group {
   minimEst: number;
   maxEst: number;
   estado: GroupStatus;
+}
+
+// El alta de un grupo no recibe `numGrupo` (se genera correlativamente por curso)
+// ni `estado` (arranca siempre en preinscripcion).
+export type CreateGroup = Omit<Group, 'id' | 'numGrupo' | 'estado'>;
+
+// En la edición el grupo no cambia de curso: solo se corrigen sus datos y su cupo.
+export type UpdateGroup = Omit<Group, 'id' | 'numGrupo' | 'estado' | 'idCurso'>;
+
+// Fila de grupo enriquecida para el listado: trae el nombre del docente y la
+// cantidad de inscritos, que no viven en `grupos`.
+export interface GroupListItem extends Group {
+  instructorNombre: string;
+  inscritos: number;
 }
 
 export interface Student {

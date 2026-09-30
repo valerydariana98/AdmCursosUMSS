@@ -24,4 +24,4 @@ export interface CourseFormValues {
   periodo: string;
 }
 
-export type CoursePayload = Omit<Course, 'id' | 'estado'>;
+export type CoursePayload = Omit<Course, 'id' | 'estado' | 'preinscripcionFinalizada'>;

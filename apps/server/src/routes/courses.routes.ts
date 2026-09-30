@@ -2,8 +2,10 @@ import { Router } from 'express';
 import {
   createCourse,
   deleteCourse,
+  finalizarPreinscripcion,
   getCourse,
   getCourses,
+  previsualizarFinalizacion,
   updateCourse,
 } from '../controllers/courses.controller.js';
 import { validate, validateParams, validateQuery } from '../middlewares/validate.js';
@@ -17,5 +19,15 @@ router.get('/:id', validateParams(idParamsSchema), getCourse);
 router.post('/', validate(createCourseSchema), createCourse);
 router.put('/:id', validateParams(idParamsSchema), validate(createCourseSchema), updateCourse);
 router.delete('/:id', validateParams(idParamsSchema), deleteCourse);
+router.get(
+  '/:id/finalizar-preinscripcion',
+  validateParams(idParamsSchema),
+  previsualizarFinalizacion
+);
+router.post(
+  '/:id/finalizar-preinscripcion',
+  validateParams(idParamsSchema),
+  finalizarPreinscripcion
+);
 
 export default router;
