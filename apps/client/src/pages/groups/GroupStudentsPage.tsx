@@ -200,6 +200,18 @@ const GroupStudentsPage = () => {
       );
     }
 
+    // Sin grupo resuelto no hay nada que listar. Cortar aqui evita armar enlaces
+    // con `grupoActual?.id` en undefined cuando llego un id de grupo invalido.
+    if (!grupoActual) {
+      return (
+        <tr>
+          <td colSpan={7} className="py-8 text-center text-gray-400">
+            Selecciona un grupo del curso para ver sus estudiantes.
+          </td>
+        </tr>
+      );
+    }
+
     return inscritos.map((e) => {
       const tipo = tipos[e.idTipoEst];
       return (
@@ -223,7 +235,7 @@ const GroupStudentsPage = () => {
           <td className="py-4 pr-6 text-right whitespace-nowrap">
             <span className="space-x-1.5">
               <Link
-                to={`/groups/${grupoActual?.id}/enrollments/${e.id}/edit`}
+                to={`/groups/${grupoActual.id}/enrollments/${e.id}/edit`}
                 title="Editar"
                 aria-label={`Editar inscripción de ${e.estudiante.nombres}`}
                 className={actionBtn}

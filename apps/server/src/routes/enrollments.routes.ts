@@ -10,6 +10,7 @@ import { validate, validateParams } from "../middlewares/validate.js";
 import {
   createEnrollmentSchema,
   moveEnrollmentSchema,
+  updateEnrollmentSchema,
 } from "../schemas/enrollment.schema.js";
 import { enrollmentParamsSchema, idParamsSchema } from "../schemas/params.schema.js";
 
@@ -26,6 +27,7 @@ router.post(
 router.patch(
   "/:id/enrollments/:enrollmentId",
   validateParams(enrollmentParamsSchema),
+  validate(updateEnrollmentSchema),
   updateEnrollment,
 );
 

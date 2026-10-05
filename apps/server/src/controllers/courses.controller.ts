@@ -11,6 +11,14 @@ import {
   updateCourse as updateCourseService,
 } from '../services/courses.service.js';
 
+const UPDATE_FAILURE_MESSAGES = {
+  not_found: 'Course not found',
+  preinscripcion_finalizada:
+    'La preinscripción de este curso ya fue finalizada: el curso no se puede modificar',
+  periodo_vencido:
+    'Este curso pertenece a un periodo anterior: es de solo consulta y no se puede modificar',
+} as const;
+
 export const getCourses = async (
   req: Request,
   res: Response,
@@ -66,10 +74,7 @@ export const updateCourse = async (
 
     if (!result.ok) {
       res.status(result.reason === 'not_found' ? 404 : 409).json({
-        message:
-          result.reason === 'not_found'
-            ? 'Course not found'
-            : 'La preinscripción de este curso ya fue finalizada: el curso no se puede modificar',
+        message: UPDATE_FAILURE_MESSAGES[result.reason],
       });
       return;
     }
@@ -155,6 +160,13 @@ export const deleteCourse = async (
     if (result === 'has_groups') {
       res.status(409).json({
         message: 'Course cannot be deleted because it has associated groups',
+      });
+      return;
+    }
+    if (result === 'periodo_vencido') {
+      res.status(409).json({
+        message:
+          'Este curso pertenece a un periodo anterior: es de solo consulta y no se puede eliminar',
       });
       return;
     }
