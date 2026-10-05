@@ -154,6 +154,19 @@ export interface MoveEnrollment {
 export type GroupWithCount = Group & { inscritosCount: number };
 export type GroupWithCourse = Group & { curso: Course };
 
+// Grupos asignados a un instructor. El grupo no guarda fechas propias: se
+// resuelven desde el curso al que pertenece, igual que el periodo.
+export interface InstructorGroup {
+  id: number;
+  numGrupo: number;
+  idCurso: number;
+  nombreCurso: string;
+  periodo: string;
+  fechaIni: string;
+  fechaFin: string;
+  estado: GroupStatus;
+}
+
 export const calcularMonto = (
   tipo: StudentTypeName,
   c: Pick<Course, 'costoUmss' | 'costoAux' | 'costoExterno'>,

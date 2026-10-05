@@ -1,7 +1,7 @@
 import { and, count, eq, ilike, or, type SQL } from 'drizzle-orm';
-import type { Instructor } from 'shared';
+import type { Instructor, InstructorGroup } from 'shared';
 import { db } from '../db/index.js';
-import { grupos, instructores, usuarios } from '../db/schema.js';
+import { cursos, grupos, instructores, usuarios } from '../db/schema.js';
 import type { CreateInstructorInput, InstructorsQuery } from '../schemas/instructor.schema.js';
 
 const DEFAULT_PAGE = 1;
@@ -115,6 +115,27 @@ export const getInstructorById = async (id: number): Promise<Instructor | null> 
 
   return (row as Instructor | undefined) ?? null;
 };
+
+// Grupos que tiene asignados un instructor, de cualquier curso. El grupo solo
+// guarda su horario, asi que las fechas y el periodo se toman de su curso.
+export const listGroupsByInstructor = async (
+  idInstructor: number
+): Promise<InstructorGroup[]> =>
+  db
+    .select({
+      id: grupos.id,
+      numGrupo: grupos.numGrupo,
+      idCurso: grupos.idCurso,
+      nombreCurso: cursos.nombreCurso,
+      periodo: cursos.periodo,
+      fechaIni: cursos.fechaIni,
+      fechaFin: cursos.fechaFin,
+      estado: grupos.estado,
+    })
+    .from(grupos)
+    .innerJoin(cursos, eq(grupos.idCurso, cursos.id))
+    .where(eq(grupos.idInstructor, idInstructor))
+    .orderBy(cursos.periodo, cursos.nombreCurso, grupos.numGrupo);
 
 export const createInstructor = async (
   data: CreateInstructorInput

@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
 import Button from '../../components/Button';
 import EstadoBadge from '../../components/EstadoBadge';
+import InstructorGroupsModal from '../../components/InstructorGroupsModal';
 import Modal from '../../components/Modal';
 import Toggle from '../../components/Toggle';
 import { useCourse } from '../../hooks/useCourse';
@@ -94,6 +95,9 @@ const GroupsListPage = () => {
   const [loadingValidacion, setLoadingValidacion] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
   const [finalizacionError, setFinalizacionError] = useState<string | null>(null);
+
+  // Docente cuyos grupos se listan en el modal (HU #39).
+  const [instructorModal, setInstructorModal] = useState<GroupListItem | null>(null);
 
   const closeDeleteModal = () => {
     setGrupoToDelete(null);
@@ -217,7 +221,16 @@ const GroupsListPage = () => {
     return grupos.map((grupo) => (
       <tr key={grupo.id} className="hover:bg-gray-50/60 transition-colors">
         <td className="py-4 px-6 font-bold text-gray-900">Grupo {grupo.numGrupo}</td>
-        <td className="py-4 px-4 text-gray-600">{grupo.instructorNombre}</td>
+        <td className="py-4 px-4">
+          <button
+            type="button"
+            onClick={() => setInstructorModal(grupo)}
+            title="Ver todos los grupos de este docente"
+            className="text-left font-medium text-[#1D3557] underline decoration-dotted underline-offset-4 hover:text-[#0C103C]"
+          >
+            {grupo.instructorNombre}
+          </button>
+        </td>
         <td className="py-4 px-4 text-gray-600 whitespace-nowrap">
           {grupo.horaIni} - {grupo.horaFin}
         </td>
@@ -518,6 +531,12 @@ const GroupsListPage = () => {
           </p>
         )}
       </Modal>
+
+      <InstructorGroupsModal
+        instructorId={instructorModal?.idInstructor ?? null}
+        instructorNombre={instructorModal?.instructorNombre ?? ''}
+        onClose={() => setInstructorModal(null)}
+      />
     </div>
   );
 };

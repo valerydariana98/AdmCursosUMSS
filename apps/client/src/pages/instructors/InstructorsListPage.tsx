@@ -22,6 +22,7 @@ interface InstructorsListPageProps {
   onNavigateToCreate?: () => void;
   onNavigateToEdit?: (instructor: Instructor) => void;
   onDeleteInstructor?: (instructor: Instructor) => void;
+  onViewGroups?: (instructor: Instructor) => void;
 }
 
 export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
@@ -39,6 +40,7 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
   onNavigateToCreate,
   onNavigateToEdit,
   onDeleteInstructor,
+  onViewGroups,
 }) => {
   return (
     <div className="p-8 bg-[#F8FAFC] min-h-screen font-sans">
@@ -135,8 +137,20 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
                     <td className="py-4 px-4 text-gray-600 font-medium">{item.ci}</td>
                     <td className="py-4 px-4 text-gray-600">{item.telefono}</td>
                     <td className="py-4 px-4 text-gray-600">{item.cargo}</td>
-                    <td className="py-4 px-4 text-gray-600">
-                      {item.gruposAsignadosCount ?? 0} {item.gruposAsignadosCount === 1 ? 'grupo' : 'grupos'}
+                    <td className="py-4 px-4">
+                      {item.gruposAsignadosCount ? (
+                        <button
+                          type="button"
+                          onClick={() => onViewGroups?.(item)}
+                          title="Ver los grupos asignados a este docente"
+                          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 font-semibold text-[#1D3557] underline decoration-dotted underline-offset-4 transition-colors hover:bg-[#1D3557]/5 hover:text-[#0C103C]"
+                        >
+                          {item.gruposAsignadosCount}{' '}
+                          {item.gruposAsignadosCount === 1 ? 'grupo' : 'grupos'}
+                        </button>
+                      ) : (
+                        <span className="text-gray-400">Sin grupos</span>
+                      )}
                     </td>
                     <td className="py-4 px-4">
                       <Badge status={item.estado} />

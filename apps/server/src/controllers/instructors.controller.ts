@@ -5,6 +5,7 @@ import {
   createInstructor as createInstructorService,
   deleteInstructor as deleteInstructorService,
   getInstructorById,
+  listGroupsByInstructor,
   listInstructors,
   updateInstructor as updateInstructorService,
 } from '../services/instructors.service.js';
@@ -43,6 +44,25 @@ export const getInstructor = async (
     }
 
     res.json(instructor);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getInstructorGroups = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!(await getInstructorById(id))) {
+      res.status(404).json({ message: 'Instructor not found' });
+      return;
+    }
+
+    res.json(await listGroupsByInstructor(id));
   } catch (error) {
     next(error);
   }
