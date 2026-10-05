@@ -1,4 +1,4 @@
-// apps/client/src/pages/grupos/GrupoStudentsPage.tsx
+// apps/client/src/pages/groups/GroupStudentsPage.tsx
 // Vista de Administrators: estudiantes inscritos por grupo de un curso.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
@@ -11,8 +11,8 @@ import AlertInfo from '../../components/AlertInfo';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
-import { useCurso } from '../../hooks/useCurso';
-import { useGrupos } from '../../hooks/useGrupos';
+import { useCourse } from '../../hooks/useCourse';
+import { useGroups } from '../../hooks/useGroups';
 import {
   deleteEnrollment,
   getEnrollments,
@@ -64,14 +64,14 @@ const badgeCls: Record<string, string> = {
   aux: 'bg-gray-100 text-gray-700 border-gray-200',
 };
 
-const GrupoStudentsPage = () => {
+const GroupStudentsPage = () => {
   const { idCurso } = useParams();
   const cursoId = Number(idCurso);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const { curso, loading: loadingCurso, error: cursoError } = useCurso(cursoId);
+  const { curso, loading: loadingCurso, error: cursoError } = useCourse(cursoId);
   const { grupos, loading: loadingGrupos, error: gruposError, refetch: refetchGrupos } =
-    useGrupos(cursoId);
+    useGroups(cursoId);
 
   const [inscritos, setInscritos] = useState<EnrolledStudent[]>([]);
   const [loadingInscritos, setLoadingInscritos] = useState(false);
@@ -436,4 +436,4 @@ const GrupoStudentsPage = () => {
   );
 };
 
-export default GrupoStudentsPage;
+export default GroupStudentsPage;

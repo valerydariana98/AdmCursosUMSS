@@ -1,7 +1,7 @@
-// apps/client/src/hooks/useGrupos.ts
+// apps/client/src/hooks/useGroups.ts
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../services/api';
-import { grupoService } from '../services/grupoService';
+import { groupService } from '../services/groupService';
 import type {
   CreateGroupDTO,
   GroupListItem,
@@ -9,7 +9,7 @@ import type {
   UpdateGroupDTO,
 } from '../types/group';
 
-export const useGrupos = (idCurso: number) => {
+export const useGroups = (idCurso: number) => {
   const [grupos, setGrupos] = useState<GroupListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export const useGrupos = (idCurso: number) => {
     setError(null);
 
     try {
-      setGrupos(await grupoService.listByCurso(idCurso));
+      setGrupos(await groupService.listByCurso(idCurso));
     } catch (caught) {
       setGrupos([]);
       setError(
@@ -41,24 +41,24 @@ export const useGrupos = (idCurso: number) => {
   }, [fetchGrupos]);
 
   const addGrupo = async (data: CreateGroupDTO) => {
-    const created = await grupoService.create(data);
+    const created = await groupService.create(data);
     await fetchGrupos();
     return created;
   };
 
-  const updateGrupo = async (id: number, data: UpdateGroupDTO) => {
-    const updated = await grupoService.update(id, data);
+  const updateGroup = async (id: number, data: UpdateGroupDTO) => {
+    const updated = await groupService.update(id, data);
     await fetchGrupos();
     return updated;
   };
 
-  const deleteGrupo = async (id: number) => {
-    await grupoService.remove(id);
+  const deleteGroup = async (id: number) => {
+    await groupService.remove(id);
     await fetchGrupos();
   };
 
   const cambiarEstado = async (id: number, estado: GroupStatus) => {
-    const updated = await grupoService.cambiarEstado(id, estado);
+    const updated = await groupService.cambiarEstado(id, estado);
     await fetchGrupos();
     return updated;
   };
@@ -68,8 +68,8 @@ export const useGrupos = (idCurso: number) => {
     loading,
     error,
     addGrupo,
-    updateGrupo,
-    deleteGrupo,
+    updateGroup,
+    deleteGroup,
     cambiarEstado,
     refetch: fetchGrupos,
   };

@@ -4,7 +4,7 @@ const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 // Campos que el administrador puede corregir del grupo. El alta y la edición
 // comparten exactamente las mismas reglas, asi que viven en un solo objeto.
-const grupoCamposSchema = z.object({
+const groupFieldsSchema = z.object({
   idInstructor: z.coerce
     .number({ error: 'Debe elegir un instructor' })
     .int('El instructor debe ser un número')
@@ -35,7 +35,7 @@ const grupoCamposSchema = z.object({
     .positive('El máximo de estudiantes debe ser mayor a 0'),
 });
 
-const validarGrupo = (data: z.infer<typeof grupoCamposSchema>, ctx: z.RefinementCtx) => {
+const validateGroup = (data: z.infer<typeof groupFieldsSchema>, ctx: z.RefinementCtx) => {
   if (data.modalidad !== 'virtual' && !data.aula) {
     ctx.addIssue({
       code: 'custom',
@@ -61,27 +61,27 @@ const validarGrupo = (data: z.infer<typeof grupoCamposSchema>, ctx: z.Refinement
   }
 };
 
-export const createGrupoSchema = grupoCamposSchema
+export const createGroupSchema = groupFieldsSchema
   .extend({
     idCurso: z.coerce
       .number({ error: 'El curso es obligatorio' })
       .int('El curso debe ser un número')
       .positive('El curso es obligatorio'),
   })
-  .superRefine(validarGrupo);
+  .superRefine(validateGroup);
 
 // En la edición el curso no cambia: el grupo ya pertenece a uno.
-export const updateGrupoSchema = grupoCamposSchema.superRefine(validarGrupo);
+export const updateGroupSchema = groupFieldsSchema.superRefine(validateGroup);
 
 // El administrador solo alterna entre habilitado e inhabilitado desde la lista;
 // preinscripcion y finalizado se gobiernan solos.
-export const cambiarEstadoGrupoSchema = z.object({
+export const changeGroupStatusSchema = z.object({
   estado: z.enum(['habilitado', 'inhabilitado'], {
     error: 'El estado debe ser habilitado o inhabilitado',
   }),
 });
 
-export const gruposQuerySchema = z.object({
+export const groupsQuerySchema = z.object({
   idCurso: z.coerce
     .number({ error: 'El curso debe ser un número' })
     .int('El curso debe ser un número')
@@ -89,7 +89,7 @@ export const gruposQuerySchema = z.object({
     .optional(),
 });
 
-export type CreateGrupoInput = z.infer<typeof createGrupoSchema>;
-export type UpdateGrupoInput = z.infer<typeof updateGrupoSchema>;
-export type CambiarEstadoGrupoInput = z.infer<typeof cambiarEstadoGrupoSchema>;
-export type GruposQuery = z.infer<typeof gruposQuerySchema>;
+export type CreateGroupInput = z.infer<typeof createGroupSchema>;
+export type UpdateGroupInput = z.infer<typeof updateGroupSchema>;
+export type ChangeGroupStatusInput = z.infer<typeof changeGroupStatusSchema>;
+export type GroupsQuery = z.infer<typeof groupsQuerySchema>;

@@ -5,12 +5,12 @@ import ComingSoonPage from "./pages/ComingSoonPage";
 import CourseCreatePage from "./pages/courses/CourseCreatePage";
 import CourseEditPage from "./pages/courses/CourseEditPage";
 import CoursesListPage from "./pages/courses/CoursesListPage";
-import GrupoCreatePage from "./pages/grupos/GrupoCreatePage";
-import GrupoEditPage from "./pages/grupos/GrupoEditPage";
-import GruposPage from "./pages/grupos/GruposPage";
-import GruposListPage from "./pages/grupos/GruposListPage";
-import GrupoStudentsPage from "./pages/grupos/GrupoStudentsPage";
-import TempStudentsRedirect from "./pages/grupos/TempStudentsRedirect";
+import GroupCreatePage from "./pages/groups/GroupCreatePage";
+import GroupEditPage from "./pages/groups/GroupEditPage";
+import GroupsPage from "./pages/groups/GroupsPage";
+import GroupsListPage from "./pages/groups/GroupsListPage";
+import GroupStudentsPage from "./pages/groups/GroupStudentsPage";
+import TempStudentsRedirect from "./pages/groups/TempStudentsRedirect";
 import InstructorsContainer from "./pages/instructors/InstructorsContainer";
 import EditEnrollmentPage from "./pages/EditEnrollmentPage";
 import EnrollmentPage from "./pages/EnrollmentPage";
@@ -32,20 +32,20 @@ export default function App() {
           <Route path="/cursos/:id/editar" element={<CourseEditPage />} />
 
           {/* Grupos de un curso (HU #18, #19) */}
-          <Route path="/cursos/:idCurso/grupos" element={<GruposListPage />} />
+          <Route path="/cursos/:idCurso/grupos" element={<GroupsListPage />} />
           <Route
             path="/cursos/:idCurso/grupos/nuevo"
-            element={<GrupoCreatePage />}
+            element={<GroupCreatePage />}
           />
           <Route
             path="/cursos/:idCurso/grupos/:idGrupo/editar"
-            element={<GrupoEditPage />}
+            element={<GroupEditPage />}
           />
 
           {/* Estudiantes inscritos por grupo */}
           <Route
             path="/cursos/:idCurso/estudiantes"
-            element={<GrupoStudentsPage />}
+            element={<GroupStudentsPage />}
           />
           <Route
             path="/groups/:groupId/students-temp"
@@ -60,7 +60,7 @@ export default function App() {
 
           {/* Secciones de otros colaboradores */}
           <Route path="/dashboard" element={<Prueba />} />
-          <Route path="/grupos" element={<GruposPage />} />
+          <Route path="/grupos" element={<GroupsPage />} />
           <Route
             path="/estudiantes"
             element={<ComingSoonPage title="Estudiantes" />}

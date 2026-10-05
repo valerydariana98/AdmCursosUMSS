@@ -1,9 +1,9 @@
-// apps/client/src/schemas/grupoSchema.tsx
+// apps/client/src/schemas/groupSchema.tsx
 import { z } from 'zod';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-export const grupoSchema = z
+export const groupSchema = z
   .object({
     idInstructor: z.string().min(1, 'Debe elegir un instructor'),
     horaIni: z.string().regex(TIME_REGEX, 'La hora de inicio debe tener el formato HH:MM'),
@@ -72,4 +72,4 @@ export const grupoSchema = z
     }
   });
 
-export type GrupoFormData = z.infer<typeof grupoSchema>;
+export type GroupFormData = z.infer<typeof groupSchema>;

@@ -1,12 +1,12 @@
-// apps/client/src/pages/grupos/GrupoEditPage.tsx
+// apps/client/src/pages/groups/GroupEditPage.tsx
 import { useParams } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
-import { useGrupo } from '../../hooks/useGrupo';
-import GrupoFormPage from './GrupoFormPage';
+import { useGroup } from '../../hooks/useGroup';
+import GroupFormPage from './GroupFormPage';
 
-const GrupoEditPage = () => {
+const GroupEditPage = () => {
   const { idGrupo } = useParams();
-  const { grupo, loading, error } = useGrupo(Number(idGrupo));
+  const { grupo, loading, error } = useGroup(Number(idGrupo));
 
   if (loading) {
     return <div className="p-8 font-sans text-sm text-gray-500">Cargando grupo...</div>;
@@ -20,7 +20,7 @@ const GrupoEditPage = () => {
     );
   }
 
-  return <GrupoFormPage mode="edit" grupo={grupo} loadingGrupo={loading} />;
+  return <GroupFormPage mode="edit" grupo={grupo} loadingGrupo={loading} />;
 };
 
-export default GrupoEditPage;
+export default GroupEditPage;

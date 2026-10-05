@@ -1,10 +1,10 @@
-// apps/client/src/hooks/useGruposGlobal.ts
+// apps/client/src/hooks/useGroupsGlobal.ts
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../services/api';
-import { grupoService } from '../services/grupoService';
+import { groupService } from '../services/groupService';
 import type { GroupListItem } from '../types/group';
 
-export const useGruposGlobal = () => {
+export const useGroupsGlobal = () => {
   const [grupos, setGrupos] = useState<GroupListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,7 +14,7 @@ export const useGruposGlobal = () => {
     setError(null);
 
     try {
-      setGrupos(await grupoService.listByCurso());
+      setGrupos(await groupService.listByCurso());
     } catch (caught) {
       setGrupos([]);
       setError(

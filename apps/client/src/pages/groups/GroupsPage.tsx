@@ -1,4 +1,4 @@
-// apps/client/src/pages/grupos/GruposPage.tsx
+// apps/client/src/pages/groups/GroupsPage.tsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
@@ -7,10 +7,10 @@ import EstadoBadge from '../../components/EstadoBadge';
 import Modal from '../../components/Modal';
 import Toggle from '../../components/Toggle';
 import { useCourses } from '../../hooks/useCourses';
-import { useGruposGlobal } from '../../hooks/useGruposGlobal';
+import { useGroupsGlobal } from '../../hooks/useGroupsGlobal';
 import { ApiError } from '../../services/api';
 import { courseService, type ValidacionFinalizacion } from '../../services/courseService';
-import { grupoService } from '../../services/grupoService';
+import { groupService } from '../../services/groupService';
 import type { Modality } from 'shared';
 import type { Course } from '../../types/course';
 import {
@@ -65,9 +65,9 @@ interface CursoConGrupos {
   grupos: GroupListItem[];
 }
 
-const GruposPage = () => {
+const GroupsPage = () => {
   const { courses, loading: loadingCursos, error: cursosError } = useCourses();
-  const { grupos, loading, error, refetch } = useGruposGlobal();
+  const { grupos, loading, error, refetch } = useGroupsGlobal();
 
   const [grupoToDelete, setGrupoToDelete] = useState<GroupListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -102,7 +102,7 @@ const GruposPage = () => {
     setDeleteError(null);
 
     try {
-      await grupoService.remove(grupoToDelete.id);
+      await groupService.remove(grupoToDelete.id);
       closeDeleteModal();
       await refetch();
     } catch (caught) {
@@ -133,7 +133,7 @@ const GruposPage = () => {
     setEstadoError(null);
 
     try {
-      await grupoService.cambiarEstado(grupoToToggle.id, estado);
+      await groupService.cambiarEstado(grupoToToggle.id, estado);
       closeEstadoModal();
       await refetch();
     } catch (caught) {
@@ -514,4 +514,4 @@ const GruposPage = () => {
   );
 };
 
-export default GruposPage;
+export default GroupsPage;

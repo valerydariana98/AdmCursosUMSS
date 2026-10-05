@@ -1,4 +1,4 @@
-// apps/client/src/pages/grupos/GrupoFormPage.tsx
+// apps/client/src/pages/groups/GroupFormPage.tsx
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
@@ -7,10 +7,10 @@ import EstadoBadge from '../../components/EstadoBadge';
 import RadioGroup from '../../components/RadioGroup';
 import Select from '../../components/Select';
 import TextField from '../../components/TextField';
-import { useCurso } from '../../hooks/useCurso';
-import { useGrupos } from '../../hooks/useGrupos';
+import { useCourse } from '../../hooks/useCourse';
+import { useGroups } from '../../hooks/useGroups';
 import { useInstructorOptions } from '../../hooks/useInstructorOptions';
-import { grupoSchema } from '../../schemas/grupoSchema';
+import { groupSchema } from '../../schemas/groupSchema';
 import { ApiError } from '../../services/api';
 import { MODALITY_OPTIONS, type Group, type GroupFormValues } from '../../types/group';
 import {
@@ -22,22 +22,22 @@ import {
 
 type FieldErrors = Record<string, string>;
 
-interface GrupoFormPageProps {
+interface GroupFormPageProps {
   mode: 'create' | 'edit';
   /** Solo en modo edición: el grupo que se está editando. */
   grupo?: Group;
   loadingGrupo?: boolean;
 }
 
-const GrupoFormPage = ({ mode, grupo, loadingGrupo }: GrupoFormPageProps) => {
+const GroupFormPage = ({ mode, grupo, loadingGrupo }: GroupFormPageProps) => {
   const { idCurso } = useParams();
   const navigate = useNavigate();
   const cursoId = Number(idCurso);
 
   const isEdit = mode === 'edit';
 
-  const { curso } = useCurso(cursoId);
-  const { addGrupo, updateGrupo } = useGrupos(cursoId);
+  const { curso } = useCourse(cursoId);
+  const { addGrupo, updateGroup } = useGroups(cursoId);
   const { options: instructorOptions, loading: loadingInstructores } = useInstructorOptions();
 
   const [values, setValues] = useState<GroupFormValues>(emptyGroupForm);
@@ -87,7 +87,7 @@ const GrupoFormPage = ({ mode, grupo, loadingGrupo }: GrupoFormPageProps) => {
     event.preventDefault();
     setSubmitError(null);
 
-    const result = grupoSchema.safeParse(values);
+    const result = groupSchema.safeParse(values);
 
     if (!result.success) {
       const errors: FieldErrors = {};
@@ -103,7 +103,7 @@ const GrupoFormPage = ({ mode, grupo, loadingGrupo }: GrupoFormPageProps) => {
     setSaving(true);
     try {
       if (isEdit && grupo) {
-        await updateGrupo(grupo.id, toUpdateGroupPayload(result.data));
+        await updateGroup(grupo.id, toUpdateGroupPayload(result.data));
       } else {
         await addGrupo(toCreateGroupPayload(result.data, cursoId));
       }
@@ -284,4 +284,4 @@ const GrupoFormPage = ({ mode, grupo, loadingGrupo }: GrupoFormPageProps) => {
   );
 };
 
-export default GrupoFormPage;
+export default GroupFormPage;

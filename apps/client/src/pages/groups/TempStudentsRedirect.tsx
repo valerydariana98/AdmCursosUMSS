@@ -1,5 +1,5 @@
-// apps/client/src/pages/grupos/TempStudentsRedirect.tsx
-// La vista por grupo paso a ser por curso (GrupoStudentsPage). Este componente
+// apps/client/src/pages/groups/TempStudentsRedirect.tsx
+// La vista por grupo paso a ser por curso (GroupStudentsPage). Este componente
 // conserva los enlaces antiguos resolviendo el curso del grupo y redirigiendo.
 import { useEffect } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';

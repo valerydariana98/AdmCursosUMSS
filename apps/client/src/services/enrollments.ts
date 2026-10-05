@@ -16,16 +16,16 @@ const handle = async (res: Response) => {
 };
 
 export const getGroupWithCourse = (groupId: number): Promise<GroupWithCourse> =>
-  fetch(`${API}/api/groups/${groupId}`).then(handle);
+  fetch(`${API}/api/grupos/${groupId}`).then(handle);
 
 export const getStudentTypes = (): Promise<StudentType[]> =>
   fetch(`${API}/api/student-types`).then(handle);
 
 export const getEnrollments = (groupId: number): Promise<EnrolledStudent[]> =>
-  fetch(`${API}/api/groups/${groupId}/enrollments`).then(handle);
+  fetch(`${API}/api/grupos/${groupId}/enrollments`).then(handle);
 
 export const createEnrollment = (groupId: number, data: CreateEnrollment) =>
-  fetch(`${API}/api/groups/${groupId}/enrollments`, {
+  fetch(`${API}/api/grupos/${groupId}/enrollments`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -36,14 +36,14 @@ export const updateEnrollment = (
   enrollmentId: number,
   data: Partial<CreateEnrollment>,
 ) =>
-  fetch(`${API}/api/groups/${groupId}/enrollments/${enrollmentId}`, {
+  fetch(`${API}/api/grupos/${groupId}/enrollments/${enrollmentId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   }).then(handle);
 
 export const deleteEnrollment = (groupId: number, enrollmentId: number) =>
-  fetch(`${API}/api/groups/${groupId}/enrollments/${enrollmentId}`, {
+  fetch(`${API}/api/grupos/${groupId}/enrollments/${enrollmentId}`, {
     method: "DELETE",
   }).then((res) => {
     if (!res.ok) throw new Error("No se pudo eliminar la inscripción");
@@ -56,7 +56,7 @@ export const moveEnrollment = (
   enrollmentId: number,
   idGrupoDestino: number,
 ) =>
-  fetch(`${API}/api/groups/${groupId}/enrollments/${enrollmentId}/grupo`, {
+  fetch(`${API}/api/grupos/${groupId}/enrollments/${enrollmentId}/grupo`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ idGrupoDestino }),

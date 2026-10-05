@@ -1,10 +1,10 @@
-// apps/client/src/hooks/useCurso.ts
+// apps/client/src/hooks/useCourse.ts
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../services/api';
 import { courseService } from '../services/courseService';
 import type { Course } from '../types/course';
 
-export const useCurso = (idCurso: number) => {
+export const useCourse = (idCurso: number) => {
   const [curso, setCurso] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

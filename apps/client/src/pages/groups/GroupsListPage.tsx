@@ -1,4 +1,4 @@
-// apps/client/src/pages/grupos/GruposListPage.tsx
+// apps/client/src/pages/groups/GroupsListPage.tsx
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
@@ -6,8 +6,8 @@ import Button from '../../components/Button';
 import EstadoBadge from '../../components/EstadoBadge';
 import Modal from '../../components/Modal';
 import Toggle from '../../components/Toggle';
-import { useCurso } from '../../hooks/useCurso';
-import { useGrupos } from '../../hooks/useGrupos';
+import { useCourse } from '../../hooks/useCourse';
+import { useGroups } from '../../hooks/useGroups';
 import { ApiError } from '../../services/api';
 import { courseService } from '../../services/courseService';
 import type { Modality } from 'shared';
@@ -73,12 +73,12 @@ const UserPlusIcon = () => (
     />
   </svg>
 );
-const GruposListPage = () => {
+const GroupsListPage = () => {
   const { idCurso } = useParams();
   const cursoId = Number(idCurso);
   const { curso, loading: loadingCurso, error: cursoError, refetch: refetchCurso } =
-    useCurso(cursoId);
-  const { grupos, loading, error, deleteGrupo, cambiarEstado } = useGrupos(cursoId);
+    useCourse(cursoId);
+  const { grupos, loading, error, deleteGroup, cambiarEstado } = useGroups(cursoId);
 
   const finalizada = !!curso?.preinscripcionFinalizada;
 
@@ -107,7 +107,7 @@ const GruposListPage = () => {
     setDeleteError(null);
 
     try {
-      await deleteGrupo(grupoToDelete.id);
+      await deleteGroup(grupoToDelete.id);
       closeDeleteModal();
     } catch (caught) {
       setDeleteError(
@@ -522,4 +522,4 @@ const GruposListPage = () => {
   );
 };
 
-export default GruposListPage;
+export default GroupsListPage;

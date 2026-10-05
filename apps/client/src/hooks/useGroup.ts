@@ -1,10 +1,10 @@
-// apps/client/src/hooks/useGrupo.ts
+// apps/client/src/hooks/useGroup.ts
 import { useEffect, useState } from 'react';
 import { ApiError } from '../services/api';
-import { grupoService } from '../services/grupoService';
+import { groupService } from '../services/groupService';
 import type { Group } from '../types/group';
 
-export const useGrupo = (id: number) => {
+export const useGroup = (id: number) => {
   const [grupo, setGrupo] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export const useGrupo = (id: number) => {
     setLoading(true);
     setError(null);
 
-    grupoService
+    groupService
       .getById(id)
       .then((result) => {
         if (!cancelled) setGrupo(result);

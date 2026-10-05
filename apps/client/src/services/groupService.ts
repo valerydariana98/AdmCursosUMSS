@@ -1,4 +1,4 @@
-// apps/client/src/services/grupoService.ts
+// apps/client/src/services/groupService.ts
 import { api } from './api';
 import type {
   CreateGroupDTO,
@@ -8,7 +8,7 @@ import type {
   UpdateGroupDTO,
 } from '../types/group';
 
-export const grupoService = {
+export const groupService = {
   listByCurso(idCurso?: number): Promise<GroupListItem[]> {
     const query = idCurso !== undefined ? `?idCurso=${idCurso}` : '';
     return api.get<GroupListItem[]>(`/api/grupos${query}`);
