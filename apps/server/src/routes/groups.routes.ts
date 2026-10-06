@@ -7,6 +7,10 @@ import {
   getGroups,
   updateGroup,
 } from '../controllers/groups.controller.js';
+import {
+  detalleGrupo,
+  misGrupos,
+} from '../controllers/teacherGroups.controller.js';
 import { validate, validateParams, validateQuery } from '../middlewares/validate.js';
 import {
   changeGroupStatusSchema,
@@ -17,6 +21,11 @@ import {
 import { idParamsSchema } from '../schemas/params.schema.js';
 
 const router = Router();
+
+// Debe declararse antes de `/:id`, o el id numérico de la ruta lo capturaría.
+router.get('/mis-grupos', misGrupos);
+
+router.get('/:id/detalle', validateParams(idParamsSchema), detalleGrupo);
 
 router.get('/', validateQuery(groupsQuerySchema), getGroups);
 router.get('/:id', validateParams(idParamsSchema), getGroup);

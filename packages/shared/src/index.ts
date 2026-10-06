@@ -4,6 +4,19 @@
 
 export type Modality = 'presencial' | 'virtual' | 'hibrida';
 export type GroupStatus = 'preinscripcion' | 'habilitado' | 'inhabilitado' | 'finalizado';
+
+export const ROLES = ['ADMIN', 'DOCENTE'] as const;
+export type Rol = (typeof ROLES)[number];
+
+export const ROL_LABEL: Record<Rol, string> = {
+  ADMIN: 'Administrador',
+  DOCENTE: 'Docente',
+};
+
+// Días de la semana que se muestran en las tarjetas de grupo.
+// La tabla `grupos` no tiene columna de días, así que hoy se muestra un valor fijo.
+// Cuando exista el dato real por grupo, se cambia SOLO esta constante.
+export const GRUPOS_DIAS_LABEL = 'LUN - VIE';
 export type EvaluationType = 'asistencia' | 'eval' | 'trabajo';
 export type UpdateEnrollment = Partial<CreateEnrollment>;
 export interface Course {
@@ -92,6 +105,50 @@ export interface PaginatedInstructors {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+// ------------------------------------------------------------------
+// Sesión (HU #27)
+// ------------------------------------------------------------------
+
+export interface AuthUser {
+  id: number;
+  username: string;
+  email: string;
+  rol: Rol;
+}
+
+export interface LoginResponse {
+  token: string;
+  usuario: AuthUser;
+}
+
+// ------------------------------------------------------------------
+// Mis Grupos (HU #28) y detalle de grupo (HU #67)
+// ------------------------------------------------------------------
+
+export interface TeacherGroupCard {
+  id: number;
+  numGrupo: number;
+  modalidad: Modality;
+  aula: string | null;
+  horaIni: string;
+  horaFin: string;
+  estado: GroupStatus;
+  inscritosCount: number;
+  cursoId: number;
+  cursoNombre: string;
+  cursoPeriodo: string;
+  cursoFechaIni: string;
+  cursoFechaFin: string;
+}
+
+export interface GroupDetail extends TeacherGroupCard {
+  minimEst: number;
+  maxEst: number;
+  instructorNombre: string;
+  notaMin: number;
+  maxFaltas: number;
 }
 
 export interface Enrollment {
