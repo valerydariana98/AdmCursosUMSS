@@ -63,6 +63,7 @@ const InstructorGroupsModal = ({
       isOpen={instructorId !== null}
       title={`Grupos asignados a ${instructorNombre}`}
       onClose={onClose}
+      size="lg"
       footer={
         <Button variant="secondary" onClick={onClose}>
           Cerrar
