@@ -561,6 +561,122 @@ export interface UpsertAttendance {
   records: AttendanceRecordInput[];
 }
 
+// HU #35. Condición que el reporte muestra por estudiante según la nota mínima y
+// el máximo de faltas del curso.
+//
+// - `aprobacion`: cumple asistencia y alcanza la nota mínima.
+// - `asistencia`: cumple asistencia pero no alcanza la nota mínima.
+// - `sin_certificado`: no cumple el requisito de asistencia, tenga o no la nota.
+// - `pendiente`: todavía no hay notas cargadas (HU #33/#34), así que no se puede
+//   decidir. No es un estado del estudiante, es la ausencia de dato.
+export type CertificateCondition = 'aprobacion' | 'asistencia' | 'sin_certificado' | 'pendiente';
+
+export const CERTIFICATE_CONDITION_LABEL: Record<CertificateCondition, string> = {
+  aprobacion: 'Certificado de aprobación',
+  asistencia: 'Certificado de asistencia',
+  sin_certificado: 'Sin certificado',
+  pendiente: 'Pendiente',
+};
+
+export interface CertificateConditionInput {
+  notaFinal: number | null;
+  passingGrade: number;
+  meetsAttendance: boolean;
+  // false mientras la HU #33/#34 no entregue el registro de notas.
+  hasGrades: boolean;
+  // false mientras el grupo no tenga jornadas de asistencia registradas: sin ese
+  // dato no se puede afirmar que el estudiante cumple el máximo de faltas.
+  hasAttendance: boolean;
+}
+
+// Regla del reporte, aislada de la base de datos y del HTTP para que se pueda
+// cubrir con pruebas directas. El orden importa: primero se descarta lo que no se
+// puede evaluar, después la asistencia, y solo al final la nota.
+export const resolveCertificateCondition = ({
+  notaFinal,
+  passingGrade,
+  meetsAttendance,
+  hasGrades,
+  hasAttendance,
+}: CertificateConditionInput): CertificateCondition => {
+  if (!hasGrades || notaFinal === null || !hasAttendance) return 'pendiente';
+  if (!meetsAttendance) return 'sin_certificado';
+
+  return notaFinal >= passingGrade ? 'aprobacion' : 'asistencia';
+};
+
+export interface ReportRubricItem {
+  id: number;
+  name: string;
+  category: RubricCategory;
+  percentage: number;
+}
+
+export interface ReportRubric {
+  items: ReportRubricItem[];
+  totalPercentage: number;
+  // Suma de los ítems de categoría `attendance`: el peso que la asistencia tiene
+  // dentro de la nota final. null cuando el grupo todavía no tiene rúbrica.
+  attendancePercentage: number | null;
+}
+
+// Una fila del reporte. `notas` y `notaFinal` quedan en null mientras el módulo
+// de notas (HU #33/#34) no exista: la fila se muestra igual con lo que ya se sabe.
+export interface ReportStudent {
+  studentId: number;
+  nombres: string;
+  apPaterno: string;
+  apMaterno: string;
+  ci: string;
+  codSis: string | null;
+  asistencia: AttendanceStudentSummary;
+  // Porcentaje de asistencia ya multiplicado por el peso de la rúbrica.
+  // null cuando no hay rúbrica o no hay jornadas registradas.
+  asistenciaPonderada: number | null;
+  notas: Record<string, number> | null;
+  notaFinal: number | null;
+  condicion: CertificateCondition;
+}
+
+export interface GroupReportView {
+  group: RubricGroupInfo;
+  policy: RubricPolicy;
+  rubric: ReportRubric | null;
+  // Total de jornadas de asistencia registradas del grupo.
+  totalSessions: number;
+  // false mientras la HU #33/#34 no esté entregada: el reporte lo avisa en la UI
+  // en vez de fingir que las notas valen 0.
+  notasDisponibles: boolean;
+  students: ReportStudent[];
+}
+
+// HU #37. Motivos por los que un grupo todavía no se puede finalizar. El servidor
+// devuelve todos los que apliquen a la vez, para que el mensaje detalle el
+// pendiente completo en lugar de revelar uno por intento.
+export type FinalizePendiente =
+  | 'grupo_no_habilitado'
+  | 'horas_no_completadas'
+  | 'notas_incompletas';
+
+export const FINALIZE_PENDIENTE_LABEL: Record<FinalizePendiente, string> = {
+  grupo_no_habilitado: 'El grupo no está habilitado',
+  horas_no_completadas: 'Las horas del curso aún no se han completado',
+  notas_incompletas: 'Faltan notas por registrar',
+};
+
+export interface FinalizePendientes {
+  ok: false;
+  pendientes: FinalizePendiente[];
+}
+
+export interface FinalizeSuccess {
+  ok: true;
+  groupId: number;
+  // true cuando al finalizar este grupo ya no queda ninguno activo del curso: ahí
+  // el curso pasa a finalizado (HU #37).
+  cursoFinalizado: boolean;
+}
+
 export interface Student {
   id: number;
   codSis: string | null;

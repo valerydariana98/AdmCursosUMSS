@@ -14,7 +14,9 @@ export const createEnrollment = (idGrupo: number, input: CreateEnrollment) =>
       .for('update', { of: grupos });
     if (!row) return { error: 'group_not_found' } as const;
 
-    if (row.grupo.estado !== 'preinscripcion' && row.grupo.estado !== 'habilitado')
+    // Solo la preinscripcion admite altas nuevas. Un grupo habilitado ya tiene su
+    // cupo cerrado (los traslados de estudiantes ya inscritos si pueden entrar).
+    if (row.grupo.estado !== 'preinscripcion')
       return { error: 'group_closed' } as const;
 
     const [{ total }] = await tx

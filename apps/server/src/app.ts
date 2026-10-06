@@ -8,6 +8,7 @@ import enrollmentsRouter from './routes/enrollments.routes.js';
 import authRouter from './routes/auth.routes.js';
 import rubricsRouter from './routes/rubrics.routes.js';
 import attendanceRouter from './routes/attendance.routes.js';
+import reportsRouter from './routes/reports.routes.js';
 import studentTypesRouter from './routes/studentTypes.routes.js';
 import { requireAuth } from './middlewares/auth.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
@@ -38,6 +39,7 @@ app.use('/api/grupos', groupsRouter);
 app.use('/api/grupos', enrollmentsRouter);
 app.use('/api/grupos', rubricsRouter);
 app.use('/api/grupos', attendanceRouter);
+app.use('/api/grupos', reportsRouter);
 app.use('/api/student-types', studentTypesRouter);
 
 app.use(notFound);

@@ -7,6 +7,7 @@ import {
   getGroups,
   updateGroup,
 } from '../controllers/groups.controller.js';
+import { finalizeGroup } from '../controllers/finalize.controller.js';
 import {
   detalleGrupo,
   misGrupos,
@@ -38,5 +39,9 @@ router.patch(
   validate(changeGroupStatusSchema),
   changeGroupStatus
 );
+
+// Cierre formal del grupo (HU #37). No recibe cuerpo: las condiciones se
+// evalúan con los datos del grupo y del curso.
+router.post('/:id/finalizar', validateParams(idParamsSchema), finalizeGroup);
 
 export default router;

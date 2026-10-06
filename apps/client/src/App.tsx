@@ -10,6 +10,7 @@ import GroupDetailPage from "./pages/groups/GroupDetailPage";
 import GroupEditPage from "./pages/groups/GroupEditPage";
 import GroupAttendancePage from "./pages/groups/GroupAttendancePage";
 import GroupRubricPage from "./pages/groups/GroupRubricPage";
+import GroupReportPage from "./pages/groups/GroupReportPage";
 import GroupsPage from "./pages/groups/GroupsPage";
 import GroupsListPage from "./pages/groups/GroupsListPage";
 import GroupStudentsPage from "./pages/groups/GroupStudentsPage";
@@ -106,6 +107,10 @@ export default function App() {
           <Route
             path="/cursos/:idCurso/grupos/:idGrupo/asistencia"
             element={autenticado(<GroupAttendancePage />)}
+          />
+          <Route
+            path="/cursos/:idCurso/grupos/:idGrupo/reporte"
+            element={autenticado(<GroupReportPage />)}
           />
 
           {/* Estudiantes inscritos por grupo */}
