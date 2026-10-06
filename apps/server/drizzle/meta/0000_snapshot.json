@@ -1,0 +1,1027 @@
+{
+  "id": "14de116e-a260-469b-81f4-861ad9b596dd",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.asistencias": {
+      "name": "asistencias",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "id_grupo": {
+          "name": "id_grupo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_estudiante": {
+          "name": "id_estudiante",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asistencia": {
+          "name": "asistencia",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "asistencias_id_grupo_grupos_id_fk": {
+          "name": "asistencias_id_grupo_grupos_id_fk",
+          "tableFrom": "asistencias",
+          "tableTo": "grupos",
+          "columnsFrom": [
+            "id_grupo"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "asistencias_id_estudiante_estudiantes_id_fk": {
+          "name": "asistencias_id_estudiante_estudiantes_id_fk",
+          "tableFrom": "asistencias",
+          "tableTo": "estudiantes",
+          "columnsFrom": [
+            "id_estudiante"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cursos": {
+      "name": "cursos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nombre_curso": {
+          "name": "nombre_curso",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duracion_horas": {
+          "name": "duracion_horas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fecha_ini": {
+          "name": "fecha_ini",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fecha_fin": {
+          "name": "fecha_fin",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "costo_aux": {
+          "name": "costo_aux",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "costo_umss": {
+          "name": "costo_umss",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "costo_externo": {
+          "name": "costo_externo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nota_min": {
+          "name": "nota_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_faltas": {
+          "name": "max_faltas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "periodo": {
+          "name": "periodo",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estado": {
+          "name": "estado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "preinscripcion_finalizada": {
+          "name": "preinscripcion_finalizada",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.estudiantes": {
+      "name": "estudiantes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "cod_sis": {
+          "name": "cod_sis",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ci": {
+          "name": "ci",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombres": {
+          "name": "nombres",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ap_paterno": {
+          "name": "ap_paterno",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ap_materno": {
+          "name": "ap_materno",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "celular": {
+          "name": "celular",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "estudiantes_ci_unique": {
+          "name": "estudiantes_ci_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "ci"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.evaluaciones": {
+      "name": "evaluaciones",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "id_grupo": {
+          "name": "id_grupo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_tipo": {
+          "name": "id_tipo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "porcentaje": {
+          "name": "porcentaje",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "evaluaciones_id_grupo_grupos_id_fk": {
+          "name": "evaluaciones_id_grupo_grupos_id_fk",
+          "tableFrom": "evaluaciones",
+          "tableTo": "grupos",
+          "columnsFrom": [
+            "id_grupo"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "evaluaciones_id_tipo_tipos_id_fk": {
+          "name": "evaluaciones_id_tipo_tipos_id_fk",
+          "tableFrom": "evaluaciones",
+          "tableTo": "tipos",
+          "columnsFrom": [
+            "id_tipo"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.grupos": {
+      "name": "grupos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "num_grupo": {
+          "name": "num_grupo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_curso": {
+          "name": "id_curso",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_instructor": {
+          "name": "id_instructor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hora_ini": {
+          "name": "hora_ini",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hora_fin": {
+          "name": "hora_fin",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "modalidad": {
+          "name": "modalidad",
+          "type": "modalidad_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aula": {
+          "name": "aula",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "minim_est": {
+          "name": "minim_est",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_est": {
+          "name": "max_est",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estado": {
+          "name": "estado",
+          "type": "estado_grupo_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "grupos_curso_num_unico": {
+          "name": "grupos_curso_num_unico",
+          "columns": [
+            {
+              "expression": "id_curso",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "num_grupo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "grupos_id_curso_cursos_id_fk": {
+          "name": "grupos_id_curso_cursos_id_fk",
+          "tableFrom": "grupos",
+          "tableTo": "cursos",
+          "columnsFrom": [
+            "id_curso"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "grupos_id_instructor_instructores_id_fk": {
+          "name": "grupos_id_instructor_instructores_id_fk",
+          "tableFrom": "grupos",
+          "tableTo": "instructores",
+          "columnsFrom": [
+            "id_instructor"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.inscripciones": {
+      "name": "inscripciones",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "id_est": {
+          "name": "id_est",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_grupo": {
+          "name": "id_grupo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "monto": {
+          "name": "monto",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo_pago": {
+          "name": "tipo_pago",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_tipo_est": {
+          "name": "id_tipo_est",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fotocopia_ci": {
+          "name": "fotocopia_ci",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observaciones": {
+          "name": "observaciones",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "inscripciones_est_grupo_unico": {
+          "name": "inscripciones_est_grupo_unico",
+          "columns": [
+            {
+              "expression": "id_est",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id_grupo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "inscripciones_id_est_estudiantes_id_fk": {
+          "name": "inscripciones_id_est_estudiantes_id_fk",
+          "tableFrom": "inscripciones",
+          "tableTo": "estudiantes",
+          "columnsFrom": [
+            "id_est"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "inscripciones_id_grupo_grupos_id_fk": {
+          "name": "inscripciones_id_grupo_grupos_id_fk",
+          "tableFrom": "inscripciones",
+          "tableTo": "grupos",
+          "columnsFrom": [
+            "id_grupo"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "inscripciones_id_tipo_est_tipo_estudiante_id_fk": {
+          "name": "inscripciones_id_tipo_est_tipo_estudiante_id_fk",
+          "tableFrom": "inscripciones",
+          "tableTo": "tipo_estudiante",
+          "columnsFrom": [
+            "id_tipo_est"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.instructores": {
+      "name": "instructores",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nombres": {
+          "name": "nombres",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ap_paterno": {
+          "name": "ap_paterno",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ap_materno": {
+          "name": "ap_materno",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estado": {
+          "name": "estado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "telefono": {
+          "name": "telefono",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ci": {
+          "name": "ci",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cargo": {
+          "name": "cargo",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "instructores_ci_unico": {
+          "name": "instructores_ci_unico",
+          "columns": [
+            {
+              "expression": "ci",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "instructores_usuario_id_usuarios_id_fk": {
+          "name": "instructores_usuario_id_usuarios_id_fk",
+          "tableFrom": "instructores",
+          "tableTo": "usuarios",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "instructores_usuario_id_unique": {
+          "name": "instructores_usuario_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "usuario_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.notas": {
+      "name": "notas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "id_estudiante": {
+          "name": "id_estudiante",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_evaluacion": {
+          "name": "id_evaluacion",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nota": {
+          "name": "nota",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "notas_id_estudiante_estudiantes_id_fk": {
+          "name": "notas_id_estudiante_estudiantes_id_fk",
+          "tableFrom": "notas",
+          "tableTo": "estudiantes",
+          "columnsFrom": [
+            "id_estudiante"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "notas_id_evaluacion_evaluaciones_id_fk": {
+          "name": "notas_id_evaluacion_evaluaciones_id_fk",
+          "tableFrom": "notas",
+          "tableTo": "evaluaciones",
+          "columnsFrom": [
+            "id_evaluacion"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.rubric_items": {
+      "name": "rubric_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "rubric_id": {
+          "name": "rubric_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "rubric_category_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "percentage_hundredths": {
+          "name": "percentage_hundredths",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "rubric_items_rubric_id_rubrics_id_fk": {
+          "name": "rubric_items_rubric_id_rubrics_id_fk",
+          "tableFrom": "rubric_items",
+          "tableTo": "rubrics",
+          "columnsFrom": [
+            "rubric_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.rubrics": {
+      "name": "rubrics",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "rubrics_group_id_grupos_id_fk": {
+          "name": "rubrics_group_id_grupos_id_fk",
+          "tableFrom": "rubrics",
+          "tableTo": "grupos",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "rubrics_group_id_unique": {
+          "name": "rubrics_group_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "group_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tipo_estudiante": {
+      "name": "tipo_estudiante",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tipo_estudiante_nombre_unique": {
+          "name": "tipo_estudiante_nombre_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "nombre"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tipos": {
+      "name": "tipos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_eval_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tipos_tipo_unique": {
+          "name": "tipos_tipo_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "tipo"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.usuarios": {
+      "name": "usuarios",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "username": {
+          "name": "username",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rol": {
+          "name": "rol",
+          "type": "rol_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "usuarios_username_unique": {
+          "name": "usuarios_username_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "username"
+          ]
+        },
+        "usuarios_email_unique": {
+          "name": "usuarios_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.estado_grupo_enum": {
+      "name": "estado_grupo_enum",
+      "schema": "public",
+      "values": [
+        "preinscripcion",
+        "habilitado",
+        "inhabilitado",
+        "finalizado"
+      ]
+    },
+    "public.modalidad_enum": {
+      "name": "modalidad_enum",
+      "schema": "public",
+      "values": [
+        "presencial",
+        "virtual",
+        "hibrida"
+      ]
+    },
+    "public.rol_enum": {
+      "name": "rol_enum",
+      "schema": "public",
+      "values": [
+        "ADMIN",
+        "DOCENTE"
+      ]
+    },
+    "public.rubric_category_enum": {
+      "name": "rubric_category_enum",
+      "schema": "public",
+      "values": [
+        "attendance",
+        "assignments",
+        "exams"
+      ]
+    },
+    "public.tipo_eval_enum": {
+      "name": "tipo_eval_enum",
+      "schema": "public",
+      "values": [
+        "asistencia",
+        "eval",
+        "trabajo"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

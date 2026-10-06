@@ -11,3 +11,8 @@ export const enrollmentParamsSchema = z.object({
   id: z.coerce.number().int().positive(),
   enrollmentId: z.coerce.number().int().positive(),
 });
+
+export const rubricItemParamsSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  itemId: z.coerce.number().int().positive(),
+});

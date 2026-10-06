@@ -7,6 +7,8 @@ import CourseEditPage from "./pages/courses/CourseEditPage";
 import CoursesListPage from "./pages/courses/CoursesListPage";
 import GroupCreatePage from "./pages/groups/GroupCreatePage";
 import GroupEditPage from "./pages/groups/GroupEditPage";
+import GroupAttendancePage from "./pages/groups/GroupAttendancePage";
+import GroupRubricPage from "./pages/groups/GroupRubricPage";
 import GroupsPage from "./pages/groups/GroupsPage";
 import GroupsListPage from "./pages/groups/GroupsListPage";
 import GroupStudentsPage from "./pages/groups/GroupStudentsPage";
@@ -40,6 +42,14 @@ export default function App() {
           <Route
             path="/cursos/:idCurso/grupos/:idGrupo/editar"
             element={<GroupEditPage />}
+          />
+          <Route
+            path="/cursos/:idCurso/grupos/:idGrupo/rubrica"
+            element={<GroupRubricPage />}
+          />
+          <Route
+            path="/cursos/:idCurso/grupos/:idGrupo/asistencia"
+            element={<GroupAttendancePage />}
           />
 
           {/* Estudiantes inscritos por grupo */}

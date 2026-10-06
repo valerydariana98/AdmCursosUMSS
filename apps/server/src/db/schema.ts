@@ -6,6 +6,7 @@ import {
   integer,
   boolean,
   date,
+  timestamp,
   pgEnum,
   bigint,
   uniqueIndex,
@@ -24,6 +25,14 @@ export const estadoGrupoEnum = pgEnum('estado_grupo_enum', [
   'finalizado',
 ]);
 export const tipoEvalEnum = pgEnum('tipo_eval_enum', ['asistencia', 'eval', 'trabajo']);
+export const rubricCategoryEnum = pgEnum('rubric_category_enum', [
+  'attendance',
+  'assignments',
+  'exams',
+]);
+// Estado de un estudiante en una jornada de asistencia. El texto visible sale de
+// `ATTENDANCE_STATUS_LABEL` en shared, igual que las categorías de la rúbrica.
+export const attendanceStatusEnum = pgEnum('attendance_status_enum', ['present', 'absent']);
 
 // ==========================================
 // TABLAS
@@ -157,6 +166,69 @@ export const asistencias = pgTable('asistencias', {
   asistencia: bigint('asistencia', { mode: 'number' }).notNull(), // Máscara de bits (bitmask)
 });
 
+// 11b. Sesiones de asistencia
+// La asistencia se registra por jornada: una fila por grupo y fecha de clase. El
+// índice único sobre (group_id, date) impide que un grupo tenga dos sesiones para
+// la misma fecha, sin importar cuántas veces se guarde.
+export const attendanceSessions = pgTable(
+  'attendance_sessions',
+  {
+    id: serial('id').primaryKey(),
+    groupId: integer('group_id')
+      .notNull()
+      .references(() => grupos.id, { onDelete: 'cascade' }),
+    // Solo la fecha, sin hora: la jornada es el día de clase, no un instante.
+    date: date('date').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('attendance_sessions_group_date_unique').on(table.groupId, table.date)]
+);
+
+// Un registro por estudiante dentro de una sesión. El índice único sobre
+// (session_id, student_id) garantiza que nadie tenga dos estados en la misma
+// jornada, aunque el guardado se repita.
+export const attendanceRecords = pgTable(
+  'attendance_records',
+  {
+    id: serial('id').primaryKey(),
+    sessionId: integer('session_id')
+      .notNull()
+      .references(() => attendanceSessions.id, { onDelete: 'cascade' }),
+    studentId: integer('student_id')
+      .notNull()
+      .references(() => estudiantes.id, { onDelete: 'cascade' }),
+    status: attendanceStatusEnum('status').notNull(),
+  },
+  (table) => [uniqueIndex('attendance_records_session_student_unique').on(table.sessionId, table.studentId)]
+);
+
+// 12. Rúbricas de evaluación
+// Un grupo tiene como máximo una rúbrica: el índice único sobre `group_id` lo
+// garantiza a nivel de base de datos, sin importar cuántas veces se guarde.
+export const rubrics = pgTable('rubrics', {
+  id: serial('id').primaryKey(),
+  groupId: integer('group_id')
+    .notNull()
+    .references(() => grupos.id, { onDelete: 'cascade' })
+    .unique(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Los porcentajes se guardan en centésimas (enteros) para que la suma sea
+// aritmética exacta y el 100% no dependa del redondeo de punto flotante.
+export const rubricItems = pgTable('rubric_items', {
+  id: serial('id').primaryKey(),
+  rubricId: integer('rubric_id')
+    .notNull()
+    .references(() => rubrics.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  category: rubricCategoryEnum('category').notNull(),
+  percentageHundredths: integer('percentage_hundredths').notNull(),
+  position: integer('position').notNull(),
+});
+
 // ==========================================
 // RELACIONES DRIZZLE (Completas y Bidireccionales)
 // ==========================================
@@ -186,12 +258,43 @@ export const gruposRelations = relations(grupos, ({ one, many }) => ({
   inscripciones: many(inscripciones),
   evaluaciones: many(evaluaciones),
   asistencias: many(asistencias),
+  attendanceSessions: many(attendanceSessions),
+  rubric: one(rubrics, { fields: [grupos.id], references: [rubrics.groupId] }),
+}));
+
+export const attendanceSessionsRelations = relations(attendanceSessions, ({ one, many }) => ({
+  group: one(grupos, {
+    fields: [attendanceSessions.groupId],
+    references: [grupos.id],
+  }),
+  records: many(attendanceRecords),
+}));
+
+export const attendanceRecordsRelations = relations(attendanceRecords, ({ one }) => ({
+  session: one(attendanceSessions, {
+    fields: [attendanceRecords.sessionId],
+    references: [attendanceSessions.id],
+  }),
+  student: one(estudiantes, {
+    fields: [attendanceRecords.studentId],
+    references: [estudiantes.id],
+  }),
+}));
+
+export const rubricsRelations = relations(rubrics, ({ one, many }) => ({
+  group: one(grupos, { fields: [rubrics.groupId], references: [grupos.id] }),
+  items: many(rubricItems),
+}));
+
+export const rubricItemsRelations = relations(rubricItems, ({ one }) => ({
+  rubric: one(rubrics, { fields: [rubricItems.rubricId], references: [rubrics.id] }),
 }));
 
 export const estudiantesRelations = relations(estudiantes, ({ many }) => ({
   inscripciones: many(inscripciones),
   notas: many(notas),
   asistencias: many(asistencias),
+  attendanceRecords: many(attendanceRecords),
 }));
 
 export const tipoEstudianteRelations = relations(tipoEstudiante, ({ many }) => ({
