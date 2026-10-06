@@ -52,7 +52,13 @@ export const createCourse = async (data: CreateCourseInput) => {
 
 export type UpdateCourseResult =
   | { ok: true; curso: Course }
-  | { ok: false; reason: 'not_found' | 'preinscripcion_finalizada' };
+  | { ok: false; reason: 'not_found' | 'preinscripcion_finalizada' | 'periodo_vencido' };
+
+// Un curso deja de ser vigente cuando su periodo ya no es el actual. Desde ese
+// momento es de solo consulta: el listado lo saca de "Activos" y las escrituras
+// se rechazan, que es la misma regla que aplica la UI.
+const isPeriodoVencido = (periodo: string, targetPeriod: string) =>
+  periodo !== targetPeriod;
 
 export const updateCourse = async (
   id: number,
@@ -65,6 +71,10 @@ export const updateCourse = async (
   // Cerrada la preinscripcion el curso ya no se puede modificar.
   if (curso.preinscripcionFinalizada) {
     return { ok: false, reason: 'preinscripcion_finalizada' };
+  }
+
+  if (isPeriodoVencido(curso.periodo, getCurrentPeriod())) {
+    return { ok: false, reason: 'periodo_vencido' };
   }
 
   const [updated] = await db
@@ -83,11 +93,16 @@ export const getCourseById = async (id: number) => {
 
 export const deleteCourse = async (id: number) => {
   const [course] = await db
-    .select({ id: cursos.id })
+    .select({ id: cursos.id, periodo: cursos.periodo })
     .from(cursos)
     .where(eq(cursos.id, id));
 
   if (!course) return 'not_found' as const;
+
+  // Misma regla que en la edicion: un curso de un periodo anterior no se borra.
+  if (isPeriodoVencido(course.periodo, getCurrentPeriod())) {
+    return 'periodo_vencido' as const;
+  }
 
   const [group] = await db
     .select({ id: grupos.id })

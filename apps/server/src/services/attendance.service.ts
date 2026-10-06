@@ -29,6 +29,7 @@ import type { GroupOwnershipFailure } from './groupOwnership.js';
 export type AttendanceFailure =
   | GroupOwnershipFailure
   | 'teacher_not_found'
+  | 'group_finalized'
   | 'invalid_date'
   | 'future_date'
   | 'invalid_status'
@@ -57,6 +58,9 @@ interface AttendanceContext {
   courseName: string;
   instructorId: number;
   maxAbsences: number;
+  // El estado del grupo decide si la asistencia todavía admite cambios: una vez
+  // finalizado (HU #37) queda en solo lectura.
+  estado: string;
 }
 
 // Lecturas que corren tanto fuera de una transacción como dentro de ella.
@@ -74,6 +78,7 @@ const loadAttendanceContext = async (
       courseName: cursos.nombreCurso,
       instructorId: grupos.idInstructor,
       maxAbsences: cursos.maxFaltas,
+      estado: grupos.estado,
     })
     .from(grupos)
     .innerJoin(cursos, eq(grupos.idCurso, cursos.id))
@@ -287,11 +292,12 @@ const today = (): string => {
 
 export const getAttendanceForTeacher = async (
   groupId: number,
-  teacherId: number,
-  date: string
+  teacherId: number | null,
+  date: string,
+  isAdmin = false
 ): Promise<AttendanceResult> => {
   const context = await loadAttendanceContext(db, groupId);
-  const denied = resolveGroupOwnershipFailure(context, teacherId);
+  const denied = resolveGroupOwnershipFailure(context, teacherId, isAdmin);
 
   if (denied) return { ok: false, reason: denied };
 
@@ -312,8 +318,9 @@ export const getAttendanceForTeacher = async (
 // ON CONFLICT resuelve dos guardadas simultáneas de la misma jornada.
 export const saveAttendanceForTeacher = async (
   groupId: number,
-  teacherId: number,
-  data: UpsertAttendance
+  teacherId: number | null,
+  data: UpsertAttendance,
+  isAdmin = false
 ): Promise<AttendanceResult> => {
   const dateFailure = resolveAttendanceDateFailure(data.date, today());
 
@@ -321,9 +328,13 @@ export const saveAttendanceForTeacher = async (
 
   return db.transaction(async (tx) => {
     const context = await loadAttendanceContext(tx, groupId);
-    const denied = resolveGroupOwnershipFailure(context, teacherId);
+    const denied = resolveGroupOwnershipFailure(context, teacherId, isAdmin);
 
     if (denied) return { ok: false, reason: denied };
+
+    // Un grupo finalizado (HU #37) conserva sus asistencias intactas: se puede
+    // consultar, pero no se vuelve a escribir sobre ellas.
+    if (context!.estado === 'finalizado') return { ok: false, reason: 'group_finalized' };
 
     const enrolled = await loadEnrolledStudents(tx, groupId);
 

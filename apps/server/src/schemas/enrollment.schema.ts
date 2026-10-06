@@ -10,7 +10,8 @@ export const createEnrollmentSchema = z.object({
   fotocopiaCI: z.boolean(),
   idTipoEst: z.number().int().positive(),
   tipoPago: z.enum(PAYMENT_TYPES),
-  observaciones: z.string().trim().optional(),
+  // La columna es nullable en la BD: se acepta null para dejarla vacía.
+  observaciones: z.string().trim().nullish(),
 });
 export const updateEnrollmentSchema = createEnrollmentSchema.partial();
 

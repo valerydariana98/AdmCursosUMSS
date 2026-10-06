@@ -3,6 +3,7 @@ import {
   createInstructor,
   deleteInstructor,
   getInstructor,
+  getInstructorGroups,
   getInstructors,
   updateInstructor,
 } from '../controllers/instructors.controller.js';
@@ -14,6 +15,7 @@ const router = Router();
 
 router.get('/', validateQuery(instructorsQuerySchema), getInstructors);
 router.get('/:id', validateParams(idParamsSchema), getInstructor);
+router.get('/:id/grupos', validateParams(idParamsSchema), getInstructorGroups);
 router.post('/', validate(createInstructorSchema), createInstructor);
 router.put(
   '/:id',

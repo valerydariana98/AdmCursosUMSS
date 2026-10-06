@@ -166,10 +166,11 @@ export const resolveRemovalGate = (
 // arranca vacío en lugar de fallar.
 export const getRubricForTeacher = async (
   groupId: number,
-  teacherId: number
+  teacherId: number | null,
+  isAdmin = false
 ): Promise<RubricResult> => {
   const context = await loadRubricContext(db, groupId);
-  const denied = resolveGroupOwnershipFailure(context, teacherId);
+  const denied = resolveGroupOwnershipFailure(context, teacherId, isAdmin);
 
   if (denied) return { ok: false, reason: denied };
 
@@ -201,11 +202,12 @@ export const getRubricForTeacher = async (
 // ajeno, para no revelar la existencia de rúbricas de otros docentes.
 export const getRubricItemRemovalImpact = async (
   groupId: number,
-  teacherId: number,
-  itemId: number
+  teacherId: number | null,
+  itemId: number,
+  isAdmin = false
 ): Promise<RubricItemRemovalResult> => {
   const context = await loadRubricContext(db, groupId);
-  const denied = resolveGroupOwnershipFailure(context, teacherId);
+  const denied = resolveGroupOwnershipFailure(context, teacherId, isAdmin);
 
   if (denied) return { ok: false, reason: denied };
 
@@ -249,8 +251,9 @@ export const getRubricItemRemovalImpact = async (
 // si el payload no cuadra a 100% no se escribe nada.
 export const saveRubricForTeacher = async (
   groupId: number,
-  teacherId: number,
-  data: UpsertRubricInput
+  teacherId: number | null,
+  data: UpsertRubricInput,
+  isAdmin = false
 ): Promise<RubricResult> => {
   const validation = validateRubric(data.items);
 
@@ -258,7 +261,7 @@ export const saveRubricForTeacher = async (
 
   return db.transaction(async (tx) => {
     const context = await loadRubricContext(tx, groupId);
-    const denied = resolveGroupOwnershipFailure(context, teacherId);
+    const denied = resolveGroupOwnershipFailure(context, teacherId, isAdmin);
 
     if (denied) return { ok: false, reason: denied };
 

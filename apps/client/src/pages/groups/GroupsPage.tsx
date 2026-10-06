@@ -75,6 +75,7 @@ const GroupsPage = () => {
 
   const [grupoToToggle, setGrupoToToggle] = useState<GroupListItem | null>(null);
   const [savingEstado, setSavingEstado] = useState(false);
+  const [accionEstado, setAccionEstado] = useState<'habilitar' | 'inhabilitar' | null>(null);
   const [estadoError, setEstadoError] = useState<string | null>(null);
 
   const [cursoToFinalizar, setCursoToFinalizar] = useState<Course | null>(null);
@@ -130,6 +131,7 @@ const GroupsPage = () => {
     const estado: GroupStatus = habilitado ? 'habilitado' : 'inhabilitado';
 
     setSavingEstado(true);
+    setAccionEstado(habilitado ? 'habilitar' : 'inhabilitar');
     setEstadoError(null);
 
     try {
@@ -142,6 +144,7 @@ const GroupsPage = () => {
       );
     } finally {
       setSavingEstado(false);
+      setAccionEstado(null);
     }
   };
 
@@ -358,24 +361,49 @@ const GroupsPage = () => {
 
       <Modal
         isOpen={grupoToToggle !== null}
-        title={grupoToToggle?.estado === 'inhabilitado' ? 'Habilitar grupo' : 'Inhabilitar grupo'}
+        title={
+          grupoToToggle?.estado === 'preinscripcion'
+            ? 'Cambiar estado del grupo'
+            : grupoToToggle?.estado !== 'habilitado'
+              ? 'Habilitar grupo'
+              : 'Inhabilitar grupo'
+        }
         onClose={closeEstadoModal}
         footer={
           <>
             <Button variant="secondary" onClick={closeEstadoModal} disabled={savingEstado}>
               Cancelar
             </Button>
-            <Button
-              variant={grupoToToggle?.estado === 'inhabilitado' ? 'primary' : 'danger'}
-              onClick={() => handleEstadoChange(grupoToToggle?.estado !== 'inhabilitado')}
-              disabled={savingEstado}
-            >
-              {savingEstado
-                ? 'Guardando...'
-                : grupoToToggle?.estado === 'inhabilitado'
-                  ? 'Habilitar'
-                  : 'Inhabilitar'}
-            </Button>
+            {grupoToToggle?.estado === 'preinscripcion' ? (
+              <>
+                <Button
+                  variant="danger"
+                  onClick={() => handleEstadoChange(false)}
+                  disabled={savingEstado}
+                >
+                  {accionEstado === 'inhabilitar' ? 'Guardando...' : 'Inhabilitar'}
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => handleEstadoChange(true)}
+                  disabled={savingEstado}
+                >
+                  {accionEstado === 'habilitar' ? 'Guardando...' : 'Habilitar'}
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant={grupoToToggle?.estado !== 'habilitado' ? 'primary' : 'danger'}
+                onClick={() => handleEstadoChange(grupoToToggle?.estado !== 'habilitado')}
+                disabled={savingEstado}
+              >
+                {savingEstado
+                  ? 'Guardando...'
+                  : grupoToToggle?.estado !== 'habilitado'
+                    ? 'Habilitar'
+                    : 'Inhabilitar'}
+              </Button>
+            )}
           </>
         }
       >
@@ -383,22 +411,54 @@ const GroupsPage = () => {
           <AlertInfo type="warning" title={estadoError} />
         ) : (
           <div className="space-y-4">
-            <Toggle
-              label="Grupo habilitado"
-              description={`Grupo ${grupoToToggle?.numGrupo}`}
-              checked={grupoToToggle?.estado === 'habilitado'}
-              onChange={handleEstadoChange}
-              disabled={savingEstado}
-            />
-            <AlertInfo
-              type="warning"
-              title={
-                grupoToToggle?.estado === 'inhabilitado'
-                  ? 'Al habilitar el grupo los estudiantes podrán verlo e inscribirse en el'
-                  : 'Al inhabilitar el grupo los estudiantes no podrán asumir más inscripciones'
-              }
-              subtitle="Esta acción no se puede deshacer desde esta vista"
-            />
+            {grupoToToggle && grupoToToggle.estado === 'preinscripcion' ? (
+              <>
+                <p className="text-sm text-gray-600">
+                  El grupo está en{' '}
+                  <span className="font-semibold text-gray-900">preinscripción</span>. Elige con qué
+                  estado continúa:
+                </p>
+                <AlertInfo
+                  type="info"
+                  title="Habilitar: queda confirmado para dictarse y ya no admitirá nuevos inscritos"
+                />
+                <AlertInfo
+                  type="warning"
+                  title="Inhabilitar: no se dictará y ya no admitirá nuevos inscritos"
+                  subtitle="Los estudiantes ya inscritos deben reasignarse a otro grupo o eliminarse"
+                />
+                {grupoToToggle.inscritos < grupoToToggle.minimEst && (
+                  <AlertInfo
+                    type="warning"
+                    title={`Este grupo tiene ${grupoToToggle.inscritos} de ${grupoToToggle.minimEst} inscritos: por debajo del mínimo`}
+                    subtitle="Si lo habilitas igualmente, quedará como habilitado manualmente al finalizar la preinscripción"
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                <Toggle
+                  label="Grupo habilitado"
+                  description={`Grupo ${grupoToToggle?.numGrupo}`}
+                  checked={grupoToToggle?.estado === 'habilitado'}
+                  onChange={handleEstadoChange}
+                  disabled={savingEstado}
+                />
+                <AlertInfo
+                  type="warning"
+                  title={
+                    grupoToToggle?.estado !== 'habilitado'
+                      ? 'Al habilitar el grupo queda confirmado para dictarse y ya no admitirá nuevos inscritos'
+                      : 'Al inhabilitar el grupo no se dictará y ya no admitirá nuevos inscritos'
+                  }
+                  subtitle={
+                    grupoToToggle?.estado !== 'habilitado'
+                      ? 'Podrás volver a cambiar el estado mientras la preinscripción del curso siga abierta'
+                      : 'Los estudiantes ya inscritos deben reasignarse a otro grupo o eliminarse'
+                  }
+                />
+              </>
+            )}
           </div>
         )}
       </Modal>

@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, max, sql, type SQL } from 'drizzle-orm';
+import { and, count, eq, max, sql, type SQL } from 'drizzle-orm';
 import type { Group, GroupListItem, GroupWithCourse } from 'shared';
 import { db } from '../db/index.js';
 import { cursos, grupos, instructores, inscripciones, rubrics } from '../db/schema.js';
@@ -110,46 +110,7 @@ const resolveUniqueViolation = (error: unknown): CreateGroupFailure | null => {
   return null;
 };
 
-// Un grupo en preinscripcion pasa a habilitado cuando alcanza el minimo de
-// inscritos. Se evalua al listar para que el estado quede al dia sin depender del
-// endpoint de inscripcion, que todavia no existe; el modulo de inscripciones puede
-// llamar a esta misma funcion tras crear una inscripcion para aplicarlo al instante.
-const habilitarGruposQueCumplenMinimo = async (idCurso?: number) => {
-  const [curso] = await db
-    .select({ preinscripcionFinalizada: cursos.preinscripcionFinalizada })
-    .from(cursos)
-    .where(eq(cursos.id, idCurso ?? -1));
-
-  if (idCurso !== undefined && curso?.preinscripcionFinalizada) return;
-
-  const condiciones: SQL[] = [eq(grupos.estado, 'preinscripcion')];
-  if (idCurso !== undefined) condiciones.push(eq(grupos.idCurso, idCurso));
-
-  const candidatos = await db
-    .select({ id: grupos.id, minimEst: grupos.minimEst, inscritos: count(inscripciones.id) })
-    .from(grupos)
-    .leftJoin(inscripciones, eq(grupos.id, inscripciones.idGrupo))
-    .where(and(...condiciones))
-    .groupBy(grupos.id);
-
-  const listos = candidatos.filter((grupo) => Number(grupo.inscritos) >= grupo.minimEst);
-
-  if (listos.length === 0) return;
-
-  await db
-    .update(grupos)
-    .set({ estado: 'habilitado' })
-    .where(
-      inArray(
-        grupos.id,
-        listos.map((grupo) => grupo.id)
-      )
-    );
-};
-
 export const listGroupsByCourse = async (idCurso?: number): Promise<GroupListItem[]> => {
-  await habilitarGruposQueCumplenMinimo(idCurso);
-
   const condiciones: SQL[] = [];
   if (idCurso !== undefined) condiciones.push(eq(grupos.idCurso, idCurso));
 

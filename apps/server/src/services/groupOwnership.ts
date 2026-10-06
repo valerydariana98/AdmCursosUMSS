@@ -12,12 +12,17 @@ export interface GroupOwnershipContext {
   instructorId: number;
 }
 
+// `isAdmin` existe porque el ADMIN no tiene fila en `instructores`: no puede ser
+// el dueño de ningún grupo, pero sí administrarlos todos, igual que hace en la
+// vista de detalle. Los docentes siguen entrando únicamente a los suyos.
 export const resolveGroupOwnershipFailure = (
   context: GroupOwnershipContext | null,
-  teacherId: number
+  teacherId: number | null,
+  isAdmin = false
 ): GroupOwnershipFailure | null => {
   if (!context) return 'group_not_found';
-  if (context.instructorId !== teacherId) return 'forbidden';
+  if (isAdmin) return null;
+  if (teacherId === null || context.instructorId !== teacherId) return 'forbidden';
 
   return null;
 };

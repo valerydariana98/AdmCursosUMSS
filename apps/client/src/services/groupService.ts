@@ -1,5 +1,6 @@
 // apps/client/src/services/groupService.ts
 import { api } from './api';
+import type { InstructorGroup } from 'shared';
 import type {
   CreateGroupDTO,
   Group,
@@ -27,5 +28,8 @@ export const groupService = {
   },
   cambiarEstado(id: number, estado: GroupStatus): Promise<Group> {
     return api.patch<Group>(`/api/grupos/${id}/estado`, { estado });
+  },
+  listByInstructor(idInstructor: number): Promise<InstructorGroup[]> {
+    return api.get<InstructorGroup[]>(`/api/instructores/${idInstructor}/grupos`);
   },
 };

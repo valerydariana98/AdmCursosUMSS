@@ -3,8 +3,14 @@ import type { Group, GroupListItem, GroupStatus, Modality } from 'shared';
 
 export type { Group, GroupListItem, GroupStatus };
 
-// El administrador solo alterna entre estos dos estados desde la lista.
-export const TOGGLEABLE_STATES: GroupStatus[] = ['habilitado', 'inhabilitado'];
+// Estados desde los que la lista permite cambiar el grupo.
+//
+// `preinscripcion` tiene que estar: es el estado con el que nace un grupo y,
+// si no alcanza su mínimo de inscritos, nunca sale de ahí solo. Sin esta entrada
+// el botón quedaba deshabilitado y la preinscripción del curso no se podía
+// finalizar nunca (HU #26), porque la validación exige que ningún grupo siga
+// en preinscripción.
+export const TOGGLEABLE_STATES: GroupStatus[] = ['preinscripcion', 'habilitado', 'inhabilitado'];
 
 export type CreateGroupDTO = Omit<Group, 'id' | 'numGrupo' | 'estado'>;
 export type UpdateGroupDTO = Omit<Group, 'id' | 'numGrupo' | 'estado' | 'idCurso'>;

@@ -1,6 +1,6 @@
 // apps/server/src/controllers/attendance.controller.ts
 import type { NextFunction, Request, Response } from 'express';
-import { getCurrentTeacher } from '../auth/currentTeacher.js';
+import { getCurrentTeacherForUser } from '../auth/currentTeacher.js';
 import {
   getAttendanceForTeacher,
   saveAttendanceForTeacher,
@@ -11,6 +11,7 @@ const FAILURE_STATUS: Record<AttendanceFailure, number> = {
   teacher_not_found: 401,
   forbidden: 403,
   group_not_found: 404,
+  group_finalized: 409,
   no_enrolled_students: 400,
   invalid_date: 400,
   future_date: 400,
@@ -22,6 +23,7 @@ const FAILURE_MESSAGE: Record<AttendanceFailure, string> = {
   teacher_not_found: 'No hay un docente autenticado',
   forbidden: 'El grupo seleccionado no pertenece al docente autenticado',
   group_not_found: 'Grupo not found',
+  group_finalized: 'El grupo ya fue finalizado: su asistencia no se puede modificar',
   no_enrolled_students: 'El grupo no tiene estudiantes inscritos para registrar asistencia',
   invalid_date: 'La fecha de la jornada no es válida',
   future_date: 'No se puede registrar asistencia de una jornada futura',
@@ -29,12 +31,27 @@ const FAILURE_MESSAGE: Record<AttendanceFailure, string> = {
   unknown_student: 'Solo se puede registrar asistencia de estudiantes inscritos en el grupo',
 };
 
-// El docente autenticado se resuelve una sola vez por request; con login real el
-// cuerpo pasa a leerse del token sin tocar el resto del controller.
-const requireCurrentTeacher = async (res: Response) => {
-  // TODO(auth): teacherId viene de la sesión simulada; con login real se toma
-  // del token y esta llamada deja de ser necesaria en el controller.
-  const teacher = await getCurrentTeacher();
+// Quién registra la asistencia: el docente del token, o el ADMIN que administra
+// todos los grupos. El docente autenticado sale del token, no de una
+// configuración.
+interface GroupActor {
+  teacherId: number | null;
+  isAdmin: boolean;
+}
+
+const requireActor = async (req: Request, res: Response): Promise<GroupActor | null> => {
+  const user = req.user;
+
+  if (!user) {
+    res.status(FAILURE_STATUS.teacher_not_found).json({
+      message: FAILURE_MESSAGE.teacher_not_found,
+    });
+    return null;
+  }
+
+  if (user.rol === 'ADMIN') return { teacherId: null, isAdmin: true };
+
+  const teacher = await getCurrentTeacherForUser(user.id);
 
   if (!teacher) {
     res.status(FAILURE_STATUS.teacher_not_found).json({
@@ -43,17 +60,17 @@ const requireCurrentTeacher = async (res: Response) => {
     return null;
   }
 
-  return teacher;
+  return { teacherId: teacher.id, isAdmin: false };
 };
 
 export const getAttendance = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const groupId = Number(req.params.id);
-    const teacher = await requireCurrentTeacher(res);
+    const actor = await requireActor(req, res);
 
-    if (!teacher) return;
+    if (!actor) return;
 
-    const result = await getAttendanceForTeacher(groupId, teacher.id, req.query.date as string);
+    const result = await getAttendanceForTeacher(groupId, actor.teacherId, req.query.date as string, actor.isAdmin);
 
     if (!result.ok) {
       res.status(FAILURE_STATUS[result.reason]).json({ message: FAILURE_MESSAGE[result.reason] });
@@ -69,11 +86,11 @@ export const getAttendance = async (req: Request, res: Response, next: NextFunct
 export const saveAttendance = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const groupId = Number(req.params.id);
-    const teacher = await requireCurrentTeacher(res);
+    const actor = await requireActor(req, res);
 
-    if (!teacher) return;
+    if (!actor) return;
 
-    const result = await saveAttendanceForTeacher(groupId, teacher.id, req.body);
+    const result = await saveAttendanceForTeacher(groupId, actor.teacherId, req.body, actor.isAdmin);
 
     if (!result.ok) {
       res.status(FAILURE_STATUS[result.reason]).json({ message: FAILURE_MESSAGE[result.reason] });

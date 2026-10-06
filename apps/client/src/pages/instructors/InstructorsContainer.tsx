@@ -5,6 +5,7 @@ import { ApiError } from '../../services/api';
 import type { Instructor } from '../../types/instructor';
 import AlertInfo from '../../components/AlertInfo';
 import Button from '../../components/Button';
+import InstructorGroupsModal from '../../components/InstructorGroupsModal';
 import Modal from '../../components/Modal';
 import InstructorsListPage from './InstructorsListPage';
 import InstructorFormPage from './InstructorFormPage';
@@ -18,6 +19,9 @@ export default function InstructorsContainer() {
   const [instructorToDelete, setInstructorToDelete] = useState<Instructor | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Docente cuyos grupos asignados se listan en el modal (HU #39).
+  const [instructorWithGroups, setInstructorWithGroups] = useState<Instructor | null>(null);
 
   const {
     instructors,
@@ -108,6 +112,7 @@ export default function InstructorsContainer() {
           setDeleteError(null);
           setInstructorToDelete(inst);
         }}
+        onViewGroups={(inst) => setInstructorWithGroups(inst)}
       />
 
       <Modal
@@ -135,6 +140,16 @@ export default function InstructorsContainer() {
           ? Esta acción no se puede deshacer.
         </p>
       </Modal>
+
+      <InstructorGroupsModal
+        instructorId={instructorWithGroups?.id ?? null}
+        instructorNombre={
+          instructorWithGroups
+            ? `${instructorWithGroups.nombres} ${instructorWithGroups.apPaterno}`
+            : ''
+        }
+        onClose={() => setInstructorWithGroups(null)}
+      />
     </>
   );
 }

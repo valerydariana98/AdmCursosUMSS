@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import { getCurrentTeacher } from '../auth/currentTeacher.js';
+import { getCurrentTeacherForUser } from '../auth/currentTeacher.js';
 import {
   getRubricForTeacher,
   getRubricItemRemovalImpact,
@@ -28,12 +28,26 @@ const FAILURE_MESSAGE: Record<RubricFailure, string> = {
     'Hay notas registradas en las evaluaciones que querés eliminar',
 };
 
-// El docente autenticado se resuelve una sola vez por request; con login real el
-// cuerpo pasa a leerse del token sin tocar el resto del controller.
-const requireCurrentTeacher = async (res: Response) => {
-  // TODO(auth): teacherId viene de la sesión simulada; con login real se toma
-  // del token y esta llamada deja de ser necesaria en el controller.
-  const teacher = await getCurrentTeacher();
+// Quién pide el cambio: el docente del token, o el ADMIN que administra todos
+// los grupos. El docente autenticado sale del token, no de una configuración.
+interface GroupActor {
+  teacherId: number | null;
+  isAdmin: boolean;
+}
+
+const requireActor = async (req: Request, res: Response): Promise<GroupActor | null> => {
+  const user = req.user;
+
+  if (!user) {
+    res.status(FAILURE_STATUS.teacher_not_found).json({
+      message: FAILURE_MESSAGE.teacher_not_found,
+    });
+    return null;
+  }
+
+  if (user.rol === 'ADMIN') return { teacherId: null, isAdmin: true };
+
+  const teacher = await getCurrentTeacherForUser(user.id);
 
   if (!teacher) {
     res.status(FAILURE_STATUS.teacher_not_found).json({
@@ -42,17 +56,17 @@ const requireCurrentTeacher = async (res: Response) => {
     return null;
   }
 
-  return teacher;
+  return { teacherId: teacher.id, isAdmin: false };
 };
 
 export const getRubric = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const groupId = Number(req.params.id);
-    const teacher = await requireCurrentTeacher(res);
+    const actor = await requireActor(req, res);
 
-    if (!teacher) return;
+    if (!actor) return;
 
-    const result = await getRubricForTeacher(groupId, teacher.id);
+    const result = await getRubricForTeacher(groupId, actor.teacherId, actor.isAdmin);
 
     if (!result.ok) {
       res.status(FAILURE_STATUS[result.reason]).json({
@@ -70,11 +84,11 @@ export const getRubric = async (req: Request, res: Response, next: NextFunction)
 export const saveRubric = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const groupId = Number(req.params.id);
-    const teacher = await requireCurrentTeacher(res);
+    const actor = await requireActor(req, res);
 
-    if (!teacher) return;
+    if (!actor) return;
 
-    const result = await saveRubricForTeacher(groupId, teacher.id, req.body);
+    const result = await saveRubricForTeacher(groupId, actor.teacherId, req.body, actor.isAdmin);
 
     if (!result.ok) {
       res.status(FAILURE_STATUS[result.reason]).json({
@@ -100,11 +114,11 @@ export const getRubricItemRemoval = async (
   try {
     const groupId = Number(req.params.id);
     const itemId = Number(req.params.itemId);
-    const teacher = await requireCurrentTeacher(res);
+    const actor = await requireActor(req, res);
 
-    if (!teacher) return;
+    if (!actor) return;
 
-    const result = await getRubricItemRemovalImpact(groupId, teacher.id, itemId);
+    const result = await getRubricItemRemovalImpact(groupId, actor.teacherId, itemId, actor.isAdmin);
 
     if (!result.ok) {
       res.status(FAILURE_STATUS[result.reason]).json({

@@ -7,12 +7,21 @@ interface ModalProps {
   children?: React.ReactNode;
   footer?: React.ReactNode;
   onClose: () => void;
+  // 'md' es el tamaño por defecto para confirmaciones cortas. 'lg' va en los
+  // modales con tablas anchas, donde en 448px las columnas se apretujan y
+  // aparece una barra de scroll horizontal.
+  size?: 'md' | 'lg';
 }
+
+const WIDTH: Record<NonNullable<ModalProps['size']>, string> = {
+  md: 'max-w-md',
+  lg: 'max-w-4xl',
+};
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-const Modal: React.FC<ModalProps> = ({ isOpen, title, children, footer, onClose }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, title, children, footer, onClose, size = 'md' }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -74,7 +83,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, title, children, footer, onClose 
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden focus:outline-none"
+        className={`w-full ${WIDTH[size]} bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden focus:outline-none`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="px-6 py-4 border-b border-gray-100">
