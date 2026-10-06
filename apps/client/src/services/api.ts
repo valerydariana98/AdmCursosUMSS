@@ -28,23 +28,28 @@ export interface ApiFieldError {
 export class ApiError extends Error {
   status: number;
   errors: ApiFieldError[];
+  // Datos extra que el servidor adjunta al error, como el conteo de notas
+  // afectadas de un 409. Se leen con una comprobación de tipo en quien lo consume.
+  meta: unknown;
 
-  constructor(status: number, message: string, errors: ApiFieldError[] = []) {
+  constructor(status: number, message: string, errors: ApiFieldError[] = [], meta: unknown = null) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.errors = errors;
+    this.meta = meta;
   }
 }
 
 // Interceptor para transformar errores de Axios a ApiError
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ message?: string; errors?: ApiFieldError[] }>) => {
+  (error: AxiosError<{ message?: string; errors?: ApiFieldError[]; meta?: unknown }>) => {
     if (error.response) {
       const status = error.response.status;
       const message = error.response.data?.message || `Error ${status}: Falló la petición`;
       const errors = error.response.data?.errors || [];
+      const meta = error.response.data?.meta ?? null;
 
       // Token vencido o ausente: la sesión ya no sirve, se limpia y se vuelve
       // al login. Se exceptúa el propio login para no redirigir en bucle.
@@ -56,7 +61,7 @@ axiosInstance.interceptors.response.use(
         }
       }
 
-      return Promise.reject(new ApiError(status, message, errors));
+      return Promise.reject(new ApiError(status, message, errors, meta));
     }
     return Promise.reject(new ApiError(500, error.message || 'Error de conexión con el servidor'));
   }

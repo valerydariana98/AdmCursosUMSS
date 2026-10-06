@@ -1,7 +1,7 @@
 import { and, count, eq, inArray, max, sql, type SQL } from 'drizzle-orm';
 import type { Group, GroupListItem, GroupWithCourse } from 'shared';
 import { db } from '../db/index.js';
-import { cursos, grupos, instructores, inscripciones } from '../db/schema.js';
+import { cursos, grupos, instructores, inscripciones, rubrics } from '../db/schema.js';
 import type {
   ChangeGroupStatusInput,
   CreateGroupInput,
@@ -168,6 +168,9 @@ export const listGroupsByCourse = async (idCurso?: number): Promise<GroupListIte
       estado: grupos.estado,
       instructorNombre: sql<string>`${instructores.nombres} || ' ' || ${instructores.apPaterno}`,
       inscritos: count(inscripciones.id),
+      // Un EXISTS por grupo alcanza para que la vista de gestión diga "Editar
+      // rúbrica" o "Configurar rúbrica" sin una consulta extra por grupo.
+      hasRubric: sql<boolean>`exists (select 1 from ${rubrics} where ${rubrics.groupId} = ${grupos.id})`,
     })
     .from(grupos)
     .innerJoin(instructores, eq(grupos.idInstructor, instructores.id))

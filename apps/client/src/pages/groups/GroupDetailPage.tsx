@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   GRUPOS_DIAS_LABEL,
   type GroupDetail,
@@ -25,14 +25,15 @@ const formatDate = (iso: string) => {
     : d.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
-// Módulos previstos en la HU #67. Los que aún no tienen implementación propia
-// se muestran igual como punto de entrada, pero sin acción.
+// Módulos previstos en la HU #67. `ruta` es el destino dentro de la página del
+// grupo: cuando existe, la tarjeta navega; si no, queda como aviso de lo que
+// todavía no está implementado.
 const MODULOS = [
-  { key: 'rubrica', label: 'Rúbrica de evaluación', desc: 'Crear y editar la ponderación', listo: false },
-  { key: 'asistencia', label: 'Asistencia', desc: 'Registro por jornadas', listo: false },
-  { key: 'notas', label: 'Notas', desc: 'Registrar y editar calificaciones', listo: false },
-  { key: 'reporte', label: 'Reporte académico', desc: 'Notas y estado de certificados', listo: false },
-  { key: 'finalizar', label: 'Finalizar curso', desc: 'Cerrar el proceso académico', listo: false },
+  { key: 'rubrica', label: 'Rúbrica de evaluación', desc: 'Crear y editar la ponderación', ruta: '/rubrica' },
+  { key: 'asistencia', label: 'Asistencia', desc: 'Registro por jornadas', ruta: '/asistencia' },
+  { key: 'notas', label: 'Notas', desc: 'Registrar y editar calificaciones', ruta: null },
+  { key: 'reporte', label: 'Reporte académico', desc: 'Notas y estado de certificados', ruta: null },
+  { key: 'finalizar', label: 'Finalizar curso', desc: 'Cerrar el proceso académico', ruta: null },
 ] as const;
 
 export default function GroupDetailPage() {
@@ -174,18 +175,41 @@ export default function GroupDetailPage() {
           Gestión académica
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {MODULOS.map((m) => (
-            <div
-              key={m.key}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col"
-            >
-              <h3 className="font-semibold text-gray-800 text-sm">{m.label}</h3>
-              <p className="text-xs text-gray-500 mt-1 flex-1">{m.desc}</p>
-              <span className="mt-4 inline-flex w-fit text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-100 text-gray-400">
-                Próximamente
-              </span>
-            </div>
-          ))}
+          {MODULOS.map((m) => {
+            // Solo un grupo habilitado abre sus módulos: en preinscripción siguen
+            // inaccesibles, como avisa el mensaje de abajo.
+            const destino =
+              m.ruta && activo
+                ? `/cursos/${grupo.cursoId}/grupos/${grupo.id}${m.ruta}`
+                : null;
+
+            const clases =
+              'bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col';
+
+            const tarjeta = (
+              <>
+                <h3 className="font-semibold text-gray-800 text-sm">{m.label}</h3>
+                <p className="text-xs text-gray-500 mt-1 flex-1">{m.desc}</p>
+                <span
+                  className={`mt-4 inline-flex w-fit text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full ${
+                    destino ? 'bg-[#1D3557]/10 text-[#1D3557]' : 'bg-gray-100 text-gray-400'
+                  }`}
+                >
+                  {destino ? 'Abrir' : 'Próximamente'}
+                </span>
+              </>
+            );
+
+            return destino ? (
+              <Link key={m.key} to={destino} className={clases}>
+                {tarjeta}
+              </Link>
+            ) : (
+              <div key={m.key} className={clases}>
+                {tarjeta}
+              </div>
+            );
+          })}
         </div>
       </section>
 

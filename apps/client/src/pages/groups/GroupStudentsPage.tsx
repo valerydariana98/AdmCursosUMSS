@@ -300,9 +300,19 @@ const GroupStudentsPage = () => {
           </p>
         </div>
         {grupoActual && (
-          <Link to={`/groups/${grupoActual.id}/enroll`}>
-            <Button variant="primary">+ Inscribir estudiante</Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Link to={`/cursos/${cursoId}/grupos/${grupoActual.id}/asistencia`}>
+              <Button variant="secondary">Asistencia</Button>
+            </Link>
+            <Link to={`/cursos/${cursoId}/grupos/${grupoActual.id}/rubrica`}>
+              <Button variant="secondary">
+                {grupoActual.hasRubric ? 'Editar rúbrica' : 'Configurar rúbrica'}
+              </Button>
+            </Link>
+            <Link to={`/groups/${grupoActual.id}/enroll`}>
+              <Button variant="primary">+ Inscribir estudiante</Button>
+            </Link>
+          </div>
         )}
       </div>
 
