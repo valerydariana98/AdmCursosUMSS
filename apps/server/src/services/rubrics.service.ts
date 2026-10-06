@@ -1,6 +1,5 @@
 import { and, count, eq, inArray } from 'drizzle-orm';
 import {
-  RUBRIC_CATEGORY_BY_EVALUATION_TYPE,
   RUBRIC_CATEGORIES,
   buildRubricRemovalCheck,
   fromPercentageHundredths,
@@ -22,7 +21,6 @@ import {
   notas,
   rubricItems,
   rubrics,
-  tipos,
 } from '../db/schema.js';
 import type { UpsertRubricInput } from '../schemas/rubric.schema.js';
 import { resolveGroupOwnershipFailure } from './groupOwnership.js';
@@ -112,30 +110,30 @@ const loadRubricItems = async (
   }));
 };
 
-// Las notas del proyecto viven en `notas` -> `evaluaciones` -> `tipos`, así que la
-// única forma de saber si un ítem de la rúbrica ya tiene notas registradas es
-// contar las del grupo cuya evaluación es del mismo tipo que la categoría del ítem
-// (`asistencia`/`trabajo`/`eval`). El conteo se agrupa por tipo para no repetir la
-// misma consulta por ítem.
+// Las notas del proyecto viven en `notas` -> `evaluaciones` -> `rubric_items`, y
+// la categoría sale del propio ítem de la rúbrica: contar por `evaluaciones.idTipo`
+// desfasaría el conteo la vez que el docente cambie la categoría de un ítem que
+// ya tiene notas, y eso podría mostrar un "0 notas afectadas" que no es cierto.
 const loadGradeCountsByCategory = async (
   executor: RubricExecutor,
   groupId: number
 ): Promise<Record<RubricCategory, number>> => {
   const rows = await executor
-    .select({ tipo: tipos.tipo, total: count(notas.id) })
+    .select({ category: rubricItems.category, total: count(notas.id) })
     .from(notas)
     .innerJoin(evaluaciones, eq(notas.idEvaluacion, evaluaciones.id))
-    .innerJoin(tipos, eq(evaluaciones.idTipo, tipos.id))
-    .where(eq(evaluaciones.idGrupo, groupId))
-    .groupBy(tipos.tipo);
+    .innerJoin(rubricItems, eq(evaluaciones.idRubricItem, rubricItems.id))
+    .innerJoin(rubrics, eq(rubricItems.rubricId, rubrics.id))
+    .where(eq(rubrics.groupId, groupId))
+    .groupBy(rubricItems.category);
 
   const counts = Object.fromEntries(
     RUBRIC_CATEGORIES.map((category) => [category, 0])
   ) as Record<RubricCategory, number>;
 
   for (const row of rows) {
-    const category = RUBRIC_CATEGORY_BY_EVALUATION_TYPE[row.tipo];
-    if (category) counts[category] = Number(row.total);
+    const category = row.category as RubricCategory;
+    if (category in counts) counts[category] = Number(row.total);
   }
 
   return counts;

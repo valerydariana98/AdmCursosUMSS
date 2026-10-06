@@ -22,7 +22,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   user = { name: 'Mario Rocha', role: 'Administrador', initials: 'MR' },
 }) => {
   return (
-    <aside className="w-64 h-screen bg-[#0C103C] text-white flex flex-col justify-between p-4 shrink-0 select-none font-sans">
+    <aside className="w-64 h-screen bg-[#0C103C] text-white flex flex-col justify-between p-4 shrink-0 select-none font-sans no-print">
       <div>
         {/* LOGO SUPERIOR */}
         <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-white/10 pb-5">

@@ -6,6 +6,7 @@ import instructorsRouter from './routes/instructors.routes.js';
 import groupsRouter from './routes/groups.routes.js';
 import enrollmentsRouter from './routes/enrollments.routes.js';
 import rubricsRouter from './routes/rubrics.routes.js';
+import gradesRouter from './routes/grades.routes.js';
 import attendanceRouter from './routes/attendance.routes.js';
 import studentTypesRouter from './routes/studentTypes.routes.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
@@ -29,6 +30,7 @@ app.use('/api/instructores', instructorsRouter);
 app.use('/api/grupos', groupsRouter);
 app.use('/api/grupos', enrollmentsRouter);
 app.use('/api/grupos', rubricsRouter);
+app.use('/api/grupos', gradesRouter);
 app.use('/api/grupos', attendanceRouter);
 app.use('/api/student-types', studentTypesRouter);
 

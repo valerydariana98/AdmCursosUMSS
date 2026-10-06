@@ -8,6 +8,7 @@ import CoursesListPage from "./pages/courses/CoursesListPage";
 import GroupCreatePage from "./pages/groups/GroupCreatePage";
 import GroupEditPage from "./pages/groups/GroupEditPage";
 import GroupAttendancePage from "./pages/groups/GroupAttendancePage";
+import GroupGradesPage from "./pages/groups/GroupGradesPage";
 import GroupRubricPage from "./pages/groups/GroupRubricPage";
 import GroupsPage from "./pages/groups/GroupsPage";
 import GroupsListPage from "./pages/groups/GroupsListPage";
@@ -21,10 +22,12 @@ import Prueba from "./pages/Prueba";
 
 export default function App() {
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans">
+    // `app-shell`/`app-content` son los puntos donde la hoja de impresión (#36)
+    // desarma el marco para que sólo salga el documento en el papel.
+    <div className="app-shell flex h-screen bg-[#F8FAFC] overflow-hidden font-sans">
       <Sidebar />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="app-content flex-1 overflow-y-auto">
         <Routes>
           <Route path="/" element={<Navigate to="/cursos" replace />} />
 
@@ -50,6 +53,10 @@ export default function App() {
           <Route
             path="/cursos/:idCurso/grupos/:idGrupo/asistencia"
             element={<GroupAttendancePage />}
+          />
+          <Route
+            path="/cursos/:idCurso/grupos/:idGrupo/notas"
+            element={<GroupGradesPage />}
           />
 
           {/* Estudiantes inscritos por grupo */}

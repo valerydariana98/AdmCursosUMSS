@@ -292,6 +292,9 @@ const GroupStudentsPage = () => {
             <Link to={`/cursos/${cursoId}/grupos/${grupoActual.id}/asistencia`}>
               <Button variant="secondary">Asistencia</Button>
             </Link>
+            <Link to={`/cursos/${cursoId}/grupos/${grupoActual.id}/notas`}>
+              <Button variant="secondary">Notas</Button>
+            </Link>
             <Link to={`/cursos/${cursoId}/grupos/${grupoActual.id}/rubrica`}>
               <Button variant="secondary">
                 {grupoActual.hasRubric ? 'Editar rúbrica' : 'Configurar rúbrica'}
