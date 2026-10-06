@@ -8,6 +8,10 @@ interface TextFieldProps {
   type?: 'text' | 'password' | 'email' | 'number' | 'date' | 'time';
   error?: string;
   maxLength?: number;
+  // Límites de los inputs nativos. `max` es lo que usa el selector de fecha para
+  // no dejar elegir un día que el servidor va a rechazar.
+  min?: string | number;
+  max?: string | number;
   className?: string;
   disabled?: boolean;
   readOnly?: boolean;
@@ -22,6 +26,8 @@ const TextField: React.FC<TextFieldProps> = ({
   type = 'text',
   error,
   maxLength,
+  min,
+  max,
   className = '',
   disabled = false,
   readOnly = false,
@@ -38,6 +44,8 @@ const TextField: React.FC<TextFieldProps> = ({
           onChange={onChange}
           placeholder={placeholder}
           maxLength={maxLength}
+          min={min}
+          max={max}
           disabled={disabled}
           readOnly={readOnly}
           className={`w-full ${icon ? 'pl-10' : 'px-4'} py-2.5 border rounded-xl outline-none transition-all duration-150 text-sm ${
