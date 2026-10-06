@@ -1,7 +1,8 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, notInArray } from 'drizzle-orm';
 import { fromPercentageHundredths, toPercentageHundredths } from 'shared';
 import { getCurrentTeacher, getCurrentTeacherId } from '../auth/currentTeacher.js';
 import { syncEvaluacionesFromRubric } from '../services/grades.service.js';
+import { getCurrentPeriod } from '../utils/period.js';
 import { db } from './index.js';
 import {
   attendanceRecords,
@@ -22,7 +23,30 @@ import {
 // seed sea idempotente y que el grupo siempre pertenezca al docente que simula la
 // sesión, así la vista de rúbrica siempre se puede abrir en desarrollo.
 const DEV_COURSE_NAME = 'PRUEBA - RÚBRICA';
-const DEV_PERIODO = '0-TEST';
+
+// El fixture se arma con respecto al día en que corre el seed. Dos motivos:
+// la lista de cursos sólo muestra en la pestaña "Activos" los que tienen
+// `periodo` igual al período actual (courses.service.ts) y el schema de cursos
+// exige que `periodo` matchee /^[12]-\d{4}$/, así que un '0-TEST' dejaba el
+// curso sin poder editarse desde la UI.
+const SEED_DAY = new Date();
+const DEV_PERIODO = getCurrentPeriod(SEED_DAY);
+
+const toIsoDate = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate()
+  ).padStart(2, '0')}`;
+
+const daysFrom = (date: Date, days: number): string => {
+  const copy = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  copy.setDate(copy.getDate() + days);
+  return toIsoDate(copy);
+};
+
+// Ventana del curso: arrancó hace un mes y termina en un mes y medio, con el
+// período recién calculado, para que la fecha y el período siempre concuerden.
+const DEV_COURSE_START = daysFrom(SEED_DAY, -30);
+const DEV_COURSE_END = daysFrom(SEED_DAY, 45);
 
 // Fixture de desarrollo de las HU de notas: cuatro estudiantes, una rúbrica de
 // tres ítems, diez jornadas de asistencia y notas ya registradas. Los CIs son
@@ -40,20 +64,16 @@ const DEV_RUBRIC_ITEMS = [
   { name: 'Examen final', category: 'exams', percentage: 60 },
 ] as const;
 
-// Diez jornadas dentro del período del curso: alcanzan para que un estudiante
+// Diez jornadas terminando hoy y de a un día por medio: caen dentro del
+// período actual, nunca en el futuro, y alcanzan para que un estudiante
 // supere las 8 faltas máximas y se pueda ver el caso que no cumple asistencia.
-const DEV_SESSION_DATES = [
-  '2026-01-05',
-  '2026-01-07',
-  '2026-01-09',
-  '2026-01-13',
-  '2026-01-15',
-  '2026-01-19',
-  '2026-01-21',
-  '2026-01-23',
-  '2026-01-26',
-  '2026-01-28',
-] as const;
+const DEV_SESSION_COUNT = 10;
+const DEV_SESSION_STEP_DAYS = 2;
+
+const DEV_SESSION_DATES: string[] = Array.from(
+  { length: DEV_SESSION_COUNT },
+  (_, index) => daysFrom(SEED_DAY, -DEV_SESSION_STEP_DAYS * (DEV_SESSION_COUNT - 1 - index))
+);
 
 // Notas por estudiante en el orden de `DEV_RUBRIC_ITEMS`. `null` deja la celda
 // sin registrar para poder ver el caso de una nota vacía que rinde 0.
@@ -163,6 +183,19 @@ const seedDevRubric = async (grupoId: number) => {
 };
 
 const seedDevAttendance = async (grupoId: number, enrolled: { ci: string; studentId: number }[]) => {
+  // Las fechas se recalculan en cada corrida, así que las jornadas que ya no
+  // están en el fixture se retiran del grupo de prueba. Si no, correr el seed
+  // en otra fecha duplicaría las sesiones y desfasaría los porcentajes.
+  // `attendance_records` borra en cascada.
+  await db
+    .delete(attendanceSessions)
+    .where(
+      and(
+        eq(attendanceSessions.groupId, grupoId),
+        notInArray(attendanceSessions.date, DEV_SESSION_DATES)
+      )
+    );
+
   for (const [index, date] of DEV_SESSION_DATES.entries()) {
     const [existingSession] = await db
       .select()
@@ -256,26 +289,40 @@ const seedDevGroupForTeacher = async () => {
     .where(eq(cursos.nombreCurso, DEV_COURSE_NAME))
     .limit(1);
 
-  const curso =
-    existingCourse ??
-    (
-      await db
-        .insert(cursos)
-        .values({
-          nombreCurso: DEV_COURSE_NAME,
-          duracionHoras: 32,
-          fechaIni: '2026-01-05',
-          fechaFin: '2026-02-27',
-          costoAux: 0,
-          costoUmss: 0,
-          costoExterno: 0,
-          notaMin: 40,
-          maxFaltas: 8,
-          periodo: DEV_PERIODO,
-          estado: true,
-        })
-        .returning()
-    )[0];
+  const courseValues = {
+    nombreCurso: DEV_COURSE_NAME,
+    duracionHoras: 32,
+    fechaIni: DEV_COURSE_START,
+    fechaFin: DEV_COURSE_END,
+    costoAux: 0,
+    costoUmss: 0,
+    costoExterno: 0,
+    notaMin: 40,
+    maxFaltas: 8,
+    periodo: DEV_PERIODO,
+    estado: true,
+  };
+
+  let curso = existingCourse;
+
+  if (!curso) {
+    [curso] = await db.insert(cursos).values(courseValues).returning();
+    console.log(`⏳ Curso de prueba creado (${DEV_PERIODO}).`);
+  } else if (
+    curso.periodo !== DEV_PERIODO ||
+    curso.fechaIni !== DEV_COURSE_START ||
+    curso.fechaFin !== DEV_COURSE_END
+  ) {
+    // El curso ya existe de corridas anteriores: si se dejara como estaba,
+    // quedaría en la pestaña "Pasados" (periodo '0-TEST') y con un período
+    // que el schema rechaza al editarlo.
+    [curso] = await db
+      .update(cursos)
+      .set({ periodo: DEV_PERIODO, fechaIni: DEV_COURSE_START, fechaFin: DEV_COURSE_END })
+      .where(eq(cursos.id, curso.id))
+      .returning();
+    console.log(`⏳ Curso de prueba recolocado en el período actual (${DEV_PERIODO}).`);
+  }
 
   const [existingGroup] = await db
     .select()
