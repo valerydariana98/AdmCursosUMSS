@@ -90,6 +90,14 @@ export const sumPercentageHundredths = (percentages: number[]): number =>
 export const sumPercentages = (percentages: number[]): number =>
   fromPercentageHundredths(sumPercentageHundredths(percentages));
 
+// Redondeo compartido por los números con decimales del proyecto (porcentajes,
+// asistencia, notas). El `+ Number.EPSILON` evita que un valor como 66.665 se
+// quede en 66.66 por el error de representación binaria al multiplicar.
+export const roundToDecimals = (value: number, decimals: number): number => {
+  const factor = 10 ** decimals;
+  return Math.round((value + Number.EPSILON) * factor) / factor;
+};
+
 export type RubricTotalState = 'empty' | 'incomplete' | 'complete' | 'exceeded';
 
 export const getRubricTotalState = (percentages: number[]): RubricTotalState => {
@@ -387,6 +395,99 @@ export const validateRubric = (items: RubricItemInput[]): RubricValidationResult
   };
 };
 
+// ---- Grades ----
+
+// Las notas van de 0 a 100 y son enteras (HU #33). La columna de la base de
+// datos también: el servidor trunca los decimales en vez de redondearlos, para
+// que un 99.9 no termine siendo 100 sin que el docente lo haya escrito.
+export const GRADE_MIN = 0;
+export const GRADE_MAX = 100;
+export const DEFAULT_GRADE = 0;
+export const GRADE_DECIMALS = 2;
+
+export const roundGrade = (value: number): number =>
+  roundToDecimals(value, GRADE_DECIMALS);
+
+export const truncateGrade = (value: number): number => Math.trunc(value);
+
+// Una celda de la grilla de notas. `nota: null` significa "sin registrar": la
+// vista la lee como 0 (HU #33) y el servidor la borra en lugar de dejar un 0
+// huérfano que las eliminaciones de la rúbrica contarían después como una nota
+// registrada.
+export interface GradeCell {
+  idRubricItem: number;
+  nota: number | null;
+}
+
+export const resolveGrade = (cell: GradeCell | undefined | null): number =>
+  cell?.nota ?? DEFAULT_GRADE;
+
+export interface GradeStudentRow {
+  idEstudiante: number;
+  estudiante: Pick<
+    Student,
+    'nombres' | 'apPaterno' | 'apMaterno' | 'ci' | 'codSis'
+  >;
+  cells: GradeCell[];
+  // Suma de los resultados ponderados de todos los ítems: lo que el docente mira
+  // para saber si el estudiante alcanzó la nota mínima.
+  notaFinal: number;
+}
+
+export interface GradesView {
+  group: {
+    id: number;
+    number: number;
+    courseId: number;
+    courseName: string;
+    instructorId: number;
+  };
+  // `null` cuando el grupo todavía no tiene rúbrica: la grilla se bloquea en vez
+  // de fallar, igual que la vista de rúbrica.
+  rubric: Rubric | null;
+  policy: RubricPolicy;
+  students: GradeStudentRow[];
+}
+
+// Una celda del guardado. `null` borra la nota registrada de ese par
+// (estudiante, ítem); es lo que permite que el docente vacíe una celda.
+export interface SaveGrade {
+  idEstudiante: number;
+  idRubricItem: number;
+  nota: number | null;
+}
+
+export interface SaveGrades {
+  grades: SaveGrade[];
+}
+
+// Resultado ponderado de una nota: nota × porcentaje. Los dos operandos son
+// enteros (la nota está en 0..100 y el porcentaje en centésimas), así que el
+// producto es exacto y la división se hace una sola vez al final: la suma de
+// varios ponderados no acumula error de coma flotante, la misma razón por la que
+// la rúbrica guarda sus porcentajes en centésimas.
+export const computeWeighted = (
+  nota: number,
+  percentageHundredths: number
+): number => roundGrade((nota * percentageHundredths) / 10000);
+
+export interface FinalGradeEntry {
+  nota: number | null;
+  percentageHundredths: number;
+}
+
+// Nota final del estudiante: la suma de los ponderados de sus evaluaciones. Una
+// celda sin registrar entra como 0, así que la celda vacía y el 0 escrito
+// rinden exactamente igual (HU #33).
+export const computeFinalGrade = (entries: FinalGradeEntry[]): number => {
+  const total = entries.reduce(
+    (sum, entry) => sum + (entry.nota ?? DEFAULT_GRADE) * entry.percentageHundredths,
+    0
+  );
+
+  return roundGrade(total / 10000);
+};
+
 // ---- Attendance ----
 
 export const ATTENDANCE_STATUSES = ['present', 'absent'] as const;
@@ -402,13 +503,8 @@ export const ATTENDANCE_STATUS_LABEL: Record<AttendanceStatus, string> = {
 // de número.
 export const ATTENDANCE_PERCENTAGE_DECIMALS = 2;
 
-export const roundAttendancePercentage = (percentage: number): number => {
-  const factor = 10 ** ATTENDANCE_PERCENTAGE_DECIMALS;
-
-  // El `+ Number.EPSILON` evita que un valor como 66.665 se quede en 66.66 por el
-  // error de representación binaria al multiplicar.
-  return Math.round((percentage + Number.EPSILON) * factor) / factor;
-};
+export const roundAttendancePercentage = (percentage: number): number =>
+  roundToDecimals(percentage, ATTENDANCE_PERCENTAGE_DECIMALS);
 
 // Porcentaje de asistencia sobre las jornadas registradas del grupo.
 //

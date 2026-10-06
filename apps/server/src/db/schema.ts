@@ -142,21 +142,41 @@ export const tipos = pgTable('tipos', {
 });
 
 // 9. Evaluaciones
-export const evaluaciones = pgTable('evaluaciones', {
-  id: serial('id').primaryKey(),
-  idGrupo: integer('id_grupo').references(() => grupos.id), // FK opcional
-  idTipo: integer('id_tipo').notNull().references(() => tipos.id),
-  nombre: varchar('nombre', { length: 255 }),
-  porcentaje: integer('porcentaje').notNull(),
-});
+// Una evaluación por ítem de la rúbrica: `idRubricItem` es el puente que hace que
+// `notas` cuelgue de `rubric_items` sin cambiar el modelo viejo. El índice único
+// garantiza que un ítem no termine teniendo dos evaluaciones con el mismo id.
+export const evaluaciones = pgTable(
+  'evaluaciones',
+  {
+    id: serial('id').primaryKey(),
+    idGrupo: integer('id_grupo').references(() => grupos.id), // FK opcional
+    idTipo: integer('id_tipo').notNull().references(() => tipos.id),
+    nombre: varchar('nombre', { length: 255 }),
+    porcentaje: integer('porcentaje').notNull(),
+    idRubricItem: integer('id_rubric_item').references(() => rubricItems.id, {
+      onDelete: 'cascade',
+    }),
+  },
+  (table) => [uniqueIndex('evaluaciones_rubric_item_unico').on(table.idRubricItem)]
+);
 
 // 10. Notas
-export const notas = pgTable('notas', {
-  id: serial('id').primaryKey(),
-  idEstudiante: integer('id_estudiante').notNull().references(() => estudiantes.id),
-  idEvaluacion: integer('id_evaluacion').notNull().references(() => evaluaciones.id),
-  nota: integer('nota').notNull(),
-});
+// `onDelete: 'cascade'` hace que quitar un ítem de la rúbrica elimine sus
+// evaluaciones y, con ellas, las notas registradas: es exactamente lo que el
+// modal de confirmación le promete al docente. El índice único sobre
+// (estudiante, evaluación) es lo que permite hacer upsert sin duplicar notas.
+export const notas = pgTable(
+  'notas',
+  {
+    id: serial('id').primaryKey(),
+    idEstudiante: integer('id_estudiante').notNull().references(() => estudiantes.id),
+    idEvaluacion: integer('id_evaluacion')
+      .notNull()
+      .references(() => evaluaciones.id, { onDelete: 'cascade' }),
+    nota: integer('nota').notNull(),
+  },
+  (table) => [uniqueIndex('notas_est_eval_unico').on(table.idEstudiante, table.idEvaluacion)]
+);
 
 // 11. Asistencias
 export const asistencias = pgTable('asistencias', {

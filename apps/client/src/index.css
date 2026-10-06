@@ -38,3 +38,55 @@ html, body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/* ---- Impresión (HU #36) ----
+   Al imprimir no sale la aplicación: se desarma el marco (barra lateral, altura
+   de pantalla y scroll) y sólo queda el documento marcado con `.print-area`.
+   Cualquier botón, aviso o navegación se excluye con `.no-print`.
+
+   La vista previa del reporte la entrega la HU #35; esta hoja es la capa de
+   impresión compartida y no depende de esa vista. */
+@media print {
+  @page {
+    size: landscape;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background-color: #fff !important;
+  }
+
+  .app-shell,
+  .app-content {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background-color: #fff !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-area {
+    color: #0F172A;
+    box-shadow: none !important;
+  }
+
+  /* Las tablas del documento tienen que poder pasar de página sin cortar filas. */
+  .print-area table {
+    page-break-inside: auto;
+  }
+
+  .print-area tr {
+    page-break-inside: avoid;
+  }
+
+  .print-area thead {
+    display: table-header-group;
+  }
+}
