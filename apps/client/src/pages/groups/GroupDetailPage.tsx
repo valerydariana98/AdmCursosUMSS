@@ -55,7 +55,7 @@ interface Modulo {
 const MODULOS: Modulo[] = [
   { key: 'rubrica', label: 'Rúbrica de evaluación', desc: 'Crear y editar la ponderación', ruta: '/rubrica', estados: ['habilitado'] },
   { key: 'asistencia', label: 'Asistencia', desc: 'Registro por jornadas', ruta: '/asistencia', estados: ['habilitado'] },
-  { key: 'notas', label: 'Notas', desc: 'Registrar y editar calificaciones', ruta: null, estados: ['habilitado'] },
+  { key: 'notas', label: 'Notas', desc: 'Registrar y editar calificaciones', ruta: '/notas', estados: ['habilitado'] },
   { key: 'reporte', label: 'Reporte académico', desc: 'Notas y estado de certificados', ruta: '/reporte', estados: ['habilitado', 'finalizado'] },
   { key: 'finalizar', label: 'Finalizar curso', desc: 'Cerrar el proceso académico', ruta: null, estados: ['habilitado'] },
 ];

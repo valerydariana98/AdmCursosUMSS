@@ -43,7 +43,9 @@ export type GradesResult =
 // conexión y la vista devolvería el estado anterior a lo que se acaba de guardar.
 type GradesExecutor = Pick<typeof db, 'select' | 'insert' | 'update' | 'delete'>;
 
-const cellKey = (idEstudiante: number, idRubricItem: number): string =>
+// Par (estudiante, ítem) que identifica una celda. Compartida con el reporte,
+// que lee el mismo mapa de notas y no puede tener otra noción de "celda".
+export const cellKey = (idEstudiante: number, idRubricItem: number): string =>
   `${idEstudiante}:${idRubricItem}`;
 
 // La pertenencia del grupo al docente la decide la rúbrica: un grupo ajeno
@@ -205,7 +207,11 @@ const loadStudents = async (executor: GradesExecutor, groupId: number): Promise<
     .where(eq(inscripciones.idGrupo, groupId))
     .orderBy(estudiantes.apPaterno, estudiantes.apMaterno, estudiantes.nombres);
 
-const loadGradeMap = async (
+// Notas registradas del grupo, con el mismo join que usa toda la vista de
+// notas. Exportada porque el reporte académico (HU #35) muestra las mismas
+// notas: si cada módulo armara su propio join, las dos pantallas podrían
+// discrepar sobre qué es "la nota del estudiante".
+export const loadGradeMap = async (
   executor: GradesExecutor,
   groupId: number
 ): Promise<Map<string, number>> => {
@@ -266,9 +272,10 @@ const buildView = (
 
 export const getGradesForTeacher = async (
   groupId: number,
-  teacherId: number
+  teacherId: number | null,
+  isAdmin = false
 ): Promise<GradesResult> => {
-  const rubricView = await getRubricForTeacher(groupId, teacherId);
+  const rubricView = await getRubricForTeacher(groupId, teacherId, isAdmin);
 
   if (!rubricView.ok) {
     const failure = resolveRubricFailure(rubricView.reason);
@@ -295,10 +302,11 @@ export const getGradesForTeacher = async (
 
 export const saveGradesForTeacher = async (
   groupId: number,
-  teacherId: number,
-  data: SaveGradesInput
+  teacherId: number | null,
+  data: SaveGradesInput,
+  isAdmin = false
 ): Promise<GradesResult> => {
-  const rubricView = await getRubricForTeacher(groupId, teacherId);
+  const rubricView = await getRubricForTeacher(groupId, teacherId, isAdmin);
 
   if (!rubricView.ok) {
     const failure = resolveRubricFailure(rubricView.reason);
@@ -320,7 +328,7 @@ export const saveGradesForTeacher = async (
       .from(grupos)
       .where(eq(grupos.id, groupId))
       .limit(1);
-    const denied = resolveGroupOwnershipFailure(group ?? null, teacherId);
+    const denied = resolveGroupOwnershipFailure(group ?? null, teacherId, isAdmin);
 
     if (denied) return { ok: false, reason: denied };
 
