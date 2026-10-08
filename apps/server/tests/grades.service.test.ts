@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RubricItem } from 'shared';
 import {
+  cellKey,
   planEvaluacionesSync,
   resolveRubricFailure,
   type EvaluacionRow,
@@ -118,5 +119,15 @@ describe('puente entre rubric_items y evaluaciones', () => {
     );
 
     expect(plan.inserts.map((insert) => insert.idTipo)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('clave de celda del mapa de notas', () => {
+  it('empareja estudiante e ítem en el mismo par que usa el reporte', () => {
+    // El reporte (HU #35) arma sus notas con este mapa: si la clave cambiara,
+    // las dos pantallas dejarían de mostrar la misma nota.
+    expect(cellKey(42, 3)).toBe('42:3');
+    expect(cellKey(42, 3)).not.toBe(cellKey(3, 42));
+    expect(cellKey(42, 3)).not.toBe(cellKey(7, 3));
   });
 });

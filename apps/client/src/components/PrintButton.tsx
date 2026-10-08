@@ -1,10 +1,9 @@
 // apps/client/src/components/PrintButton.tsx
 // Botón de impresión compartido por los reportes del grupo (HU #36).
 //
-// La vista que lo usa envuelve su documento con la clase `print-area` y marca
-// con `no-print` todo lo que no debe ir al papel; la hoja de `index.css` se
-// encarga del resto. El contenido del reporte (notas, asistencia, certificados)
-// lo entrega la HU #35.
+// La vista que lo usa monta en `document.body` un bloque `.print-only` con lo
+// que debe salir en el papel; la hoja de `index.css` oculta el resto. El
+// contenido del reporte (notas, asistencia, certificados) lo entrega la HU #35.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Button from './Button';
 

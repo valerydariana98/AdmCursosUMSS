@@ -53,12 +53,15 @@ html, body {
 }
 
 /* ---- Impresión (HU #36) ----
-   Al imprimir no sale la aplicación: se desarma el marco (barra lateral, altura
-   de pantalla y scroll) y sólo queda el documento marcado con `.print-area`.
-   Cualquier botón, aviso o navegación se excluye con `.no-print`.
+   Al imprimir no sale la aplicación: se oculta `#root` completo y sólo se
+   muestra el bloque `.print-only` que la vista del reporte monta aparte (portal
+   a `document.body`). Ese bloque está `display:none` en pantalla, así que no hay
+   que togglear nada con JavaScript: el media query sólo aplica al imprimir y al
+   cerrar el diálogo todo vuelve a su estado normal. */
+.print-only {
+  display: none;
+}
 
-   La vista previa del reporte la entrega la HU #35; esta hoja es la capa de
-   impresión compartida y no depende de esa vista. */
 @media print {
   @page {
     size: landscape;
@@ -72,34 +75,31 @@ html, body {
     background-color: #fff !important;
   }
 
-  .app-shell,
-  .app-content {
-    display: block !important;
-    height: auto !important;
-    min-height: 0 !important;
-    overflow: visible !important;
-    background-color: #fff !important;
-  }
-
-  .no-print {
+  /* Todo el marco de la app (sidebar, contenido, tarjetas, avisos y botones)
+     queda fuera del papel: sólo sobrevive el bloque de impresión. */
+  #root {
     display: none !important;
   }
 
-  .print-area {
+  .print-only {
+    display: block !important;
     color: #0F172A;
-    box-shadow: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
-  /* Las tablas del documento tienen que poder pasar de página sin cortar filas. */
-  .print-area table {
+  /* La tabla tiene que poder pasar de página sin cortar filas. */
+  .print-only table {
+    width: 100%;
+    border-collapse: collapse;
     page-break-inside: auto;
   }
 
-  .print-area tr {
+  .print-only tr {
     page-break-inside: avoid;
   }
 
-  .print-area thead {
+  .print-only thead {
     display: table-header-group;
   }
 }

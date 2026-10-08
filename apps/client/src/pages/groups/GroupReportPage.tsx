@@ -1,37 +1,21 @@
 // apps/client/src/pages/groups/GroupReportPage.tsx
 // Reporte académico del grupo seleccionado (HU #35).
 //
-// Muestra lo que ya está registrado (asistencia, ponderación de la rúbrica y la
-// condición de certificado) y deja las columnas de notas en `--` mientras la
-// HU #33/#34 no entregue el registro de calificaciones: el reporte no inventa un 0.
+// Muestra la asistencia, la ponderación de la rúbrica, las notas registradas
+// (HU #33/#34) y la condición de certificado. Al imprimir (HU #36) sólo sale el
+// bloque `.print-only`: encabezado del grupo más la tabla de estudiantes.
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useParams } from 'react-router-dom';
-import {
-  CERTIFICATE_CONDITION_LABEL,
-  type CertificateCondition,
-  type GroupReportView,
-  type ReportStudent,
-} from 'shared';
+import { type GroupReportView } from 'shared';
 import AlertInfo from '../../components/AlertInfo';
 import Button from '../../components/Button';
+import PrintButton from '../../components/PrintButton';
+import ReportTable from '../../components/ReportTable';
 import { api, ApiError } from '../../services/api';
 
-const CONDITION_BADGE: Record<CertificateCondition, string> = {
-  aprobacion: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  asistencia: 'bg-sky-50 text-sky-700 border-sky-200',
-  sin_certificado: 'bg-red-50 text-red-700 border-red-200',
-  pendiente: 'bg-gray-100 text-gray-500 border-gray-200',
-};
-
-const fullName = (student: ReportStudent): string =>
-  `${student.apPaterno} ${student.apMaterno} ${student.nombres}`.trim();
-
-const formatNumber = (value: number): string =>
-  Number.isInteger(value) ? String(value) : value.toFixed(1);
-
 const GroupReportPage = () => {
-  const { idCurso, idGrupo } = useParams();
-  const cursoId = Number(idCurso);
+  const { idGrupo } = useParams();
   const groupId = Number(idGrupo);
 
   const [view, setView] = useState<GroupReportView | null>(null);
@@ -39,7 +23,7 @@ const GroupReportPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
 
-  const backPath = `/cursos/${cursoId}/grupos/${groupId}/gestion`;
+  const backPath = `/grupos/${groupId}/gestion`;
 
   useEffect(() => {
     api
@@ -100,13 +84,9 @@ const GroupReportPage = () => {
     );
   }
 
-  const th = 'py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap';
-  const td = 'py-4 px-4 text-sm text-gray-600 whitespace-nowrap';
-  const items = view.rubric?.items ?? [];
-
   return (
     <div className="p-8 font-sans">
-      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-3 print:hidden">
+      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-3 no-print">
         <Link to="/cursos" className="hover:text-gray-600">
           Cursos
         </Link>
@@ -118,7 +98,7 @@ const GroupReportPage = () => {
         <span className="text-gray-600 font-medium">Reporte académico</span>
       </nav>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 print:hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 no-print">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Reporte académico · Grupo {view.group.number}
@@ -130,9 +110,7 @@ const GroupReportPage = () => {
           <Link to={backPath}>
             <Button variant="secondary">Volver al grupo</Button>
           </Link>
-          <Button variant="primary" onClick={() => window.print()}>
-            Imprimir / PDF
-          </Button>
+          <PrintButton />
         </div>
       </div>
 
@@ -198,64 +176,7 @@ const GroupReportPage = () => {
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="border-b border-gray-100">
-                <tr>
-                  <th className={`${th} pl-6`}>Estudiante</th>
-                  <th className={th}>Asistencias</th>
-                  <th className={th}>Faltas</th>
-                  <th className={th}>Asist. ponderada</th>
-                  {items.map((item) => (
-                    <th key={item.id} className={th}>
-                      {item.name} ({formatNumber(item.percentage)}%)
-                    </th>
-                  ))}
-                  <th className={th}>Nota final</th>
-                  <th className={`${th} pr-6`}>Condición</th>
-                </tr>
-              </thead>
-              <tbody>
-                {view.students.map((student) => (
-                  <tr
-                    key={student.studentId}
-                    className="border-t border-gray-100 hover:bg-gray-50/60 transition-colors"
-                  >
-                    <td className={`${td} pl-6`}>
-                      <p className="font-semibold text-gray-900">{fullName(student)}</p>
-                      <p className="text-xs text-gray-400">
-                        {student.codSis ? `SIS ${student.codSis}` : student.ci}
-                      </p>
-                    </td>
-                    <td className={td}>
-                      {student.asistencia.presentSessions} / {student.asistencia.totalSessions}
-                    </td>
-                    <td className={td}>{student.asistencia.absences}</td>
-                    <td className={`${td} font-semibold text-gray-900`}>
-                      {student.asistenciaPonderada === null
-                        ? '—'
-                        : `${formatNumber(student.asistenciaPonderada)} pts`}
-                    </td>
-                    {items.map((item) => (
-                      <td key={item.id} className={td}>
-                        {view.notasDisponibles && student.notas
-                          ? (student.notas[String(item.id)] ?? 0)
-                          : '—'}
-                      </td>
-                    ))}
-                    <td className={`${td} font-semibold text-gray-900`}>
-                      {student.notaFinal === null ? '—' : formatNumber(student.notaFinal)}
-                    </td>
-                    <td className={`${td} pr-6`}>
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap ${CONDITION_BADGE[student.condicion]}`}
-                      >
-                        {CERTIFICATE_CONDITION_LABEL[student.condicion]}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ReportTable view={view} />
           </div>
 
           <div className="p-4 border-t border-gray-100 text-xs text-gray-500">
@@ -271,6 +192,20 @@ const GroupReportPage = () => {
           máximo de faltas.
         </p>
       </div>
+
+      {createPortal(
+        // Bloque que sale en el papel: la hoja de impresión oculta `#root` y sólo
+        // muestra `.print-only`. Repite el encabezado porque el de la pantalla
+        // vive fuera de este bloque y no se imprime.
+        <div className="print-only">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Reporte académico · Grupo {view.group.number}
+          </h1>
+          <p className="text-sm text-gray-500 mb-4">{view.group.courseName}</p>
+          <ReportTable view={view} />
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
