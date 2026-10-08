@@ -38,7 +38,7 @@ const Select: React.FC<SelectProps> = ({
           className={`w-full px-4 py-2.5 border rounded-xl outline-none transition-all duration-200 text-sm appearance-none bg-white font-medium cursor-pointer ${
             error
               ? 'border-red-500 focus:ring-2 focus:ring-red-500/20 bg-red-50/30 text-gray-900'
-              : 'border-gray-300 hover:border-gray-400 focus:border-[#1D3557] focus:ring-2 focus:ring-[#1D3557]/20 text-gray-900 shadow-sm'
+              : 'border-gray-300 hover:border-gray-400 focus:border-brand-mid focus:ring-2 focus:ring-brand-mid/20 text-gray-900 shadow-sm'
           } ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
         >
           {placeholder && (

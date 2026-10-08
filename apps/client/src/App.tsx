@@ -58,7 +58,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans">
+    <div className="flex h-screen bg-brand-bg overflow-hidden font-sans">
       <Sidebar />
 
       <main className="flex-1 overflow-y-auto">

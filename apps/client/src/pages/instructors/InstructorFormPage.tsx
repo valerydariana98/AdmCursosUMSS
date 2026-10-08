@@ -138,7 +138,7 @@ export const InstructorFormPage: React.FC<InstructorFormPageProps> = ({
   };
 
   return (
-    <div className="p-8 bg-[#F8FAFC] min-h-screen font-sans max-w-5xl mx-auto">
+    <div className="p-8 bg-brand-bg min-h-screen font-sans max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <span className="text-xs text-gray-400 font-medium">
