@@ -66,7 +66,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-64 h-screen bg-sidebar-bg text-white flex flex-col justify-between p-4 shrink-0 select-none font-sans">
+    <aside className="w-64 h-screen bg-sidebar-bg text-white flex flex-col justify-between p-4 shrink-0 select-none font-sans no-print">
       <div>
         <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-white/10 pb-5">
           <div className="w-10 h-10 bg-white text-brand-dark font-black rounded-xl flex items-center justify-center text-lg shadow-md shrink-0">
