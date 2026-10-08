@@ -219,10 +219,9 @@ const CourseFormPage: React.FC<CourseFormPageProps> = ({ mode, course, loadingCo
             />
             <TextField
               label="Periodo"
-              placeholder="Ej. 1-2026"
               value={values.periodo}
-              onChange={handleChange('periodo')}
               error={fieldErrors.periodo}
+              readOnly
             />
             <div />
           </div>

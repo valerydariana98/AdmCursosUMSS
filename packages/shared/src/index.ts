@@ -5,6 +5,13 @@
 export type Modality = 'presencial' | 'virtual' | 'hibrida';
 export type GroupStatus = 'preinscripcion' | 'habilitado' | 'inhabilitado' | 'finalizado';
 
+// Semestre actual en formato "semestre-año" (ej. "1-2026" o "2-2026").
+// El primer semestre abarca enero-junio y el segundo julio-diciembre.
+export const getCurrentPeriod = (date: Date = new Date()): string => {
+  const semester = date.getMonth() < 6 ? 1 : 2;
+  return `${semester}-${date.getFullYear()}`;
+};
+
 export const ROLES = ['ADMIN', 'DOCENTE'] as const;
 export type Rol = (typeof ROLES)[number];
 
