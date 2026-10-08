@@ -229,7 +229,7 @@ const GroupsListPage = () => {
             type="button"
             onClick={() => setInstructorModal(grupo)}
             title="Ver todos los grupos de este docente"
-            className="text-left font-medium text-[#1D3557] underline decoration-dotted underline-offset-4 hover:text-[#0C103C]"
+            className="text-left font-medium text-brand-mid underline decoration-dotted underline-offset-4 hover:text-brand-dark"
           >
             {grupo.instructorNombre}
           </button>

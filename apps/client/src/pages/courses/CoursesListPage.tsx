@@ -202,7 +202,7 @@ const CoursesListPage = () => {
                 onClick={() => setView(tab)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer ${
                   view === tab
-                    ? 'bg-[#111827] text-white shadow-sm'
+                    ? 'bg-brand-primary text-white shadow-sm'
                     : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                 }`}
               >

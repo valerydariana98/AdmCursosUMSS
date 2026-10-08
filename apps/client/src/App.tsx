@@ -61,7 +61,7 @@ export default function App() {
   return (
     // `app-shell`/`app-content` son los puntos donde la hoja de impresión (#36)
     // desarma el marco para que sólo salga el documento en el papel.
-    <div className="app-shell flex h-screen bg-[#F8FAFC] overflow-hidden font-sans">
+    <div className="app-shell flex h-screen bg-brand-bg overflow-hidden font-sans">
       <Sidebar />
 
       <main className="app-content flex-1 overflow-y-auto">

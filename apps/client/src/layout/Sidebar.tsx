@@ -66,10 +66,10 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-64 h-screen bg-[#0C103C] text-white flex flex-col justify-between p-4 shrink-0 select-none font-sans no-print">
+    <aside className="w-64 h-screen bg-sidebar-bg text-white flex flex-col justify-between p-4 shrink-0 select-none font-sans no-print">
       <div>
         <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-white/10 pb-5">
-          <div className="w-10 h-10 bg-white text-[#0C103C] font-black rounded-xl flex items-center justify-center text-lg shadow-md shrink-0">
+          <div className="w-10 h-10 bg-white text-brand-dark font-black rounded-xl flex items-center justify-center text-lg shadow-md shrink-0">
             U
           </div>
           <div className="flex flex-col">
@@ -86,8 +86,8 @@ export const Sidebar: React.FC = () => {
               className={({ isActive }) =>
                 `w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
                   isActive
-                    ? 'bg-[#1D3557] text-white font-semibold shadow-sm'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-sidebar-active text-white font-semibold shadow-sm'
+                    : 'text-gray-400 hover:text-white hover:bg-sidebar-hover'
                 }`
               }
             >
@@ -102,7 +102,7 @@ export const Sidebar: React.FC = () => {
 
       <div className="border-t border-white/10 pt-4 px-2">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-blue-100 text-[#0C103C] font-bold flex items-center justify-center text-xs shrink-0">
+          <div className="w-9 h-9 rounded-full bg-blue-100 text-brand-dark font-bold flex items-center justify-center text-xs shrink-0">
             {iniciales}
           </div>
           <div className="flex flex-col text-xs overflow-hidden min-w-0 flex-1">
@@ -115,7 +115,7 @@ export const Sidebar: React.FC = () => {
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-3 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-white/5 transition"
+          className="mt-3 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-sidebar-hover transition"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

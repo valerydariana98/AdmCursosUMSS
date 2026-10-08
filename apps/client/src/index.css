@@ -1,20 +1,33 @@
 @import "tailwindcss";
 
+/*
+ * FUENTE ÚNICA DE COLORES DEL PROYECTO
+ * ------------------------------------
+ * Tailwind v4: los tokens definidos en @theme generan utilidades
+ * (ej. --color-brand-dark  ->  bg-brand-dark / text-brand-dark / border-brand-dark).
+ * Ningún componente debe volver a escribir un hex a mano: usar siempre estos tokens.
+ */
 @theme {
   /* Fuentes corporativas centralizadas */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-nunito: 'Nunito', system-ui, -apple-system, sans-serif;
 
-  /* Colores Corporativos UMSS - Formación Continua */
-  --color-sidebar-bg: #0C103C;        /* Azul marino profundo de la barra lateral */
-  --color-sidebar-active: #1D3557;    /* Contenedor del ítem activo */
-  --color-sidebar-hover: rgba(255, 255, 255, 0.08);
+  /* ===== Paleta corporativa UMSS - Formación Continua ===== */
 
-  --color-brand-primary: #111827;     /* Botón e interacción principal */
-  --color-brand-accent: #1E3A8A;      /* Azul rey para toggles y foco */
-  --color-brand-secondary: #626C7A;   /* Subtítulos y textos secundarios */
-  --color-brand-bg: #F8FAFC;          /* Fondo gris claro general */
-  --color-brand-card: #FFFFFF;        /* Fondo de tarjetas y tablas */
+  /* Azules corporativos */
+  --color-brand-dark: #0C103C;         /* Azul marino profundo: sidebar, títulos, logo */
+  --color-brand-mid: #1D3557;          /* Azul medio: enlaces, ítem activo, acentos */
+  --color-brand-accent: #1E3A8A;       /* Azul rey: toggles y foco */
+  --color-brand-primary: #111827;      /* Botón e interacción principal */
+  --color-brand-primary-hover: #1F2937;
+  --color-brand-secondary: #626C7A;    /* Subtítulos y textos secundarios */
+  --color-brand-bg: #F8FAFC;           /* Fondo gris claro general */
+  --color-brand-card: #FFFFFF;         /* Fondo de tarjetas y tablas */
+
+  /* Barra lateral */
+  --color-sidebar-bg: #0C103C;         /* Azul marino profundo de la barra lateral */
+  --color-sidebar-active: #1D3557;     /* Contenedor del ítem activo */
+  --color-sidebar-hover: rgba(255, 255, 255, 0.08);
 
   /* Estados de información */
   --color-status-active-bg: #ECFDF5;
