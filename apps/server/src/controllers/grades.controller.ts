@@ -17,6 +17,8 @@ const FAILURE_STATUS: Record<GradesFailure, number> = {
   // que no son de este grupo.
   unknown_student: 400,
   unknown_rubric_item: 400,
+  // 409: el grupo ya se finalizó (HU #37) y sus notas quedan en solo lectura.
+  group_finalized: 409,
 };
 
 const FAILURE_MESSAGE: Record<GradesFailure, string> = {
@@ -26,6 +28,7 @@ const FAILURE_MESSAGE: Record<GradesFailure, string> = {
   no_rubric: 'El grupo todavía no tiene una rúbrica configurada',
   unknown_student: 'El estudiante no está inscrito en el grupo',
   unknown_rubric_item: 'La evaluación no pertenece a la rúbrica del grupo',
+  group_finalized: 'El grupo está finalizado: sus notas quedan en solo lectura',
 };
 
 // Quién califica: el docente del token, o el ADMIN que administra todos los

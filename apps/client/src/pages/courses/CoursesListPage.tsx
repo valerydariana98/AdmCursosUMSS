@@ -13,8 +13,8 @@ import type { Course } from '../../types/course';
 import { formatDate, formatDateRange } from '../../utils/format';
 
 const TAB_LABELS: Record<CourseView, string> = {
-  current: 'Activos',
-  archived: 'Pasados',
+  current: 'Periodo Actual',
+  archived: 'Archivados',
 };
 
 const PencilIcon = () => (
@@ -134,7 +134,7 @@ const CoursesListPage = () => {
           {/* El periodo es lo que define si el curso sigue vigente: `cursos.estado`
               es un booleano que se fija en true al crear y nunca cambia, asi que no
               sirve para decidir la etiqueta. */}
-          <Badge status={!isArchived} activeLabel="Activo" inactiveLabel="Pasado" />
+          <Badge status={!isArchived} activeLabel="Activo" inactiveLabel="Finalizado" />
           <p className="text-xs text-gray-400 mt-1">{course.periodo}</p>
         </td>
         <td className="py-4 px-6 text-right whitespace-nowrap">

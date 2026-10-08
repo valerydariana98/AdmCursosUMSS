@@ -20,6 +20,12 @@ interface CourseFormPageProps {
 
 const PERIOD_REGEX = /^[12]-\d{4}$/;
 
+// La fecha final debe quedar al menos una semana después de la inicial.
+const MIN_COURSE_DURATION_DAYS = 7;
+
+const daysBetween = (from: string, to: string): number =>
+  (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000;
+
 const validate = (values: CourseFormValues): FieldErrors => {
   const errors: FieldErrors = {};
   const isBlank = (value: string) => value.trim() === '';
@@ -34,8 +40,13 @@ const validate = (values: CourseFormValues): FieldErrors => {
 
   if (isBlank(values.fechaIni)) errors.fechaIni = 'La fecha inicial es obligatoria';
   if (isBlank(values.fechaFin)) errors.fechaFin = 'La fecha final es obligatoria';
-  if (!isBlank(values.fechaIni) && !isBlank(values.fechaFin) && values.fechaFin < values.fechaIni) {
-    errors.fechaFin = 'La fecha final debe ser igual o posterior a la fecha inicial';
+  if (!isBlank(values.fechaIni) && !isBlank(values.fechaFin)) {
+    const days = daysBetween(values.fechaIni, values.fechaFin);
+    if (days < 0) {
+      errors.fechaFin = 'La fecha final debe ser posterior a la fecha inicial';
+    } else if (days < MIN_COURSE_DURATION_DAYS) {
+      errors.fechaFin = 'La fecha final debe ser al menos 1 semana posterior a la inicial';
+    }
   }
 
   const costFields: Array<[keyof CourseFormValues, string]> = [
