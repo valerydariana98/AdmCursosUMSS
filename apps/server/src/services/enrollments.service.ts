@@ -192,6 +192,7 @@ export type MoveEnrollmentFailure =
   | 'same_group'
   | 'different_course'
   | 'group_closed'
+  | 'move_not_allowed'
   | 'group_full'
   | 'already_enrolled';
 
@@ -209,12 +210,17 @@ export const moveEnrollment = async (
         idEst: inscripciones.idEst,
         idGrupo: inscripciones.idGrupo,
         idCurso: grupos.idCurso,
+        estadoOrigen: grupos.estado,
       })
       .from(inscripciones)
       .innerJoin(grupos, eq(inscripciones.idGrupo, grupos.id))
       .where(and(eq(inscripciones.id, idInscripcion), eq(inscripciones.idGrupo, idGrupoOrigen)));
 
     if (!row) return { error: 'enrollment_not_found' } as const;
+
+    // Solo la preinscripcion admite reubicaciones: un grupo habilitado ya tiene
+    // su cupo cerrado y sus estudiantes quedan donde estan.
+    if (row.estadoOrigen !== 'preinscripcion') return { error: 'move_not_allowed' } as const;
 
     if (row.idGrupo === idGrupoDestino) return { error: 'same_group' } as const;
 
@@ -224,7 +230,9 @@ export const moveEnrollment = async (
     // Solo se permite moverse dentro del curso en el que se inscribio originalmente.
     if (destino.idCurso !== row.idCurso) return { error: 'different_course' } as const;
 
-    if (destino.estado !== 'preinscripcion' && destino.estado !== 'habilitado') {
+    // El destino tambien tiene que estar en preinscripcion: un grupo habilitado
+    // ya tiene su cupo cerrado.
+    if (destino.estado !== 'preinscripcion') {
       return { error: 'group_closed' } as const;
     }
 

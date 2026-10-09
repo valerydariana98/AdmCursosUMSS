@@ -201,7 +201,8 @@ const EnrollmentsPage = () => {
   const grupoOrigenDe = (inscripcion: EnrolledStudent | null): GroupListItem | null =>
     inscripcion ? (grupos.find((grupo) => grupo.id === inscripcion.idGrupo) ?? null) : null;
 
-  // Solo otros grupos del mismo curso en estado que admite estudiantes.
+  // Solo otros grupos del mismo curso que sigan en preinscripción: los grupos
+  // habilitados ya tienen su cupo cerrado.
   const gruposDestino = useMemo(() => {
     const origen = grupoOrigenDe(mover);
     if (!origen) return [];
@@ -209,7 +210,7 @@ const EnrollmentsPage = () => {
       (grupo) =>
         grupo.id !== origen.id &&
         grupo.idCurso === origen.idCurso &&
-        (grupo.estado === 'preinscripcion' || grupo.estado === 'habilitado')
+        grupo.estado === 'preinscripcion'
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grupos, mover]);
@@ -295,6 +296,25 @@ const EnrollmentsPage = () => {
           </td>
           <td className="py-4 pr-6 text-right whitespace-nowrap">
             <span className="space-x-1.5">
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMover(e);
+                  setDestino('');
+                  setMoveError(null);
+                }}
+                disabled={grupo.estado !== 'preinscripcion'}
+                title={
+                  grupo.estado !== 'preinscripcion'
+                    ? 'Solo se puede cambiar de grupo mientras el grupo está en preinscripción'
+                    : 'Cambiar grupo'
+                }
+                aria-label={`Cambiar grupo de ${e.estudiante.nombres}`}
+                className={`${actionBtn} disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent`}
+              >
+                <SwapIcon />
+              </button>
               <Link
                 to={`/groups/${e.idGrupo}/enrollments/${e.id}/edit`}
                 title="Editar"
@@ -303,19 +323,7 @@ const EnrollmentsPage = () => {
               >
                 <PencilIcon />
               </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  setMover(e);
-                  setDestino('');
-                  setMoveError(null);
-                }}
-                title="Cambiar grupo"
-                aria-label={`Cambiar grupo de ${e.estudiante.nombres}`}
-                className={actionBtn}
-              >
-                <SwapIcon />
-              </button>
+              
               <button
                 type="button"
                 onClick={() => {
@@ -328,6 +336,7 @@ const EnrollmentsPage = () => {
               >
                 <TrashIcon />
               </button>
+              
             </span>
           </td>
         </tr>
@@ -547,7 +556,7 @@ const EnrollmentsPage = () => {
               <AlertInfo
                 type="info"
                 title="No hay otros grupos disponibles"
-                subtitle="Este curso solo tiene el grupo actual en estado habilitado o preinscripción"
+                subtitle="Este curso solo tiene el grupo actual en estado preinscripción"
               />
             ) : (
               <Select
