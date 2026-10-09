@@ -47,7 +47,7 @@ export default function MyGroupsPage() {
   }
 
   return (
-    <div className="p-8 max-w-6xl">
+    <div className="p-8 font-sans">
       <header className="mb-7">
         <h1 className="text-2xl font-bold text-brand-dark">Mis Grupos</h1>
         <p className="text-sm text-gray-500 mt-1">

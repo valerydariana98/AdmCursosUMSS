@@ -175,7 +175,7 @@ export default function GroupDetailPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-8 font-sans">
       <button
         type="button"
         onClick={() => navigate('/mis-grupos')}
