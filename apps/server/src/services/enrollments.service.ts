@@ -44,9 +44,15 @@ export const createEnrollment = (idGrupo: number, input: CreateEnrollment) =>
           nombres: input.nombres,
           apPaterno: input.apPaterno,
           apMaterno: input.apMaterno,
-          celular: '', // quita esto si haces celular nullable
+          celular: input.celular ?? '',
         })
         .returning();
+    } else if (input.celular) {
+      // El estudiante ya existía: el celular del formulario lo reemplaza.
+      await tx
+        .update(estudiantes)
+        .set({ celular: input.celular })
+        .where(eq(estudiantes.id, est.id));
     }
 
     const [dup] = await tx
@@ -127,11 +133,11 @@ export const updateEnrollment = (
       if (otro) return { error: 'ci_taken' } as const;
     }
 
-    const { nombres, apPaterno, apMaterno, codSis, ci } = input;
-    if ([nombres, apPaterno, apMaterno, codSis, ci].some((v) => v !== undefined)) {
+    const { nombres, apPaterno, apMaterno, codSis, ci, celular } = input;
+    if ([nombres, apPaterno, apMaterno, codSis, ci, celular].some((v) => v !== undefined)) {
       await tx
         .update(estudiantes)
-        .set({ nombres, apPaterno, apMaterno, codSis, ci }) // drizzle ignora los undefined
+        .set({ nombres, apPaterno, apMaterno, codSis, ci, celular }) // drizzle ignora los undefined
         .where(eq(estudiantes.id, row.insc.idEst));
     }
 

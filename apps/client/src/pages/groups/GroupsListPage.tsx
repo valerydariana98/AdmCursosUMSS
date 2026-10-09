@@ -31,6 +31,12 @@ const PlusIcon = () => (
 
 const isToggleable = (estado: GroupStatus) => TOGGLEABLE_STATES.includes(estado);
 
+// El reporte académico (HU #35) necesita estudiantes inscritos y solo tiene
+// sentido para grupos habilitados o ya finalizados.
+const canReport = (grupo: GroupListItem) =>
+  grupo.inscritos > 0 &&
+  (grupo.estado === 'habilitado' || grupo.estado === 'finalizado');
+
 const PencilIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path
@@ -262,6 +268,20 @@ const GroupsListPage = () => {
             >
               <TrashIcon />
             </button>
+            {canReport(grupo) ? (
+              <Link to={`/cursos/${cursoId}/grupos/${grupo.id}/reporte`}>
+                <Button size="sm" variant="secondary">Ver reporte</Button>
+              </Link>
+            ) : (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled
+                title="El grupo necesita estar habilitado o finalizado y tener estudiantes inscritos"
+              >
+                Ver reporte
+              </Button>
+            )}
             <Button
               size="sm"
               variant="accent"

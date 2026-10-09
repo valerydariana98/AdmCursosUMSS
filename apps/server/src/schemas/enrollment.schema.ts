@@ -7,6 +7,8 @@ export const createEnrollmentSchema = z.object({
   apMaterno: z.string().trim().min(1, "Requerido"),
   codSis: z.string().trim().min(1, "Requerido"),
   ci: z.string().trim().min(1, "Requerido"),
+  // La columna es nullable: el celular se puede dejar en blanco.
+  celular: z.string().trim().max(50, "Máximo 50 caracteres").nullish(),
   fotocopiaCI: z.boolean(),
   idTipoEst: z.number().int().positive(),
   tipoPago: z.enum(PAYMENT_TYPES),

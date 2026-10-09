@@ -903,6 +903,7 @@ export interface CreateEnrollment {
   apMaterno: string;
   codSis: string;
   ci: string;
+  celular?: string | null;
   fotocopiaCI: boolean;
   idTipoEst: number;
   tipoPago: PaymentType;

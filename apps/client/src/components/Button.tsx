@@ -11,6 +11,7 @@ interface ButtonProps {
   size?: 'sm' | 'md' | 'lg';
   border?: boolean;
   icon?: React.ReactNode;
+  title?: string;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -24,6 +25,7 @@ const Button: React.FC<ButtonProps> = ({
   size = 'md',
   border = false,
   icon,
+  title,
 }) => {
   const sizeStyles = {
     sm: 'px-3 py-1.5 text-xs gap-1.5',
@@ -43,6 +45,7 @@ const Button: React.FC<ButtonProps> = ({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={`
         rounded-xl transition-all duration-150 font-semibold cursor-pointer inline-flex items-center justify-center text-center
         ${sizeStyles[size]} 
