@@ -375,7 +375,7 @@ const GroupsListPage = () => {
                 <th className="py-3.5 px-4">Mín / Máx</th>
                 <th className="py-3.5 px-4">Cupo</th>
                 <th className="py-3.5 px-4">Estado</th>
-                <th className="py-3.5 px-6 text-right">Acciones</th>
+                <th className="py-3.5 px-6 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">{tableBody()}</tbody>

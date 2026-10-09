@@ -365,7 +365,7 @@ const GroupStudentsPage = () => {
                 <th className={th}>Celular</th>
                 <th className={th}>CI</th>
                 <th className={th}>Tipo</th>
-                <th className={`${th} pr-6 text-right`}>Acciones</th>
+                <th className={`${th} pr-6 text-center`}>Acciones</th>
               </tr>
             </thead>
             <tbody>{cuerpoTabla()}</tbody>
