@@ -238,12 +238,12 @@ export default function GroupDetailPage() {
               {grupo.horaIni} - {grupo.horaFin}
             </dd>
           </div>
-          <div>
-            <dt className="text-xs text-gray-400 mb-1">
-              {grupo.modalidad === 'virtual' ? 'Enlace de sesión' : 'Aula'}
-            </dt>
-            <dd className="font-medium text-gray-800">{grupo.aula || 'Sin asignar'}</dd>
-          </div>
+          {grupo.modalidad !== 'virtual' && (
+            <div>
+              <dt className="text-xs text-gray-400 mb-1">Aula</dt>
+              <dd className="font-medium text-gray-800">{grupo.aula || 'Sin asignar'}</dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs text-gray-400 mb-1">Estudiantes inscritos</dt>
             <dd className="font-medium text-gray-800">
