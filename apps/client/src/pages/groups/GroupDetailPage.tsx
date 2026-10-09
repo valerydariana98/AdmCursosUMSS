@@ -60,6 +60,10 @@ const MODULOS: Modulo[] = [
   { key: 'finalizar', label: 'Finalizar curso', desc: 'Cerrar el proceso académico', ruta: null, estados: ['habilitado'] },
 ];
 
+// Rúbrica, asistencia y notas son del docente: el ADMIN no gestiona la vida
+// académica del grupo, solo lo consulta (reporte) y administra sus datos.
+const SOLO_DOCENTE: Modulo['key'][] = ['rubrica', 'asistencia', 'notas'];
+
 export default function GroupDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -234,12 +238,12 @@ export default function GroupDetailPage() {
               {grupo.horaIni} - {grupo.horaFin}
             </dd>
           </div>
-          <div>
-            <dt className="text-xs text-gray-400 mb-1">
-              {grupo.modalidad === 'virtual' ? 'Enlace de sesión' : 'Aula'}
-            </dt>
-            <dd className="font-medium text-gray-800">{grupo.aula || 'Sin asignar'}</dd>
-          </div>
+          {grupo.modalidad !== 'virtual' && (
+            <div>
+              <dt className="text-xs text-gray-400 mb-1">Aula</dt>
+              <dd className="font-medium text-gray-800">{grupo.aula || 'Sin asignar'}</dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs text-gray-400 mb-1">Estudiantes inscritos</dt>
             <dd className="font-medium text-gray-800">
@@ -276,7 +280,7 @@ export default function GroupDetailPage() {
           Gestión académica
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {MODULOS.map((m) => {
+          {MODULOS.filter((m) => esDocente || !SOLO_DOCENTE.includes(m.key)).map((m) => {
             const permitido = m.estados.includes(estado);
             const destino =
               m.ruta && permitido

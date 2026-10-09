@@ -2,6 +2,7 @@ import { and, count, eq, ilike, or, type SQL } from 'drizzle-orm';
 import type { Instructor, InstructorGroup } from 'shared';
 import { db } from '../db/index.js';
 import { cursos, grupos, instructores, usuarios } from '../db/schema.js';
+import { hashPassword } from './auth.service.js';
 import type { CreateInstructorInput, InstructorsQuery } from '../schemas/instructor.schema.js';
 
 const DEFAULT_PAGE = 1;
@@ -141,14 +142,17 @@ export const createInstructor = async (
   data: CreateInstructorInput
 ): Promise<CreateInstructorResult> => {
   try {
+    // La contraseña inicial del docente es su CI (ver InstructorFormPage), pero
+    // se guarda hasheada porque el login la valida con bcrypt.
+    const password = await hashPassword(data.ci);
+
     return await db.transaction(async (tx) => {
-      // La contraseña inicial del docente es su CI (ver InstructorFormPage).
       const [usuario] = await tx
         .insert(usuarios)
         .values({
           username: data.username,
           email: data.email,
-          password: data.ci,
+          password,
           rol: 'DOCENTE',
         })
         .returning();

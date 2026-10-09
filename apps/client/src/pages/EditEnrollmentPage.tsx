@@ -17,6 +17,7 @@ type FormState = {
   apMaterno: string;
   ci: string;
   codSis: string;
+  celular: string;
   fotocopiaCI: boolean;
   idTipoEst: number;
   tipoPago: PaymentType;
@@ -52,6 +53,7 @@ const EditEnrollmentPage = () => {
             apMaterno: found.estudiante.apMaterno ?? '',
             ci: found.estudiante.ci ?? '',
             codSis: found.estudiante.codSis ?? '',
+            celular: found.estudiante.celular ?? '',
             fotocopiaCI: found.fotocopiaCI,
             idTipoEst: found.idTipoEst,
             tipoPago: found.tipoPago as PaymentType,
@@ -152,6 +154,11 @@ const EditEnrollmentPage = () => {
                   onChange={(e) => setField('codSis', e.target.value)} />
               </label>
             </div>
+            <label className={labelCls}>
+              Celular
+              <input className={inputCls} inputMode="tel" maxLength={50} placeholder="Opcional · Ej. 76000000"
+                value={form.celular} onChange={(e) => setField('celular', e.target.value)} />
+            </label>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
               <input type="checkbox" checked={form.fotocopiaCI}
                 onChange={(e) => setField('fotocopiaCI', e.target.checked)} />

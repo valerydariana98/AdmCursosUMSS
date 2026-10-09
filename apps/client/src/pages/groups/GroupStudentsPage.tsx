@@ -301,17 +301,21 @@ const GroupStudentsPage = () => {
         </div>
         {grupoActual && (
           <div className="flex flex-col sm:flex-row gap-2">
-            <Link to={`/cursos/${cursoId}/grupos/${grupoActual.id}/asistencia`}>
-              <Button variant="secondary">Asistencia</Button>
-            </Link>
-            <Link to={`/cursos/${cursoId}/grupos/${grupoActual.id}/notas`}>
-              <Button variant="secondary">Notas</Button>
-            </Link>
-            <Link to={`/cursos/${cursoId}/grupos/${grupoActual.id}/rubrica`}>
-              <Button variant="secondary">
-                {grupoActual.hasRubric ? 'Editar rúbrica' : 'Configurar rúbrica'}
+            {/* Asistencia, notas y rúbrica son de docente: el admin solo inscribe
+                y consulta (Fase 2). */}
+            {inscritos.length > 0 ? (
+              <Link to={`/cursos/${cursoId}/grupos/${grupoActual.id}/reporte`}>
+                <Button variant="secondary">Ver reporte</Button>
+              </Link>
+            ) : (
+              <Button
+                variant="secondary"
+                disabled
+                title="El grupo necesita tener estudiantes inscritos para generar su reporte"
+              >
+                Ver reporte
               </Button>
-            </Link>
+            )}
             <Link to={`/groups/${grupoActual.id}/enroll`}>
               <Button variant="primary">+ Inscribir estudiante</Button>
             </Link>

@@ -32,7 +32,8 @@ export type GradesFailure =
   | 'forbidden'
   | 'no_rubric'
   | 'unknown_student'
-  | 'unknown_rubric_item';
+  | 'unknown_rubric_item'
+  | 'group_finalized';
 
 export type GradesResult =
   | { ok: true; view: GradesView }
@@ -47,6 +48,19 @@ type GradesExecutor = Pick<typeof db, 'select' | 'insert' | 'update' | 'delete'>
 // que lee el mismo mapa de notas y no puede tener otra noción de "celda".
 export const cellKey = (idEstudiante: number, idRubricItem: number): string =>
   `${idEstudiante}:${idRubricItem}`;
+
+// Un libro de notas está completo cuando cada estudiante inscrito tiene
+// registrada cada evaluación de la rúbrica. Sin estudiantes o sin ítems no hay
+// nada pendiente por calificar. Lo usa la finalización del curso (HU #37) para
+// impedir el cierre mientras falten notas.
+export const isGradeBookComplete = (
+  studentIds: number[],
+  itemIds: number[],
+  gradeMap: Map<string, number>
+): boolean =>
+  studentIds.every((studentId) =>
+    itemIds.every((itemId) => gradeMap.has(cellKey(studentId, itemId)))
+  );
 
 // La pertenencia del grupo al docente la decide la rúbrica: un grupo ajeno
 // responde 403 y uno inexistente 404, sin importar si tiene o no notas.
@@ -324,13 +338,17 @@ export const saveGradesForTeacher = async (
     // módulo por grupo hace lo mismo, y es la garantía de que un grupo ajeno no
     // se lee ni se escribe aunque la rúbrica haya pasado el chequeo afuera.
     const [group] = await tx
-      .select({ instructorId: grupos.idInstructor })
+      .select({ instructorId: grupos.idInstructor, estado: grupos.estado })
       .from(grupos)
       .where(eq(grupos.id, groupId))
       .limit(1);
     const denied = resolveGroupOwnershipFailure(group ?? null, teacherId, isAdmin);
 
     if (denied) return { ok: false, reason: denied };
+
+    // Un grupo finalizado (HU #37) conserva sus notas intactas: se pueden
+    // consultar, pero no se vuelve a escribir sobre ellas.
+    if (group!.estado === 'finalizado') return { ok: false, reason: 'group_finalized' };
 
     await syncEvaluacionesFromRubric(tx, groupId, items);
 

@@ -1,4 +1,5 @@
 // apps/client/src/utils/course.ts
+import { getCurrentPeriod } from 'shared';
 import type { Course, CourseFormValues, CoursePayload } from '../types/course';
 
 export const emptyCourseForm: CourseFormValues = {
@@ -11,7 +12,7 @@ export const emptyCourseForm: CourseFormValues = {
   costoExterno: '',
   notaMin: '',
   maxFaltas: '',
-  periodo: '',
+  periodo: getCurrentPeriod(),
 };
 
 export const toCourseFormValues = (course: Course): CourseFormValues => ({

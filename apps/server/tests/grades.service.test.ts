@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { RubricItem } from 'shared';
 import {
   cellKey,
+  isGradeBookComplete,
   planEvaluacionesSync,
   resolveRubricFailure,
   type EvaluacionRow,
@@ -129,5 +130,33 @@ describe('clave de celda del mapa de notas', () => {
     expect(cellKey(42, 3)).toBe('42:3');
     expect(cellKey(42, 3)).not.toBe(cellKey(3, 42));
     expect(cellKey(42, 3)).not.toBe(cellKey(7, 3));
+  });
+});
+
+describe('libro de notas completo (HU #37)', () => {
+  it('está completo cuando cada estudiante tiene todas las notas', () => {
+    const gradeMap = new Map([
+      ['1:1', 80],
+      ['1:2', 70],
+      ['2:1', 60],
+      ['2:2', 50],
+    ]);
+
+    expect(isGradeBookComplete([1, 2], [1, 2], gradeMap)).toBe(true);
+  });
+
+  it('queda incompleto si a un estudiante le falta una nota', () => {
+    const gradeMap = new Map([
+      ['1:1', 80],
+      ['1:2', 70],
+      ['2:1', 60],
+    ]);
+
+    expect(isGradeBookComplete([1, 2], [1, 2], gradeMap)).toBe(false);
+  });
+
+  it('sin estudiantes o sin ítems no hay nada pendiente', () => {
+    expect(isGradeBookComplete([], [1, 2], new Map())).toBe(true);
+    expect(isGradeBookComplete([1, 2], [], new Map())).toBe(true);
   });
 });

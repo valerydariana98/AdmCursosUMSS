@@ -121,12 +121,12 @@ export default function MyGroupsPage() {
                     {grupo.horaIni} - {grupo.horaFin}
                   </dd>
                 </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-gray-400">
-                    {grupo.modalidad === 'virtual' ? 'Enlace' : 'Aula'}
-                  </dt>
-                  <dd className="font-medium truncate">{grupo.aula || 'Sin asignar'}</dd>
-                </div>
+                {grupo.modalidad !== 'virtual' && (
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-gray-400">Aula</dt>
+                    <dd className="font-medium truncate">{grupo.aula || 'Sin asignar'}</dd>
+                  </div>
+                )}
                 <div className="flex justify-between gap-2">
                   <dt className="text-gray-400">Inscritos</dt>
                   <dd className="font-medium">{grupo.inscritosCount}</dd>
