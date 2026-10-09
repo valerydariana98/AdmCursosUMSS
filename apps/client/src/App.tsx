@@ -20,6 +20,7 @@ import TempStudentsRedirect from "./pages/groups/TempStudentsRedirect";
 import InstructorsContainer from "./pages/instructors/InstructorsContainer";
 import EditEnrollmentPage from "./pages/EditEnrollmentPage";
 import EnrollmentPage from "./pages/EnrollmentPage";
+import EnrollmentsPage from "./pages/EnrollmentsPage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import Prueba from "./pages/Prueba";
@@ -141,7 +142,7 @@ export default function App() {
           <Route path="/grupos" element={soloAdmin(<GroupsPage />)} />
           <Route
             path="/estudiantes"
-            element={autenticado(<ComingSoonPage title="Estudiantes" />)}
+            element={soloAdmin(<EnrollmentsPage />)}
           />
           <Route
             path="/certificados"
