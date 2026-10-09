@@ -17,6 +17,7 @@ type FormState = {
   apMaterno: string;
   ci: string;
   codSis: string;
+  celular: string;
   fotocopiaCI: boolean;
   idTipoEst: number;
   tipoPago: PaymentType;
@@ -52,6 +53,7 @@ const EditEnrollmentPage = () => {
             apMaterno: found.estudiante.apMaterno ?? '',
             ci: found.estudiante.ci ?? '',
             codSis: found.estudiante.codSis ?? '',
+            celular: found.estudiante.celular ?? '',
             fotocopiaCI: found.fotocopiaCI,
             idTipoEst: found.idTipoEst,
             tipoPago: found.tipoPago as PaymentType,
@@ -98,7 +100,7 @@ const EditEnrollmentPage = () => {
   };
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto max-w-5xl p-6">
+    <form onSubmit={onSubmit} className="p-8 font-sans">
       <p className="text-sm text-gray-400">
         <Link to={listUrl} className="hover:underline">Estudiantes</Link> /{' '}
         <span className="font-semibold text-gray-600">Editar estudiante</span>
@@ -110,12 +112,6 @@ const EditEnrollmentPage = () => {
           <p className="text-sm text-gray-500">
             {group.curso.nombreCurso} · Grupo {group.numGrupo}
           </p>
-        </div>
-        <div className="flex gap-3">
-          <Link to={listUrl} className={btnSecondary}>Cancelar</Link>
-          <button type="submit" disabled={isSaving} className={btnPrimary}>
-            {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-          </button>
         </div>
       </div>
 
@@ -152,6 +148,11 @@ const EditEnrollmentPage = () => {
                   onChange={(e) => setField('codSis', e.target.value)} />
               </label>
             </div>
+            <label className={labelCls}>
+              Celular
+              <input className={inputCls} inputMode="tel" maxLength={50} placeholder="Opcional · Ej. 76000000"
+                value={form.celular} onChange={(e) => setField('celular', e.target.value)} />
+            </label>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
               <input type="checkbox" checked={form.fotocopiaCI}
                 onChange={(e) => setField('fotocopiaCI', e.target.checked)} />
@@ -196,6 +197,13 @@ const EditEnrollmentPage = () => {
         </section>
 
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      </div>
+
+      <div className="flex justify-end gap-2 pt-6 pb-4">
+        <Link to={listUrl} className={btnSecondary}>Cancelar</Link>
+        <button type="submit" disabled={isSaving} className={btnPrimary}>
+          {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+        </button>
       </div>
     </form>
   );

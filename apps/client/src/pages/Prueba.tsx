@@ -18,7 +18,7 @@ const Prueba = () => {
   const [modalidad, setModalidad] = useState<string | number>('presencial');
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans">
+    <div className="flex h-screen bg-brand-bg overflow-hidden font-sans">
 
       {/* 2. CONTENIDO PRINCIPAL / SHOWCASE DE COMPONENTES */}
       <main className="flex-1 overflow-y-auto p-8 space-y-8">

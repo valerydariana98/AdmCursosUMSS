@@ -244,7 +244,7 @@ const GroupAttendancePage = () => {
         </div>
       </div>
 
-      <div className="space-y-6 max-w-5xl">
+      <div className="space-y-6">
         <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <TextField

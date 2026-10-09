@@ -5,7 +5,7 @@ import { ApiError } from '../services/api';
 import { homeForRol } from '../components/ProtectedRoute';
 
 const inputCls =
-  'w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 outline-none transition focus:border-[#1D3557] focus:ring-2 focus:ring-[#1D3557]/15';
+  'w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 outline-none transition focus:border-brand-mid focus:ring-2 focus:ring-brand-mid/15';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -55,13 +55,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-brand-bg px-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 bg-[#0C103C] text-white font-black rounded-2xl flex items-center justify-center text-2xl shadow-md">
+          <div className="w-14 h-14 bg-brand-dark text-white font-black rounded-2xl flex items-center justify-center text-2xl shadow-md">
             U
           </div>
-          <h1 className="mt-4 text-xl font-bold text-[#0C103C]">Formación Continua UMSS</h1>
+          <h1 className="mt-4 text-xl font-bold text-brand-dark">Formación Continua UMSS</h1>
           <p className="text-sm text-gray-500 mt-1">Inicia sesión para continuar</p>
         </div>
 
@@ -119,7 +119,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3 rounded-xl bg-[#0C103C] text-white text-sm font-semibold hover:bg-[#1D3557] transition disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-xl bg-brand-dark text-white text-sm font-semibold hover:bg-brand-mid transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {submitting ? 'Verificando...' : 'Iniciar Sesión'}
           </button>

@@ -4,6 +4,12 @@ import { getCurrentPeriodYear, getPeriodYear } from '../utils/period.js';
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 const periodRegex = /^[12]-\d{4}$/;
 
+// La fecha final debe quedar al menos una semana después de la inicial.
+const MIN_COURSE_DURATION_DAYS = 7;
+
+const daysBetween = (from: string, to: string): number =>
+  (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000;
+
 const isRealDate = (value: string): boolean => {
   const [year, month, day] = value.split('-').map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
@@ -58,8 +64,8 @@ export const createCourseSchema = z
       .string({ error: 'Period is required' })
       .regex(periodRegex, 'Invalid format, expected 1-2026 (semester-year), e.g. 1-2026, 2-2026'),
   })
-  .refine((data) => data.fechaFin >= data.fechaIni, {
-    message: 'End date must be equal to or later than start date',
+  .refine((data) => daysBetween(data.fechaIni, data.fechaFin) >= MIN_COURSE_DURATION_DAYS, {
+    message: 'End date must be at least 1 week after the start date',
     path: ['fechaFin'],
   })
   .refine((data) => getPeriodYear(data.periodo) >= getCurrentPeriodYear(), {

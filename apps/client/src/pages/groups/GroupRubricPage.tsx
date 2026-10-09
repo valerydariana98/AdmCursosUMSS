@@ -430,7 +430,7 @@ const GroupRubricPage = () => {
         </div>
       </div>
 
-      <div className="space-y-6 max-w-5xl">
+      <div className="space-y-6">
         <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
           <h2 className="text-base font-bold text-gray-900 mb-1">Reglas del curso</h2>
           <p className="text-xs text-gray-500 mb-4">

@@ -2,7 +2,7 @@ import React from 'react';
 
 interface ButtonProps {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'accent';
   onClick?: () => void;
   type?: 'button' | 'submit';
   fullWidth?: boolean;
@@ -11,6 +11,7 @@ interface ButtonProps {
   size?: 'sm' | 'md' | 'lg';
   border?: boolean;
   icon?: React.ReactNode;
+  title?: string;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -24,6 +25,7 @@ const Button: React.FC<ButtonProps> = ({
   size = 'md',
   border = false,
   icon,
+  title,
 }) => {
   const sizeStyles = {
     sm: 'px-3 py-1.5 text-xs gap-1.5',
@@ -32,9 +34,10 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const variantStyles = {
-    primary: 'bg-[#111827] text-white hover:bg-gray-800',
+    primary: 'bg-brand-primary text-white hover:bg-brand-primary-hover',
     secondary: 'bg-white text-gray-800 hover:bg-gray-50 border-gray-300',
     danger: 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200',
+    accent: 'bg-brand-accent text-white hover:bg-brand-mid',
   };
 
   return (
@@ -42,6 +45,7 @@ const Button: React.FC<ButtonProps> = ({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={`
         rounded-xl transition-all duration-150 font-semibold cursor-pointer inline-flex items-center justify-center text-center
         ${sizeStyles[size]} 

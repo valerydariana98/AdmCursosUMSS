@@ -49,7 +49,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({ name, label, value, onChange, o
           );
         })}
       </div>
-      {error && <span className="text-xs text-status-errorText font-medium">{error}</span>}
+      {error && <span className="text-xs text-status-error-text font-medium">{error}</span>}
     </div>
   );
 };

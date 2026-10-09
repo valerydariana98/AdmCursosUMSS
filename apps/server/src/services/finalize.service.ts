@@ -12,7 +12,8 @@ import {
   type FinalizeSuccess,
 } from 'shared';
 import { db } from '../db/index.js';
-import { cursos, grupos } from '../db/schema.js';
+import { cursos, grupos, inscripciones, rubricItems, rubrics } from '../db/schema.js';
+import { isGradeBookComplete, loadGradeMap } from './grades.service.js';
 import { resolveGroupOwnershipFailure } from './groupOwnership.js';
 import type { GroupOwnershipFailure } from './groupOwnership.js';
 
@@ -83,6 +84,39 @@ const loadFinalizeContext = async (groupId: number): Promise<FinalizeContext | n
   return row ?? null;
 };
 
+// Estado del libro de notas del grupo para la validación de la HU #37. Sin
+// rúbrica no hay nada que calificar y la comprobación de notas queda apagada;
+// con rúbrica, `notasCompletas` dice si a cada inscrito le falta alguna nota.
+const loadGradeStatus = async (
+  groupId: number
+): Promise<{ notasDisponibles: boolean; notasCompletas: boolean }> => {
+  const [rubric] = await db
+    .select({ id: rubrics.id })
+    .from(rubrics)
+    .where(eq(rubrics.groupId, groupId))
+    .limit(1);
+
+  if (!rubric) return { notasDisponibles: false, notasCompletas: true };
+
+  const [items, students, gradeMap] = await Promise.all([
+    db.select({ id: rubricItems.id }).from(rubricItems).where(eq(rubricItems.rubricId, rubric.id)),
+    db
+      .select({ id: inscripciones.idEst })
+      .from(inscripciones)
+      .where(eq(inscripciones.idGrupo, groupId)),
+    loadGradeMap(db, groupId),
+  ]);
+
+  return {
+    notasDisponibles: true,
+    notasCompletas: isGradeBookComplete(
+      students.map((student) => student.id),
+      items.map((item) => item.id),
+      gradeMap
+    ),
+  };
+};
+
 // El docente finaliza su propio grupo. El ADMIN no finaliza: la HU pide
 // explícitamente que el grupo pertenezca al docente autenticado, y el ADMIN no
 // es dueño de ninguno.
@@ -96,13 +130,14 @@ export const finalizeGroupForTeacher = async (
   if (denied) return { ok: false, reason: denied, pendientes: [] };
   if (teacherId === null) return { ok: false, reason: 'teacher_not_found', pendientes: [] };
 
+  const gradeStatus = await loadGradeStatus(groupId);
+
   const pendientes = resolveFinalizePendientes({
     estado: context!.estado,
     fechaFin: context!.fechaFin,
     today: today(),
-    // HU #33/#34: se enciende cuando exista el registro de notas.
-    notasDisponibles: false,
-    notasCompletas: true,
+    notasDisponibles: gradeStatus.notasDisponibles,
+    notasCompletas: gradeStatus.notasCompletas,
   });
 
   if (pendientes.length > 0) return { ok: false, reason: 'pendientes', pendientes };

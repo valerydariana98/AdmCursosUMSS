@@ -29,6 +29,14 @@ const PlusIcon = () => (
   </svg>
 );
 
+const isToggleable = (estado: GroupStatus) => TOGGLEABLE_STATES.includes(estado);
+
+// El reporte académico (HU #35) necesita estudiantes inscritos y solo tiene
+// sentido para grupos habilitados o ya finalizados.
+const canReport = (grupo: GroupListItem) =>
+  grupo.inscritos > 0 &&
+  (grupo.estado === 'habilitado' || grupo.estado === 'finalizado');
+
 const PencilIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path
@@ -50,19 +58,6 @@ const TrashIcon = () => (
     />
   </svg>
 );
-
-const ToggleIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      d="M7 7h10a3 3 0 010 6H7a3 3 0 010-6zM7 7l-3 5 3 5M7 7l3 5-3 5"
-    />
-  </svg>
-);
-
-const isToggleable = (estado: GroupStatus) => TOGGLEABLE_STATES.includes(estado);
 
 const UserPlusIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,7 +224,7 @@ const GroupsListPage = () => {
             type="button"
             onClick={() => setInstructorModal(grupo)}
             title="Ver todos los grupos de este docente"
-            className="text-left font-medium text-[#1D3557] underline decoration-dotted underline-offset-4 hover:text-[#0C103C]"
+            className="text-left font-medium text-brand-mid underline decoration-dotted underline-offset-4 hover:text-brand-dark"
           >
             {grupo.instructorNombre}
           </button>
@@ -249,17 +244,7 @@ const GroupsListPage = () => {
           <EstadoBadge estado={grupo.estado} />
         </td>
         <td className="py-4 px-6">
-          <div className="flex justify-end gap-1">
-            <button
-              type="button"
-              onClick={() => openEstadoModal(grupo)}
-              title="Cambiar estado"
-              aria-label={`Cambiar estado del grupo ${grupo.numGrupo}`}
-              disabled={finalizada || !isToggleable(grupo.estado)}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-            >
-              <ToggleIcon />
-            </button>
+          <div className="flex justify-end items-center gap-1.5">
             <Link
               to={`/cursos/${cursoId}/grupos/${grupo.id}/editar`}
               title="Editar grupo"
@@ -283,6 +268,28 @@ const GroupsListPage = () => {
             >
               <TrashIcon />
             </button>
+            {canReport(grupo) ? (
+              <Link to={`/cursos/${cursoId}/grupos/${grupo.id}/reporte`}>
+                <Button size="sm" variant="secondary">Ver reporte</Button>
+              </Link>
+            ) : (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled
+                title="El grupo necesita estar habilitado o finalizado y tener estudiantes inscritos"
+              >
+                Ver reporte
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="accent"
+              onClick={() => openEstadoModal(grupo)}
+              disabled={finalizada || !isToggleable(grupo.estado)}
+            >
+              Cambiar estado
+            </Button>
           </div>
         </td>
       </tr>
@@ -368,7 +375,7 @@ const GroupsListPage = () => {
                 <th className="py-3.5 px-4">Mín / Máx</th>
                 <th className="py-3.5 px-4">Cupo</th>
                 <th className="py-3.5 px-4">Estado</th>
-                <th className="py-3.5 px-6 text-right">Acciones</th>
+                <th className="py-3.5 px-6 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">{tableBody()}</tbody>

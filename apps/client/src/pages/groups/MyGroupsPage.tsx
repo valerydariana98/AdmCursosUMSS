@@ -47,9 +47,9 @@ export default function MyGroupsPage() {
   }
 
   return (
-    <div className="p-8 max-w-6xl">
+    <div className="p-8 font-sans">
       <header className="mb-7">
-        <h1 className="text-2xl font-bold text-[#0C103C]">Mis Grupos</h1>
+        <h1 className="text-2xl font-bold text-brand-dark">Mis Grupos</h1>
         <p className="text-sm text-gray-500 mt-1">
           Grupos activos que tenés asignados en el período académico actual.
         </p>
@@ -90,11 +90,11 @@ export default function MyGroupsPage() {
               key={grupo.id}
               type="button"
               onClick={() => navigate(`/grupos/${grupo.id}/gestion`)}
-              className="text-left bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:border-[#1D3557]/40 hover:shadow-md transition-all duration-150"
+              className="text-left bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:border-brand-mid/40 hover:shadow-md transition-all duration-150"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h2 className="font-bold text-[#0C103C] leading-snug truncate">
+                  <h2 className="font-bold text-brand-dark leading-snug truncate">
                     {grupo.cursoNombre}
                   </h2>
                   <p className="text-xs text-gray-500 mt-0.5">Grupo {grupo.numGrupo}</p>
@@ -121,12 +121,12 @@ export default function MyGroupsPage() {
                     {grupo.horaIni} - {grupo.horaFin}
                   </dd>
                 </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-gray-400">
-                    {grupo.modalidad === 'virtual' ? 'Enlace' : 'Aula'}
-                  </dt>
-                  <dd className="font-medium truncate">{grupo.aula || 'Sin asignar'}</dd>
-                </div>
+                {grupo.modalidad !== 'virtual' && (
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-gray-400">Aula</dt>
+                    <dd className="font-medium truncate">{grupo.aula || 'Sin asignar'}</dd>
+                  </div>
+                )}
                 <div className="flex justify-between gap-2">
                   <dt className="text-gray-400">Inscritos</dt>
                   <dd className="font-medium">{grupo.inscritosCount}</dd>

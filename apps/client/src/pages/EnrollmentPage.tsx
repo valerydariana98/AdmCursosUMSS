@@ -24,7 +24,7 @@ const EnrollmentPage = () => {
   if (!group) return <p role="alert" className="p-6">{error ?? 'Grupo no encontrado'}</p>;
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto max-w-5xl p-4">
+    <form onSubmit={onSubmit} className="p-8 font-sans">
       <p className="text-sm text-gray-400">
         <Link to={listUrl} className="hover:underline">Estudiantes</Link> /{' '}
         <span className="font-semibold text-gray-600">Inscribir estudiante</span>
@@ -36,12 +36,6 @@ const EnrollmentPage = () => {
           <p className="text-sm text-gray-500">
             {group.curso.nombreCurso} · Grupo {group.numGrupo}
           </p>
-        </div>
-        <div className="flex gap-3">
-          <Link to={listUrl} className={btnSecondary}>Cancelar</Link>
-          <button type="submit" disabled={isSaving} className={btnPrimary}>
-            {isSaving ? 'Inscribiendo...' : 'Inscribir'}
-          </button>
         </div>
       </div>
 
@@ -78,6 +72,11 @@ const EnrollmentPage = () => {
                   value={form.codSis} onChange={(e) => setField('codSis', e.target.value)} />
               </label>
             </div>
+            <label className={labelCls}>
+              Celular
+              <input className={inputCls} inputMode="tel" maxLength={50} placeholder="Opcional · Ej. 76000000"
+                value={form.celular ?? ''} onChange={(e) => setField('celular', e.target.value)} />
+            </label>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
               <input type="checkbox" checked={form.fotocopiaCI}
                 onChange={(e) => setField('fotocopiaCI', e.target.checked)} />
@@ -123,6 +122,13 @@ const EnrollmentPage = () => {
         </section>
 
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      </div>
+
+      <div className="flex justify-end gap-2 pt-6 pb-4">
+        <Link to={listUrl} className={btnSecondary}>Cancelar</Link>
+        <button type="submit" disabled={isSaving} className={btnPrimary}>
+          {isSaving ? 'Inscribiendo...' : 'Inscribir'}
+        </button>
       </div>
     </form>
   );

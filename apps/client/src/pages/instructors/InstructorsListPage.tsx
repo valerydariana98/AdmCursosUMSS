@@ -43,7 +43,7 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
   onViewGroups,
 }) => {
   return (
-    <div className="p-8 bg-[#F8FAFC] min-h-screen font-sans">
+    <div className="p-8 bg-brand-bg min-h-screen font-sans">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Instructores</h1>
@@ -101,7 +101,7 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
                 <th className="py-3.5 px-4">Cargo</th>
                 <th className="py-3.5 px-4">Grupos Asignados</th>
                 <th className="py-3.5 px-4">Estado</th>
-                <th className="py-3.5 px-6 text-right">Acciones</th>
+                <th className="py-3.5 px-6 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
@@ -143,7 +143,7 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
                           type="button"
                           onClick={() => onViewGroups?.(item)}
                           title="Ver los grupos asignados a este docente"
-                          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 font-semibold text-[#1D3557] underline decoration-dotted underline-offset-4 transition-colors hover:bg-[#1D3557]/5 hover:text-[#0C103C]"
+                          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 font-semibold text-brand-mid underline decoration-dotted underline-offset-4 transition-colors hover:bg-brand-mid/5 hover:text-brand-dark"
                         >
                           {item.gruposAsignadosCount}{' '}
                           {item.gruposAsignadosCount === 1 ? 'grupo' : 'grupos'}

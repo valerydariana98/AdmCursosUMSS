@@ -3,7 +3,7 @@ import { calcularMonto, type CreateEnrollment, type GroupWithCourse, type Studen
 import { createEnrollment, getGroupWithCourse, getStudentTypes } from '../services/enrollments';
 
 const EMPTY: CreateEnrollment = {
-  nombres: '', apPaterno: '', apMaterno: '', codSis: '', ci: '',
+  nombres: '', apPaterno: '', apMaterno: '', codSis: '', ci: '', celular: '',
   fotocopiaCI: false, idTipoEst: 0, tipoPago: 'efectivo', observaciones: '',
 };
 
