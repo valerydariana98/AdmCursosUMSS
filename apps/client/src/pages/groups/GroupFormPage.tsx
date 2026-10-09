@@ -157,11 +157,6 @@ const GroupFormPage = ({ mode, grupo, loadingGrupo }: GroupFormPageProps) => {
           </div>
           {isEdit && grupo && <EstadoBadge estado={grupo.estado} />}
         </div>
-        <Link to={backPath}>
-          <Button variant="secondary" disabled={saving}>
-            Cancelar
-          </Button>
-        </Link>
       </div>
 
       {isEdit ? (
@@ -186,7 +181,7 @@ const GroupFormPage = ({ mode, grupo, loadingGrupo }: GroupFormPageProps) => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
           <h2 className="text-base font-bold text-gray-900">Datos del grupo</h2>
 

@@ -100,7 +100,7 @@ const EditEnrollmentPage = () => {
   };
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto max-w-5xl p-6">
+    <form onSubmit={onSubmit} className="p-8 font-sans">
       <p className="text-sm text-gray-400">
         <Link to={listUrl} className="hover:underline">Estudiantes</Link> /{' '}
         <span className="font-semibold text-gray-600">Editar estudiante</span>
@@ -112,12 +112,6 @@ const EditEnrollmentPage = () => {
           <p className="text-sm text-gray-500">
             {group.curso.nombreCurso} · Grupo {group.numGrupo}
           </p>
-        </div>
-        <div className="flex gap-3">
-          <Link to={listUrl} className={btnSecondary}>Cancelar</Link>
-          <button type="submit" disabled={isSaving} className={btnPrimary}>
-            {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-          </button>
         </div>
       </div>
 
@@ -203,6 +197,13 @@ const EditEnrollmentPage = () => {
         </section>
 
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      </div>
+
+      <div className="flex justify-end gap-2 pt-6 pb-4">
+        <Link to={listUrl} className={btnSecondary}>Cancelar</Link>
+        <button type="submit" disabled={isSaving} className={btnPrimary}>
+          {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+        </button>
       </div>
     </form>
   );

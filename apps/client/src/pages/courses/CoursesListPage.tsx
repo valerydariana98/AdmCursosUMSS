@@ -242,7 +242,7 @@ const CoursesListPage = () => {
                 <th className="py-3.5 px-4">{isArchived ? 'Fecha Fin' : 'Fechas'}</th>
                 {isArchived && <th className="py-3.5 px-4">Inscritos</th>}
                 <th className="py-3.5 px-4">Estado</th>
-                <th className="py-3.5 px-6 text-right">{isArchived ? 'Acción' : 'Acciones'}</th>
+                <th className="py-3.5 px-6 text-center">{isArchived ? 'Acción' : 'Acciones'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">{tableBody()}</tbody>

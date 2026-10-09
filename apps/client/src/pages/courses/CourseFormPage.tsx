@@ -174,20 +174,6 @@ const CourseFormPage: React.FC<CourseFormPageProps> = ({ mode, course, loadingCo
             <Badge status={course.estado} inactiveLabel="Finalizado" />
           )}
         </div>
-        <div className="flex gap-2">
-          <Link to="/cursos">
-            <Button variant="secondary">Cancelar</Button>
-          </Link>
-          {isEdit && (
-            <Button
-              variant="primary"
-              onClick={() => formRef.current?.requestSubmit()}
-              disabled={saving}
-            >
-              Guardar Cambios
-            </Button>
-          )}
-        </div>
       </div>
 
       {submitError && (
@@ -196,7 +182,7 @@ const CourseFormPage: React.FC<CourseFormPageProps> = ({ mode, course, loadingCo
         </div>
       )}
 
-      <form ref={formRef} onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
         <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
           <h2 className="text-base font-bold text-gray-900">Información general</h2>
 

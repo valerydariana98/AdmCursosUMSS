@@ -138,7 +138,7 @@ export const InstructorFormPage: React.FC<InstructorFormPageProps> = ({
   };
 
   return (
-    <div className="p-8 bg-brand-bg min-h-screen font-sans max-w-5xl mx-auto">
+    <div className="p-8 bg-brand-bg min-h-screen font-sans">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <span className="text-xs text-gray-400 font-medium">
@@ -150,14 +150,6 @@ export const InstructorFormPage: React.FC<InstructorFormPageProps> = ({
           <h1 className="text-2xl font-bold text-gray-900 mt-1">
             {isEdit ? 'Editar Instructor' : 'Agregar Instructor'}
           </h1>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="secondary" onClick={onCancel} disabled={submitting}>
-            Cancelar
-          </Button>
-          <Button variant="primary" onClick={() => handleSubmit()} disabled={submitting}>
-            {submitting ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Guardar Instructor'}
-          </Button>
         </div>
       </div>
 
@@ -297,6 +289,15 @@ export const InstructorFormPage: React.FC<InstructorFormPageProps> = ({
             </div>
           </div>
         </Card>
+
+        <div className="flex justify-end gap-2 pb-4">
+          <Button variant="secondary" onClick={onCancel} disabled={submitting}>
+            Cancelar
+          </Button>
+          <Button type="submit" variant="primary" disabled={submitting}>
+            {submitting ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Guardar Instructor'}
+          </Button>
+        </div>
       </form>
     </div>
   );
