@@ -288,7 +288,7 @@ const GroupsListPage = () => {
               onClick={() => openEstadoModal(grupo)}
               disabled={finalizada || !isToggleable(grupo.estado)}
             >
-              Cambiar estado
+             Finalizar preinscripción
             </Button>
           </div>
         </td>
@@ -375,7 +375,7 @@ const GroupsListPage = () => {
                 <th className="py-3.5 px-4">Mín / Máx</th>
                 <th className="py-3.5 px-4">Cupo</th>
                 <th className="py-3.5 px-4">Estado</th>
-                <th className="py-3.5 px-6 text-center">Acciones</th>
+                <th className="py-3.5 px-6 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">{tableBody()}</tbody>
@@ -407,7 +407,12 @@ const GroupsListPage = () => {
                 <Button
                   variant="danger"
                   onClick={() => handleEstadoChange(false)}
-                  disabled={savingEstado}
+                  disabled={savingEstado || (grupoToToggle?.inscritos ?? 0) > 0}
+                  title={
+                    (grupoToToggle?.inscritos ?? 0) > 0
+                      ? 'No se puede inhabilitar un grupo con estudiantes inscritos'
+                      : undefined
+                  }
                 >
                   {accionEstado === 'inhabilitar' ? 'Guardando...' : 'Inhabilitar'}
                 </Button>
@@ -423,7 +428,17 @@ const GroupsListPage = () => {
               <Button
                 variant={grupoToToggle?.estado !== 'habilitado' ? 'primary' : 'danger'}
                 onClick={() => handleEstadoChange(grupoToToggle?.estado !== 'habilitado')}
-                disabled={savingEstado}
+                disabled={
+                  savingEstado ||
+                  (grupoToToggle?.estado === 'habilitado' &&
+                    (grupoToToggle?.inscritos ?? 0) > 0)
+                }
+                title={
+                  grupoToToggle?.estado === 'habilitado' &&
+                  (grupoToToggle?.inscritos ?? 0) > 0
+                    ? 'No se puede inhabilitar un grupo con estudiantes inscritos'
+                    : undefined
+                }
               >
                 {savingEstado
                   ? 'Guardando...'
@@ -453,7 +468,11 @@ const GroupsListPage = () => {
                 <AlertInfo
                   type="warning"
                   title="Inhabilitar: no se dictará y ya no admitirá nuevos inscritos"
-                  subtitle="Los estudiantes ya inscritos deben reasignarse a otro grupo o eliminarse"
+                  subtitle={
+                    (grupoToToggle?.inscritos ?? 0) > 0
+                      ? 'Este grupo tiene estudiantes inscritos: primero debes reasignarlos o eliminarlos'
+                      : 'Los estudiantes ya inscritos deben reasignarse a otro grupo o eliminarse'
+                  }
                 />
                 {grupoToToggle.inscritos < grupoToToggle.minimEst && (
                   <AlertInfo
@@ -470,7 +489,11 @@ const GroupsListPage = () => {
                   description={`Grupo ${grupoToToggle?.numGrupo} de ${curso?.nombreCurso ?? 'este curso'}`}
                   checked={grupoToToggle?.estado === 'habilitado'}
                   onChange={handleEstadoChange}
-                  disabled={savingEstado}
+                  disabled={
+                    savingEstado ||
+                    (grupoToToggle?.estado === 'habilitado' &&
+                      (grupoToToggle?.inscritos ?? 0) > 0)
+                  }
                 />
                 <AlertInfo
                   type="warning"
