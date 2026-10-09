@@ -5,10 +5,23 @@ export const createEnrollmentSchema = z.object({
   nombres: z.string().trim().min(1, "Requerido"),
   apPaterno: z.string().trim().min(1, "Requerido"),
   apMaterno: z.string().trim().min(1, "Requerido"),
-  codSis: z.string().trim().min(1, "Requerido"),
-  ci: z.string().trim().min(1, "Requerido"),
-  // La columna es nullable: el celular se puede dejar en blanco.
-  celular: z.string().trim().max(50, "Máximo 50 caracteres").nullish(),
+  // Codigo SIS: opcional; si se informa, solo digitos.
+  codSis: z
+    .string()
+    .trim()
+    .regex(/^\d*$/, "El código SIS solo puede contener números")
+    .nullish(),
+  // CI obligatorio: solo digitos y hasta 8 (formato boliviano).
+  ci: z
+    .string()
+    .trim()
+    .regex(/^\d{1,8}$/, "El CI debe ser numérico y tener hasta 8 dígitos"),
+  // Celular opcional: si se informa, solo digitos y hasta 9.
+  celular: z
+    .string()
+    .trim()
+    .regex(/^\d{0,9}$/, "El celular debe ser numérico y tener hasta 9 dígitos")
+    .nullish(),
   fotocopiaCI: z.boolean(),
   idTipoEst: z.number().int().positive(),
   tipoPago: z.enum(PAYMENT_TYPES),

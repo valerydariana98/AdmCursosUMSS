@@ -40,11 +40,11 @@ export const createEnrollment = (idGrupo: number, input: CreateEnrollment) =>
         .insert(estudiantes)
         .values({
           ci: input.ci,
-          codSis: input.codSis,
+          codSis: input.codSis || null,
           nombres: input.nombres,
           apPaterno: input.apPaterno,
           apMaterno: input.apMaterno,
-          celular: input.celular ?? '',
+          celular: input.celular || null,
         })
         .returning();
     } else if (input.celular) {
@@ -134,10 +134,19 @@ export const updateEnrollment = (
     }
 
     const { nombres, apPaterno, apMaterno, codSis, ci, celular } = input;
-    if ([nombres, apPaterno, apMaterno, codSis, ci, celular].some((v) => v !== undefined)) {
+    // Un campo en blanco se guarda como null: no hay codigo SIS ni celular vacio.
+    const estudianteUpdate = {
+      nombres,
+      apPaterno,
+      apMaterno,
+      codSis: codSis === '' ? null : codSis,
+      ci,
+      celular: celular === '' ? null : celular,
+    };
+    if (Object.values(estudianteUpdate).some((v) => v !== undefined)) {
       await tx
         .update(estudiantes)
-        .set({ nombres, apPaterno, apMaterno, codSis, ci, celular }) // drizzle ignora los undefined
+        .set(estudianteUpdate) // drizzle ignora los undefined
         .where(eq(estudiantes.id, row.insc.idEst));
     }
 
