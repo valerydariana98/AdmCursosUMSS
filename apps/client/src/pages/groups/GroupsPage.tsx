@@ -12,7 +12,7 @@ import { useCourses } from '../../hooks/useCourses';
 import { useGroupsGlobal } from '../../hooks/useGroupsGlobal';
 import type { Modality } from 'shared';
 import type { Course } from '../../types/course';
-import { TOGGLEABLE_STATES, type GroupListItem, type GroupStatus } from '../../types/group';
+import { type GroupListItem, type GroupStatus } from '../../types/group';
 
 const PencilIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,8 +94,6 @@ const GroupsPage = () => {
       setAccionEstado(null);
     }
   };
-
-  const isToggleable = (estado: GroupStatus) => TOGGLEABLE_STATES.includes(estado);
 
   const openDeleteModal = (grupo: GroupListItem) => {
     setDeleteError(null);
@@ -197,7 +195,7 @@ const GroupsPage = () => {
                     size="sm"
                     variant="accent"
                     onClick={() => openEstadoModal(grupo)}
-                    disabled={curso.preinscripcionFinalizada || !isToggleable(grupo.estado)}
+                    disabled={curso.preinscripcionFinalizada || grupo.estado !== 'preinscripcion'}
                   >
                     Finalizar preinscripción
                   </Button>
