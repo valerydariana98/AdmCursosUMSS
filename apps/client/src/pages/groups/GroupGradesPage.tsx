@@ -101,7 +101,13 @@ const GroupGradesPage = () => {
     setSuccessMessage(null);
   };
 
-  const handleGradeChange = (idEstudiante: number, idRubricItem: number, value: string) => {
+  const handleGradeChange = (
+    idEstudiante: number,
+    idRubricItem: number,
+    value: string,
+    isAttendance: boolean
+  ) => {
+    if (isAttendance) return;
     clearMessages();
     setGrade(idEstudiante, idRubricItem, value);
   };
@@ -291,9 +297,12 @@ const GroupGradesPage = () => {
                           </p>
                         </td>
                         {items.map((item) => {
+                          const isAttendance = item.category === 'attendance';
                           const cell = student.grades[item.id];
                           const weighted =
-                            cell && cell.value.trim() !== '' ? liveWeighted(cell.value, item) : null;
+                            cell && cell.value.trim() !== ''
+                              ? liveWeighted(cell.value, item)
+                              : null;
 
                           return (
                             <td key={item.id} className={td}>
@@ -302,14 +311,28 @@ const GroupGradesPage = () => {
                                 inputMode="decimal"
                                 value={cell?.value ?? ''}
                                 placeholder="—"
-                                disabled={saving}
+                                disabled={saving || isAttendance}
+                                title={
+                                  isAttendance
+                                    ? 'Esta nota se calcula sola según la asistencia registrada'
+                                    : undefined
+                                }
                                 onChange={(event) =>
-                                  handleGradeChange(student.idEstudiante, item.id, event.target.value)
+                                  handleGradeChange(
+                                    student.idEstudiante,
+                                    item.id,
+                                    event.target.value,
+                                    isAttendance
+                                  )
                                 }
                                 className="w-20 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
                               />
                               <p className="text-[11px] text-gray-400 mt-1 h-4">
-                                {weighted === null ? '' : `aporta ${formatGrade(weighted)}`}
+                                {weighted === null
+                                  ? isAttendance
+                                    ? 'calculada'
+                                    : ''
+                                  : `aporta ${formatGrade(weighted)}`}
                               </p>
                             </td>
                           );
@@ -337,7 +360,8 @@ const GroupGradesPage = () => {
               </div>
 
               <div className="p-4 border-t border-gray-100 text-xs text-gray-500">
-                Las notas van de 0 a 100. Dejar una celda vacía equivale a 0.
+                Las notas van de 0 a 100. Dejar una celda vacía equivale a 0. Las columnas de
+                asistencia se calculan solas según las jornadas registradas.
               </div>
             </div>
 
