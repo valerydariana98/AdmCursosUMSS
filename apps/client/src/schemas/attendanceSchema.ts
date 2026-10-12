@@ -1,26 +1,31 @@
 import { z } from 'zod';
 import { ATTENDANCE_STATUSES } from 'shared';
 
-const studentId = z.coerce
-  .number({ error: 'El id del estudiante debe ser un número' })
-  .int('El id del estudiante debe ser un entero')
-  .positive('El id del estudiante debe ser un número positivo');
+const attendanceDateSchema = z
+  .string({ error: 'La fecha de la jornada es obligatoria' })
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha de la jornada no es válida');
 
-export const attendanceStatusSchema = z.object({
-  studentId,
+const attendanceStudentSchema = z.object({
+  studentId: z
+    .number({ error: 'El id del estudiante debe ser un número' })
+    .int('El id del estudiante debe ser un entero')
+    .positive('El id del estudiante debe ser un número positivo'),
   status: z.enum(ATTENDANCE_STATUSES, { error: 'El estado de asistencia no es válido' }),
 });
 
-// El mismo cuerpo que acepta el servidor. La fecha se valida aparte porque el
-// selector de fecha es un input, no un campo del payload que se edite a mano.
-export const attendancePayloadSchema = z.object({
-  date: z
-    .string({ error: 'La fecha de la jornada es obligatoria' })
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha debe tener el formato YYYY-MM-DD'),
-  records: z
-    .array(attendanceStatusSchema)
-    .min(1, 'Marca la asistencia de al menos un estudiante')
-    .max(200, 'La jornada tiene demasiados estudiantes'),
+// La grilla se valida entera antes de enviarla: todas las jornadas tocadas viajan
+// en una sola petición y el servidor las guarda en una sola transacción.
+export const attendanceGridPayloadSchema = z.object({
+  sessions: z
+    .array(
+      z.object({
+        date: attendanceDateSchema,
+        records: z
+          .array(attendanceStudentSchema)
+          .min(1, 'Una jornada necesita al menos un registro'),
+      })
+    )
+    .min(1, 'Marca la asistencia de al menos un estudiante'),
 });
 
-export type AttendancePayloadInput = z.infer<typeof attendancePayloadSchema>;
+export type AttendanceGridPayloadInput = z.infer<typeof attendanceGridPayloadSchema>;

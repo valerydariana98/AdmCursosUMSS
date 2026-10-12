@@ -128,11 +128,12 @@ const GroupStudentsPage = () => {
     await refetchGrupos();
   }, [grupoActual, cargarInscritos, refetchGrupos]);
 
-  // Solo grupos del mismo curso, tal como exige la regla de reubicacion.
+  // Solo grupos del mismo curso que sigan en preinscripción: los grupos
+  // habilitados ya tienen su cupo cerrado.
   const gruposDisponibles = useMemo(
     () =>
       grupos.filter(
-        (g) => g.id !== grupoActual?.id && (g.estado === 'preinscripcion' || g.estado === 'habilitado')
+        (g) => g.id !== grupoActual?.id && g.estado === 'preinscripcion'
       ),
     [grupos, grupoActual]
   );
@@ -249,9 +250,14 @@ const GroupStudentsPage = () => {
                   setDestino('');
                   setMoveError(null);
                 }}
-                title="Cambiar grupo"
+                disabled={grupoActual.estado !== 'preinscripcion'}
+                title={
+                  grupoActual.estado !== 'preinscripcion'
+                    ? 'Solo se puede cambiar de grupo mientras el grupo está en preinscripción'
+                    : 'Cambiar grupo'
+                }
                 aria-label={`Cambiar grupo de ${e.estudiante.nombres}`}
-                className={actionBtn}
+                className={`${actionBtn} disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent`}
               >
                 <SwapIcon />
               </button>
@@ -410,7 +416,7 @@ const GroupStudentsPage = () => {
               <AlertInfo
                 type="info"
                 title="No hay otros grupos disponibles"
-                subtitle="Este curso solo tiene el grupo actual en estado habilitado o preinscripción"
+                subtitle="Este curso solo tiene el grupo actual en estado preinscripción"
               />
             ) : (
               <Select

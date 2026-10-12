@@ -21,6 +21,8 @@ const UPDATE_FAILURE_MESSAGES = {
   grupo_not_found: 'Grupo not found',
   grupo_finalizado: 'Un grupo finalizado no se puede habilitar ni inhabilitar',
   instructor_not_found: 'El instructor seleccionado no existe',
+  has_enrollments:
+    'No se puede inhabilitar un grupo con estudiantes inscritos: reasígnalos o elimínalos primero',
   preinscripcion_finalizada:
     'La preinscripción de este curso ya fue finalizada: el grupo no se puede modificar',
 } as const;

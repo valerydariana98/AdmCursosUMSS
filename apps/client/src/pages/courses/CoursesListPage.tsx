@@ -155,13 +155,6 @@ const CoursesListPage = () => {
               >
                 <TrashIcon />
               </button>
-              <Button
-                size="sm"
-                variant="accent"
-                onClick={() => navigate(`/cursos/${course.id}/grupos`)}
-              >
-                Ver grupos
-              </Button>
             </div>
           )}
         </td>

@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { Link, useParams } from 'react-router-dom';
 import { type GroupReportView } from 'shared';
 import AlertInfo from '../../components/AlertInfo';
+import BackButton from '../../components/BackButton';
 import Button from '../../components/Button';
 import PrintButton from '../../components/PrintButton';
 import ReportTable from '../../components/ReportTable';
@@ -86,6 +87,9 @@ const GroupReportPage = () => {
 
   return (
     <div className="p-8 font-sans">
+      <div className="no-print">
+        <BackButton />
+      </div>
       <nav className="flex items-center gap-2 text-xs text-gray-400 mb-3 no-print">
         <Link to="/cursos" className="hover:text-gray-600">
           Cursos

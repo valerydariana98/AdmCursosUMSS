@@ -4,8 +4,10 @@ import {
   calculateAttendancePercentage,
   isAttendanceDate,
   isAttendanceDateInFuture,
+  isWeekendDate,
   roundAttendancePercentage,
   resolveAttendanceRequirement,
+  weekdaysBetween,
 } from '../src/index.js';
 
 describe('porcentaje de asistencia', () => {
@@ -123,5 +125,42 @@ describe('fecha de la jornada', () => {
   it('acepta hoy y cualquier fecha pasada', () => {
     expect(isAttendanceDateInFuture('2026-03-05', '2026-03-05')).toBe(false);
     expect(isAttendanceDateInFuture('2026-03-01', '2026-03-05')).toBe(false);
+  });
+});
+
+describe('fechas de la grilla', () => {
+  it('reconoce sábado y domingo', () => {
+    // 2026-03-07 es sábado y 2026-03-08 domingo.
+    expect(isWeekendDate('2026-03-07')).toBe(true);
+    expect(isWeekendDate('2026-03-08')).toBe(true);
+  });
+
+  it('no marca los días hábiles ni una fecha inválida', () => {
+    expect(isWeekendDate('2026-03-05')).toBe(false);
+    expect(isWeekendDate('2026-03-06')).toBe(false);
+    expect(isWeekendDate('nope')).toBe(false);
+  });
+
+  it('arma las fechas hábiles entre dos fechas, ambas inclusive', () => {
+    expect(weekdaysBetween('2026-03-05', '2026-03-09')).toEqual([
+      '2026-03-05',
+      '2026-03-06',
+      '2026-03-09',
+    ]);
+  });
+
+  it('una semana completa da cinco días', () => {
+    expect(weekdaysBetween('2026-03-09', '2026-03-15')).toEqual([
+      '2026-03-09',
+      '2026-03-10',
+      '2026-03-11',
+      '2026-03-12',
+      '2026-03-13',
+    ]);
+  });
+
+  it('un rango invertido o inválido queda vacío', () => {
+    expect(weekdaysBetween('2026-03-09', '2026-03-05')).toEqual([]);
+    expect(weekdaysBetween('nope', '2026-03-09')).toEqual([]);
   });
 });

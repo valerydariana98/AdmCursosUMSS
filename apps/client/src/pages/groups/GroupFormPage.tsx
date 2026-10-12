@@ -45,7 +45,8 @@ const GroupFormPage = ({ mode, grupo, loadingGrupo }: GroupFormPageProps) => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const backPath = `/cursos/${cursoId}/grupos`;
+  // El listado por curso ya no se usa: cancelar y guardar vuelven a la vista global de grupos.
+  const backPath = '/grupos';
 
   useEffect(() => {
     if (grupo) setValues(toGroupFormValues(grupo));

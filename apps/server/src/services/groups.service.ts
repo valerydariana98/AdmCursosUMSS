@@ -24,6 +24,7 @@ export type UpdateGroupFailure =
   | 'grupo_not_found'
   | 'grupo_finalizado'
   | 'instructor_not_found'
+  | 'has_enrollments'
   | 'preinscripcion_finalizada';
 
 export type UpdateGroupResult =
@@ -58,6 +59,18 @@ export const changeGroupStatus = async (
 
   if (!(await assertPreinscripcionAbierta(grupo.idCurso))) {
     return { ok: false, reason: 'preinscripcion_finalizada' };
+  }
+
+  // Inhabilitar un grupo con inscritos los dejaría huerfanos de gestión: hay que
+  // reasignarlos o eliminarlos antes de poder cerrar el grupo.
+  if (data.estado === 'inhabilitado') {
+    const [inscrito] = await db
+      .select({ id: inscripciones.id })
+      .from(inscripciones)
+      .where(eq(inscripciones.idGrupo, id))
+      .limit(1);
+
+    if (inscrito) return { ok: false, reason: 'has_enrollments' };
   }
 
   const [actualizado] = await db

@@ -99,7 +99,10 @@ const loadGradeStatus = async (
   if (!rubric) return { notasDisponibles: false, notasCompletas: true };
 
   const [items, students, gradeMap] = await Promise.all([
-    db.select({ id: rubricItems.id }).from(rubricItems).where(eq(rubricItems.rubricId, rubric.id)),
+    db
+      .select({ id: rubricItems.id, category: rubricItems.category })
+      .from(rubricItems)
+      .where(eq(rubricItems.rubricId, rubric.id)),
     db
       .select({ id: inscripciones.idEst })
       .from(inscripciones)
@@ -112,7 +115,8 @@ const loadGradeStatus = async (
     notasCompletas: isGradeBookComplete(
       students.map((student) => student.id),
       items.map((item) => item.id),
-      gradeMap
+      gradeMap,
+      new Set(items.filter((item) => item.category === 'attendance').map((item) => item.id))
     ),
   };
 };

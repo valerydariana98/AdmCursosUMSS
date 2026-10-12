@@ -4,6 +4,7 @@ import { PAYMENT_TYPES, PAYMENT_TYPE_LABEL, STUDENT_TYPE_LABEL, type PaymentType
 import {
   btnPrimary, btnSecondary, cardCls, inputCls, labelCls, sectionTitleCls,
 } from '../components/formStyles';
+import BackButton from '../components/BackButton';
 import useEnrollmentForm from '../hooks/useEnrollmentForm';
 
 const EnrollmentPage = () => {
@@ -12,8 +13,8 @@ const EnrollmentPage = () => {
   const { form, setField, types, group, monto, isLoading, isSaving, error, submit } =
     useEnrollmentForm(groupId);
 
-  // Provisional: vuelve a la lista temporal. Cambiar a la ruta definitiva cuando exista la HU #41
-  const listUrl = `/groups/${groupId}/students-temp`;
+  // Vuelve a Inscripciones con el curso del grupo preseleccionado.
+  const listUrl = group ? `/estudiantes?curso=${group.idCurso}` : '/estudiantes';
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -25,6 +26,7 @@ const EnrollmentPage = () => {
 
   return (
     <form onSubmit={onSubmit} className="p-8 font-sans">
+      <BackButton />
       <p className="text-sm text-gray-400">
         <Link to={listUrl} className="hover:underline">Estudiantes</Link> /{' '}
         <span className="font-semibold text-gray-600">Inscribir estudiante</span>
@@ -62,20 +64,23 @@ const EnrollmentPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <label className={labelCls}>
-                CI
-                <input className={inputCls} required placeholder="Ej. 8945612"
-                  value={form.ci} onChange={(e) => setField('ci', e.target.value)} />
+                CI (máx. 8 dígitos)
+                <input className={inputCls} required inputMode="numeric" maxLength={8}
+                  placeholder="Ej. 8945612" value={form.ci}
+                  onChange={(e) => setField('ci', e.target.value.replace(/\D/g, '').slice(0, 8))} />
               </label>
               <label className={labelCls}>
-                Código SIS
-                <input className={inputCls} required placeholder="Ej. 201812345"
-                  value={form.codSis} onChange={(e) => setField('codSis', e.target.value)} />
+                Código SIS (opcional)
+                <input className={inputCls} inputMode="numeric" maxLength={20}
+                  placeholder="Ej. 201812345" value={form.codSis}
+                  onChange={(e) => setField('codSis', e.target.value.replace(/\D/g, '').slice(0, 20))} />
               </label>
             </div>
             <label className={labelCls}>
-              Celular
-              <input className={inputCls} inputMode="tel" maxLength={50} placeholder="Opcional · Ej. 76000000"
-                value={form.celular ?? ''} onChange={(e) => setField('celular', e.target.value)} />
+              Celular (opcional, máx. 9 dígitos)
+              <input className={inputCls} inputMode="numeric" maxLength={9} placeholder="Ej. 76000000"
+                value={form.celular ?? ''}
+                onChange={(e) => setField('celular', e.target.value.replace(/\D/g, '').slice(0, 9))} />
             </label>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
               <input type="checkbox" checked={form.fotocopiaCI}

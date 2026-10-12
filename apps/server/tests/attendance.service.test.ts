@@ -35,12 +35,18 @@ describe('fecha de la jornada', () => {
 
   it('acepta hoy y las fechas pasadas', () => {
     expect(resolveAttendanceDateFailure(TODAY, TODAY)).toBeNull();
-    expect(resolveAttendanceDateFailure('2026-02-01', TODAY)).toBeNull();
+    expect(resolveAttendanceDateFailure('2026-02-02', TODAY)).toBeNull();
   });
 
   it('rechaza una fecha con formato inválido', () => {
     expect(resolveAttendanceDateFailure('06-03-2026', TODAY)).toBe('invalid_date');
     expect(resolveAttendanceDateFailure('', TODAY)).toBe('invalid_date');
+  });
+
+  // El curso se dicta de lunes a viernes: sábado y domingo no son jornadas.
+  it('rechaza sábado y domingo', () => {
+    expect(resolveAttendanceDateFailure('2026-03-07', TODAY)).toBe('weekend_date');
+    expect(resolveAttendanceDateFailure('2026-03-08', TODAY)).toBe('weekend_date');
   });
 });
 

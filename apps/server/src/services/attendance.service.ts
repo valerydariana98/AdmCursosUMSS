@@ -1,18 +1,19 @@
 // apps/server/src/services/attendance.service.ts
-// Asistencia por jornada de un grupo: carga, guardado y resumen acumulado.
-import { and, count, eq, inArray, sql } from 'drizzle-orm';
+// Asistencia de un grupo en grilla: carga, guardado masivo y resumen acumulado.
+import { and, count, eq } from 'drizzle-orm';
 import {
   ATTENDANCE_STATUSES,
   buildStudentAttendanceSummary,
   isAttendanceDate,
   isAttendanceDateInFuture,
+  isWeekendDate,
+  weekdaysBetween,
+  type AttendanceGridStudent,
+  type AttendanceGridView,
   type AttendanceRecordInput,
-  type AttendanceSession,
   type AttendanceStatus,
-  type AttendanceStudent,
   type AttendanceStudentSummary,
-  type AttendanceView,
-  type UpsertAttendance,
+  type UpsertAttendanceGrid,
 } from 'shared';
 import { db } from '../db/index.js';
 import {
@@ -32,16 +33,17 @@ export type AttendanceFailure =
   | 'group_finalized'
   | 'invalid_date'
   | 'future_date'
+  | 'weekend_date'
   | 'invalid_status'
   | 'unknown_student'
   | 'no_enrolled_students';
 
-export type AttendanceResult =
-  | { ok: true; view: AttendanceView }
+export type AttendanceGridResult =
+  | { ok: true; view: AttendanceGridView }
   | { ok: false; reason: AttendanceFailure };
 
-// Datos del estudiante que la vista necesita para identificarlo y armar el payload.
-// El resumen de asistencia se agrega aparte, porque sale de las jornadas.
+// Datos del estudiante que la vista necesita para identificarlo. El resumen de
+// asistencia se agrega aparte, porque sale de las jornadas.
 interface EnrolledStudent {
   studentId: number;
   nombres: string;
@@ -58,6 +60,9 @@ interface AttendanceContext {
   courseName: string;
   instructorId: number;
   maxAbsences: number;
+  // Rango de dictado del curso, que arma las columnas de la grilla.
+  fechaIni: string;
+  fechaFin: string;
   // El estado del grupo decide si la asistencia todavía admite cambios: una vez
   // finalizado (HU #37) queda en solo lectura.
   estado: string;
@@ -78,6 +83,8 @@ const loadAttendanceContext = async (
       courseName: cursos.nombreCurso,
       instructorId: grupos.idInstructor,
       maxAbsences: cursos.maxFaltas,
+      fechaIni: cursos.fechaIni,
+      fechaFin: cursos.fechaFin,
       estado: grupos.estado,
     })
     .from(grupos)
@@ -85,14 +92,32 @@ const loadAttendanceContext = async (
     .where(eq(grupos.id, groupId))
     .limit(1);
 
-  return row ?? null;
+  if (!row) return null;
+
+  return {
+    groupId: row.groupId,
+    groupNumber: row.groupNumber,
+    courseId: row.courseId,
+    courseName: row.courseName,
+    instructorId: row.instructorId,
+    maxAbsences: row.maxAbsences,
+    fechaIni: row.fechaIni,
+    fechaFin: row.fechaFin,
+    estado: row.estado,
+  };
 };
 
 // Reglas que se resuelven sin tocar la base, para que las pruebas puedan cubrirlas
 // sin una conexión y para que la validación de esquema y la de negocio no se
 // dupliquen entre middleware y servicio.
-export const resolveAttendanceDateFailure = (date: string, today: string): AttendanceFailure | null => {
+export const resolveAttendanceDateFailure = (
+  date: string,
+  today: string
+): AttendanceFailure | null => {
   if (!isAttendanceDate(date)) return 'invalid_date';
+  // El curso se dicta de lunes a viernes: una fecha de fin de semana no es una
+  // jornada válida.
+  if (isWeekendDate(date)) return 'weekend_date';
   if (isAttendanceDateInFuture(date, today)) return 'future_date';
 
   return null;
@@ -159,32 +184,6 @@ const countGroupSessions = async (
   return Number(row?.total ?? 0);
 };
 
-const findSessionByDate = async (
-  executor: AttendanceExecutor,
-  groupId: number,
-  date: string
-): Promise<AttendanceSession | null> => {
-  const [row] = await executor
-    .select({ id: attendanceSessions.id, groupId: attendanceSessions.groupId, date: attendanceSessions.date })
-    .from(attendanceSessions)
-    .where(and(eq(attendanceSessions.groupId, groupId), eq(attendanceSessions.date, date)))
-    .limit(1);
-
-  return row ? { id: row.id, groupId: row.groupId, date: row.date } : null;
-};
-
-const loadSessionRecords = async (
-  executor: AttendanceExecutor,
-  sessionId: number
-): Promise<Map<number, AttendanceStatus>> => {
-  const rows = await executor
-    .select({ studentId: attendanceRecords.studentId, status: attendanceRecords.status })
-    .from(attendanceRecords)
-    .where(eq(attendanceRecords.sessionId, sessionId));
-
-  return new Map(rows.map((row) => [row.studentId, row.status as AttendanceStatus]));
-};
-
 // Presentes por estudiante en todas las jornadas del grupo. Se cuenta en SQL con
 // un filtro por estado en vez de traer cada registro y sumarlo en JS.
 const countPresentSessionsByStudent = async (
@@ -201,10 +200,42 @@ const countPresentSessionsByStudent = async (
   return new Map(rows.map((row) => [row.studentId, Number(row.total)]));
 };
 
+// Marks por fecha: `date -> (studentId -> status)`. Es la grilla cruda que trae
+// todas las jornadas del grupo en una sola consulta.
+const loadMarksByDate = async (
+  executor: AttendanceExecutor,
+  groupId: number
+): Promise<Map<string, Map<number, AttendanceStatus>>> => {
+  const rows = await executor
+    .select({
+      date: attendanceSessions.date,
+      studentId: attendanceRecords.studentId,
+      status: attendanceRecords.status,
+    })
+    .from(attendanceSessions)
+    .innerJoin(attendanceRecords, eq(attendanceRecords.sessionId, attendanceSessions.id))
+    .where(eq(attendanceSessions.groupId, groupId));
+
+  const byDate = new Map<string, Map<number, AttendanceStatus>>();
+
+  for (const row of rows) {
+    let marks = byDate.get(row.date);
+
+    if (!marks) {
+      marks = new Map<number, AttendanceStatus>();
+      byDate.set(row.date, marks);
+    }
+
+    marks.set(row.studentId, row.status as AttendanceStatus);
+  }
+
+  return byDate;
+};
+
 // Resumen acumulado de asistencia de los estudiantes de un grupo. No valida
-// pertenencia a propósito: es el servicio que el cálculo de nota final va a
-// consumir más adelante, y ahí la pertenencia ya viene del curso que se está
-// calificando. El endpoint de la vista sí valida antes de llamarlo.
+// pertenencia a propósito: es el servicio que el cálculo de nota final consume, y
+// ahí la pertenencia ya viene del curso que se está calificando. El endpoint de la
+// vista sí valida antes de llamarlo.
 export const getStudentAttendanceSummary = async (
   groupId: number
 ): Promise<{ maxAbsences: number; totalSessions: number; summaries: AttendanceStudentSummary[] } | null> => {
@@ -237,37 +268,41 @@ export const getStudentAttendanceSummary = async (
 // El ejecutor se recibe como parámetro porque dentro del guardado hay que leer con
 // la misma transacción que escribe: si se leyera con `db` se abriría otra conexión
 // y la vista devolvería el estado anterior a lo que se acaba de guardar.
-const buildView = async (
+const buildGridView = async (
   executor: AttendanceExecutor,
-  context: AttendanceContext,
-  date: string,
-  session: AttendanceSession | null
-): Promise<AttendanceView> => {
+  context: AttendanceContext
+): Promise<AttendanceGridView> => {
   const enrolled = await loadEnrolledStudents(executor, context.groupId);
-  const [totalSessions, presentByStudent] = await Promise.all([
+  const [totalSessions, presentByStudent, marksByDate] = await Promise.all([
     countGroupSessions(executor, context.groupId),
     countPresentSessionsByStudent(executor, context.groupId),
+    loadMarksByDate(executor, context.groupId),
   ]);
-  const statuses = session
-    ? await loadSessionRecords(executor, session.id)
-    : new Map<number, AttendanceStatus>();
 
-  const students: AttendanceStudent[] = enrolled.map((student) => ({
-    ...student,
-    ...buildStudentAttendanceSummary(
-      {
-        studentId: student.studentId,
-        presentSessions: presentByStudent.get(student.studentId) ?? 0,
-        totalSessions,
-      },
-      context.maxAbsences
-    ),
-    status: statuses.get(student.studentId) ?? null,
-  }));
+  const students: AttendanceGridStudent[] = enrolled.map((student) => {
+    const marks: Record<string, AttendanceStatus> = {};
+
+    for (const [date, dateMarks] of marksByDate) {
+      const status = dateMarks.get(student.studentId);
+
+      if (status) marks[date] = status;
+    }
+
+    return {
+      ...student,
+      marks,
+      ...buildStudentAttendanceSummary(
+        {
+          studentId: student.studentId,
+          presentSessions: presentByStudent.get(student.studentId) ?? 0,
+          totalSessions,
+        },
+        context.maxAbsences
+      ),
+    };
+  });
 
   return {
-    session,
-    date,
     group: {
       id: context.groupId,
       number: context.groupNumber,
@@ -275,12 +310,14 @@ const buildView = async (
       courseName: context.courseName,
     },
     maxAbsences: context.maxAbsences,
+    courseRange: { fechaIni: context.fechaIni, fechaFin: context.fechaFin },
+    dates: weekdaysBetween(context.fechaIni, context.fechaFin),
     students,
     totalSessions,
   };
 };
 
-// "Hoy" en la zona del servidor. Se calcula una vez por proceso: la validación de
+// "Hoy" en la zona del servidor. Se calcula una vez por operación: la validación de
 // fecha futura no necesita precisión por debajo del día.
 const today = (): string => {
   const now = new Date();
@@ -290,41 +327,38 @@ const today = (): string => {
   ).padStart(2, '0')}`;
 };
 
-export const getAttendanceForTeacher = async (
+export const getAttendanceGridForTeacher = async (
   groupId: number,
   teacherId: number | null,
-  date: string,
   isAdmin = false
-): Promise<AttendanceResult> => {
+): Promise<AttendanceGridResult> => {
   const context = await loadAttendanceContext(db, groupId);
   const denied = resolveGroupOwnershipFailure(context, teacherId, isAdmin);
 
   if (denied) return { ok: false, reason: denied };
 
-  const dateFailure = resolveAttendanceDateFailure(date, today());
-
-  if (dateFailure) return { ok: false, reason: dateFailure };
-
-  const session = await findSessionByDate(db, groupId, date);
-
-  return { ok: true, view: await buildView(db, context!, date, session) };
+  return { ok: true, view: await buildGridView(db, context!) };
 };
 
-// El guardado es atómico: la jornada y todos sus registros entran en una sola
-// transacción, así que no puede quedar una sesión a medio marcar.
+// El guardado es atómico: todas las jornadas que el docente tocó entran en una
+// sola transacción, así que la grilla nunca queda a medio guardar.
 //
-// Si ya hay sesión para la fecha se actualiza en el lugar en vez de crear otra: el
+// Si ya hay sesión para una fecha se actualiza en el lugar en vez de crear otra: el
 // índice único sobre (group_id, date) lo garantiza a nivel de base de datos, y el
 // ON CONFLICT resuelve dos guardadas simultáneas de la misma jornada.
-export const saveAttendanceForTeacher = async (
+export const saveAttendanceGridForTeacher = async (
   groupId: number,
   teacherId: number | null,
-  data: UpsertAttendance,
+  data: UpsertAttendanceGrid,
   isAdmin = false
-): Promise<AttendanceResult> => {
-  const dateFailure = resolveAttendanceDateFailure(data.date, today());
+): Promise<AttendanceGridResult> => {
+  const currentToday = today();
 
-  if (dateFailure) return { ok: false, reason: dateFailure };
+  for (const session of data.sessions) {
+    const dateFailure = resolveAttendanceDateFailure(session.date, currentToday);
+
+    if (dateFailure) return { ok: false, reason: dateFailure };
+  }
 
   return db.transaction(async (tx) => {
     const context = await loadAttendanceContext(tx, groupId);
@@ -340,39 +374,42 @@ export const saveAttendanceForTeacher = async (
 
     if (enrolled.length === 0) return { ok: false, reason: 'no_enrolled_students' };
 
-    // Una jornada sin registros no es una jornada: se rechaza antes de escribir,
-    // para no crear una sesión vacía que después contenga como denominador del
-    // porcentaje de todos los estudiantes.
-    if (data.records.length === 0) return { ok: false, reason: 'no_enrolled_students' };
+    const enrolledIds = enrolled.map((student) => student.studentId);
 
-    const studentsFailure = resolveAttendanceStudentsFailure(
-      data.records,
-      enrolled.map((student) => student.studentId)
-    );
+    for (const session of data.sessions) {
+      // Una jornada sin registros no es una jornada: se rechaza antes de escribir,
+      // para no crear una sesión vacía que después contenga como denominador del
+      // porcentaje de todos los estudiantes.
+      if (session.records.length === 0) return { ok: false, reason: 'no_enrolled_students' };
 
-    if (studentsFailure) return { ok: false, reason: studentsFailure };
+      const studentsFailure = resolveAttendanceStudentsFailure(session.records, enrolledIds);
 
-    const [session] = await tx
-      .insert(attendanceSessions)
-      .values({ groupId, date: data.date })
-      .onConflictDoUpdate({
-        target: [attendanceSessions.groupId, attendanceSessions.date],
-        set: { updatedAt: new Date() },
-      })
-      .returning();
-
-    // El estado de cada estudiante se escribe en el lugar: así un reintento del
-    // guardado no duplica registros ni depende de cuál era el estado anterior.
-    for (const record of data.records) {
-      await tx
-        .insert(attendanceRecords)
-        .values({ sessionId: session.id, studentId: record.studentId, status: record.status })
-        .onConflictDoUpdate({
-          target: [attendanceRecords.sessionId, attendanceRecords.studentId],
-          set: { status: record.status },
-        });
+      if (studentsFailure) return { ok: false, reason: studentsFailure };
     }
 
-    return { ok: true, view: await buildView(tx, context!, data.date, session) };
+    for (const session of data.sessions) {
+      const [saved] = await tx
+        .insert(attendanceSessions)
+        .values({ groupId, date: session.date })
+        .onConflictDoUpdate({
+          target: [attendanceSessions.groupId, attendanceSessions.date],
+          set: { updatedAt: new Date() },
+        })
+        .returning();
+
+      // El estado de cada estudiante se escribe en el lugar: así un reintento del
+      // guardado no duplica registros ni depende de cuál era el estado anterior.
+      for (const record of session.records) {
+        await tx
+          .insert(attendanceRecords)
+          .values({ sessionId: saved.id, studentId: record.studentId, status: record.status })
+          .onConflictDoUpdate({
+            target: [attendanceRecords.sessionId, attendanceRecords.studentId],
+            set: { status: record.status },
+          });
+      }
+    }
+
+    return { ok: true, view: await buildGridView(tx, context!) };
   });
 };

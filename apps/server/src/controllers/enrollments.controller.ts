@@ -18,6 +18,11 @@ const ERRORS = {
     message: "El estudiante ya está inscrito en este grupo",
   },
   enrollment_not_found: { status: 404, message: "Inscripción no encontrada" },
+  move_not_allowed: {
+    status: 409,
+    message:
+      "Solo se puede cambiar de grupo mientras el grupo está en preinscripción",
+  },
   ci_taken: { status: 409, message: "Ese CI ya pertenece a otro estudiante" },
   same_group: { status: 400, message: "El estudiante ya pertenece a ese grupo" },
   different_course: {

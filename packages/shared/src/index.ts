@@ -579,11 +579,56 @@ export const isAttendanceDate = (value: string): boolean =>
 export const isAttendanceDateInFuture = (date: string, today: string): boolean =>
   isAttendanceDate(date) && isAttendanceDate(today) && date > today;
 
+// Fin de semana según el calendario UTC: sábado (6) o domingo (0). Se usa el
+// mediodía UTC para que la conversión no cruce de día por la zona horaria.
+export const isWeekendDate = (date: string): boolean => {
+  if (!isAttendanceDate(date)) return false;
+
+  const day = new Date(`${date}T12:00:00Z`).getUTCDay();
+
+  return day === 0 || day === 6;
+};
+
+// Fechas hábiles (lunes a viernes) entre dos fechas ISO, ambas inclusive. Es lo
+// que arma las columnas de la grilla de asistencia: el curso se dicta de lunes a
+// viernes, así que los fines de semana no son jornadas. Si el rango está
+// invertido o alguna fecha es inválida, devuelve una lista vacía.
+//
+// Se avanza con un cursor UTC y se rearma cada fecha como texto `YYYY-MM-DD`: no
+// arrastra la zona horaria ni depende del orden local.
+export const weekdaysBetween = (from: string, to: string): string[] => {
+  if (!isAttendanceDate(from) || !isAttendanceDate(to) || from > to) return [];
+
+  const dates: string[] = [];
+  const endTime = new Date(`${to}T12:00:00Z`).getTime();
+
+  for (
+    let time = new Date(`${from}T12:00:00Z`).getTime();
+    time <= endTime;
+    time += MS_PER_DAY
+  ) {
+    const date = new Date(time);
+    const day = date.getUTCDay();
+
+    if (day === 0 || day === 6) continue;
+
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const dayOfMonth = String(date.getUTCDate()).padStart(2, '0');
+
+    dates.push(`${year}-${month}-${dayOfMonth}`);
+  }
+
+  return dates;
+};
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 export interface AttendanceStudentSummary {
   studentId: number;
   // Jornadas del grupo en las que el estudiante tiene registro. El total es el del
-  // grupo: si el estudiante se发生后 de varias jornadas, cuenta como ausencia en
-  // cada una.
+  // grupo: si el estudiante se incorporó después de varias jornadas, las anteriores
+  // cuentan como ausencia.
   presentSessions: number;
   absences: number;
   totalSessions: number;
@@ -662,6 +707,45 @@ export interface UpsertAttendance {
   // `YYYY-MM-DD`.
   date: string;
   records: AttendanceRecordInput[];
+}
+
+// Grilla de asistencia: filas = estudiantes, columnas = fechas hábiles del curso.
+// Cada estudiante trae sus marcas por fecha (`null` = la jornada no tiene registro
+// para ese estudiante) más el resumen acumulado que ya usan notas y reporte.
+export interface AttendanceGridStudent {
+  studentId: number;
+  nombres: string;
+  apPaterno: string;
+  apMaterno: string;
+  ci: string;
+  codSis: string | null;
+  // Clave `YYYY-MM-DD`. Sólo figuran las fechas con registro; una fecha sin clave
+  // es una celda vacía.
+  marks: Record<string, AttendanceStatus>;
+  presentSessions: number;
+  absences: number;
+  totalSessions: number;
+  percentage: number | null;
+  requirement: AttendanceRequirement;
+}
+
+export interface AttendanceGridView {
+  group: AttendanceGroupInfo;
+  // Heredado del curso del grupo, nunca copiado a la asistencia.
+  maxAbsences: number;
+  // Rango de dictado del curso, tal como está en el curso.
+  courseRange: { fechaIni: string; fechaFin: string };
+  // Fechas hábiles (lun–vie) entre `fechaIni` y `fechaFin`, ambas inclusive.
+  dates: string[];
+  students: AttendanceGridStudent[];
+  // Total de jornadas registradas del grupo, que es el denominador del porcentaje.
+  totalSessions: number;
+}
+
+// Guardado masivo de la grilla: todas las jornadas que el docente tocó, en una
+// sola petición y una sola transacción.
+export interface UpsertAttendanceGrid {
+  sessions: UpsertAttendance[];
 }
 
 // HU #35. Condición que el reporte muestra por estudiante según la nota mínima y
