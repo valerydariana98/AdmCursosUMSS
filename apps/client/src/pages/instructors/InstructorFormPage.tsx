@@ -5,6 +5,7 @@ import TextField from '../../components/TextField';
 import Select from '../../components/Select';
 import Toggle from '../../components/Toggle';
 import AlertInfo from '../../components/AlertInfo';
+import PageHeader from '../../components/PageHeader';
 import Card from '../../components/Card';
 import { CreateInstructorDTO, Instructor } from '../../types/instructor';
 import { ApiError } from '../../services/api';
@@ -139,29 +140,20 @@ export const InstructorFormPage: React.FC<InstructorFormPageProps> = ({
 
   return (
     <div className="p-8 bg-brand-bg min-h-screen font-sans">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <span className="text-xs text-gray-400 font-medium">
-            Instructores /{' '}
-            <strong className="text-gray-700">
-              {isEdit ? 'Editar instructor' : 'Nuevo instructor'}
-            </strong>
-          </span>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">
-            {isEdit ? 'Editar Instructor' : 'Agregar Instructor'}
-          </h1>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={`Instructores / ${isEdit ? 'Editar instructor' : 'Nuevo instructor'}`}
+        title={isEdit ? 'Editar Instructor' : 'Agregar Instructor'}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {submitError && (
-          <div className="rounded-2xl border border-red-500 bg-red-50/90 px-4 py-3 text-sm font-medium text-red-950">
+          <div className="rounded-none border border-red-500 bg-red-50/90 px-4 py-3 text-sm font-medium text-red-950">
             {submitError}
           </div>
         )}
 
         <Card className="space-y-6">
-          <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark border-b border-line pb-3">
             Información general
           </h2>
 
@@ -247,7 +239,7 @@ export const InstructorFormPage: React.FC<InstructorFormPageProps> = ({
             error={errors.username}
           />
 
-          <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pt-4 pb-3">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark border-b border-line pt-4 pb-3">
             Acceso al sistema
           </h2>
 
@@ -266,7 +258,7 @@ export const InstructorFormPage: React.FC<InstructorFormPageProps> = ({
           />
 
           {/* Bloque de Estado Rediseñado: Armónico, Azul Institucional y Alineado */}
-          <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-200 flex items-center justify-between">
+          <div className="p-4 bg-gray-50/80 rounded-none border border-line flex items-center justify-between">
             <div className="space-y-0.5">
               <span className="text-sm font-semibold text-gray-900 block">Estado</span>
             </div>
@@ -276,7 +268,7 @@ export const InstructorFormPage: React.FC<InstructorFormPageProps> = ({
                 className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-all duration-200 ${
                   estado
                     ? 'bg-blue-50 text-blue-800 border-blue-800'
-                    : 'bg-gray-100 text-gray-500 border-gray-200'
+                    : 'bg-gray-100 text-gray-500 border-line'
                 }`}
               >
                 {estado ? 'Activo' : 'Inactivo'}

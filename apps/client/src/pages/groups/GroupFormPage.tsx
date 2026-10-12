@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
+import PageHeader from '../../components/PageHeader';
 import Button from '../../components/Button';
 import EstadoBadge from '../../components/EstadoBadge';
 import RadioGroup from '../../components/RadioGroup';
@@ -134,31 +135,25 @@ const GroupFormPage = ({ mode, grupo, loadingGrupo }: GroupFormPageProps) => {
 
   return (
     <div className="p-8 font-sans">
-      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-        <Link to="/cursos" className="hover:text-gray-600">
+      <nav className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-5">
+        <Link to="/cursos" className="hover:text-brand-dark transition-colors">
           Cursos
         </Link>
-        <span>/</span>
-        <Link to={backPath} className="hover:text-gray-600">
+        <span className="text-line">/</span>
+        <Link to={backPath} className="hover:text-brand-dark transition-colors">
           Grupos
         </Link>
-        <span>/</span>
-        <span className="text-gray-600 font-medium">
+        <span className="text-line">/</span>
+        <span className="text-brand-dark">
           {isEdit ? 'Editar grupo' : 'Nuevo grupo'}
         </span>
       </nav>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {isEdit ? 'Editar Grupo' : 'Nuevo Grupo'}
-            </h1>
-            {curso && <p className="text-sm text-gray-500">Curso: {curso.nombreCurso}</p>}
-          </div>
-          {isEdit && grupo && <EstadoBadge estado={grupo.estado} />}
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={curso ? curso.nombreCurso : 'Oferta académica'}
+        title={isEdit ? 'Editar Grupo' : 'Nuevo Grupo'}
+        actions={isEdit && grupo ? <EstadoBadge estado={grupo.estado} /> : undefined}
+      />
 
       {isEdit ? (
         <AlertInfo
@@ -183,8 +178,8 @@ const GroupFormPage = ({ mode, grupo, loadingGrupo }: GroupFormPageProps) => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
-          <h2 className="text-base font-bold text-gray-900">Datos del grupo</h2>
+        <section className="bg-white rounded-none border border-line shadow-sm p-6 space-y-5">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark">Datos del grupo</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <TextField
@@ -242,8 +237,8 @@ const GroupFormPage = ({ mode, grupo, loadingGrupo }: GroupFormPageProps) => {
           )}
         </section>
 
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
-          <h2 className="text-base font-bold text-gray-900">Cupo de estudiantes</h2>
+        <section className="bg-white rounded-none border border-line shadow-sm p-6 space-y-5">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark">Cupo de estudiantes</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <TextField

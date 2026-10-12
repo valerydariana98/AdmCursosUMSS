@@ -1,6 +1,7 @@
 // apps/client/src/pages/instructors/InstructorsListPage.tsx
 import React from 'react';
 import Button from '../../components/Button';
+import PageHeader from '../../components/PageHeader';
 import TextField from '../../components/TextField';
 import Select from '../../components/Select';
 import Badge from '../../components/Badge';
@@ -44,26 +45,32 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
 }) => {
   return (
     <div className="p-8 bg-brand-bg min-h-screen font-sans">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Instructores</h1>
-          <p className="text-sm text-gray-500">Docentes y auxiliares registrados en el sistema</p>
-        </div>
-        <Button
-          variant="primary"
-          onClick={onNavigateToCreate}
-          icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-          }
-        >
-          Nuevo Instructor
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Gestión de personal"
+        title="Gestión de Instructores"
+        subtitle="Docentes y auxiliares registrados en el sistema"
+        actions={
+          <Button
+            variant="primary"
+            onClick={onNavigateToCreate}
+            icon={
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            }
+          >
+            Nuevo Instructor
+          </Button>
+        }
+      />
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-4">
+      <div className="bg-white rounded-none border border-line shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-line flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <TextField
               placeholder="Buscar por nombre o CI..."
@@ -94,7 +101,7 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <tr className="border-b-2 border-brand-dark font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em]">
                 <th className="py-3.5 px-6">Instructor</th>
                 <th className="py-3.5 px-4">CI</th>
                 <th className="py-3.5 px-4">Teléfono</th>
@@ -143,7 +150,7 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
                           type="button"
                           onClick={() => onViewGroups?.(item)}
                           title="Ver los grupos asignados a este docente"
-                          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 font-semibold text-brand-mid underline decoration-dotted underline-offset-4 transition-colors hover:bg-brand-mid/5 hover:text-brand-dark"
+                          className="inline-flex items-center gap-1.5 rounded-none px-2 py-1 font-semibold text-brand-mid underline decoration-dotted underline-offset-4 transition-colors hover:bg-brand-mid/5 hover:text-brand-dark"
                         >
                           {item.gruposAsignadosCount}{' '}
                           {item.gruposAsignadosCount === 1 ? 'grupo' : 'grupos'}
@@ -158,7 +165,7 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
                     <td className="py-4 px-6 text-right space-x-1.5 whitespace-nowrap">
                       <button
                         onClick={() => onNavigateToEdit && onNavigateToEdit(item)}
-                        className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-xl transition-all duration-150 cursor-pointer inline-flex items-center justify-center"
+                        className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-none transition-all duration-150 cursor-pointer inline-flex items-center justify-center"
                         title="Editar instructor"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,7 +174,7 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
                       </button>
                       <button
                         onClick={() => onDeleteInstructor && onDeleteInstructor(item)}
-                        className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-all duration-150 cursor-pointer inline-flex items-center justify-center"
+                        className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-none transition-all duration-150 cursor-pointer inline-flex items-center justify-center"
                         title="Eliminar instructor"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,7 +189,7 @@ export const InstructorsListPage: React.FC<InstructorsListPageProps> = ({
           </table>
         </div>
 
-        <div className="p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+        <div className="p-4 border-t border-line flex items-center justify-between text-xs text-gray-500">
           <span>
             Mostrando {instructors.length} de {totalCount} instructores
             {totalPages > 1 && ` (página ${page} de ${totalPages})`}

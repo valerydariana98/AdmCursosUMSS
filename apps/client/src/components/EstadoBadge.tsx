@@ -35,7 +35,7 @@ export const EstadoBadge: React.FC<EstadoBadgeProps> = ({ estado, className = ''
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles.container} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] border ${styles.container} ${className}`}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />
       {styles.label}

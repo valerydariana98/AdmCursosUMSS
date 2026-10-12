@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
+import PageHeader from '../../components/PageHeader';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
 import TextField from '../../components/TextField';
@@ -155,26 +156,21 @@ const CourseFormPage: React.FC<CourseFormPageProps> = ({ mode, course, loadingCo
 
   return (
     <div className="p-8 font-sans">
-      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-        <Link to="/cursos" className="hover:text-gray-600">
+      <nav className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-5">
+        <Link to="/cursos" className="hover:text-brand-dark transition-colors">
           Cursos
         </Link>
-        <span>/</span>
-        <span className="text-gray-600 font-medium">
+        <span className="text-line">/</span>
+        <span className="text-brand-dark">
           {isEdit ? 'Editar curso' : 'Nuevo curso'}
         </span>
       </nav>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">
-            {isEdit ? 'Editar Curso' : 'Apertura de Curso'}
-          </h1>
-          {isEdit && course && (
-            <Badge status={course.estado} inactiveLabel="Finalizado" />
-          )}
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Oferta académica"
+        title={isEdit ? 'Editar Curso' : 'Apertura de Curso'}
+        actions={isEdit && course ? <Badge status={course.estado} inactiveLabel="Finalizado" /> : undefined}
+      />
 
       {submitError && (
         <div className="mb-4">
@@ -183,8 +179,8 @@ const CourseFormPage: React.FC<CourseFormPageProps> = ({ mode, course, loadingCo
       )}
 
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
-          <h2 className="text-base font-bold text-gray-900">Información general</h2>
+        <section className="bg-white rounded-none border border-line shadow-sm p-6 space-y-5">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark">Información general</h2>
 
           <TextField
             label="Nombre del curso"
@@ -230,9 +226,9 @@ const CourseFormPage: React.FC<CourseFormPageProps> = ({ mode, course, loadingCo
           </div>
         </section>
 
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
+        <section className="bg-white rounded-none border border-line shadow-sm p-6 space-y-5">
           <div>
-            <h2 className="text-base font-bold text-gray-900">
+            <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark">
               Costo por tipo de estudiante
             </h2>
             <p className="text-xs text-gray-500">Los montos están en bolivianos (Bs.)</p>
@@ -266,8 +262,8 @@ const CourseFormPage: React.FC<CourseFormPageProps> = ({ mode, course, loadingCo
           </div>
         </section>
 
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
-          <h2 className="text-base font-bold text-gray-900">Requisitos de aprobación</h2>
+        <section className="bg-white rounded-none border border-line shadow-sm p-6 space-y-5">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark">Requisitos de aprobación</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <TextField

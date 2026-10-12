@@ -10,6 +10,7 @@ import {
   type StudentTypeName,
 } from 'shared';
 import AlertInfo from '../components/AlertInfo';
+import PageHeader from '../components/PageHeader';
 import Button from '../components/Button';
 import EstadoBadge from '../components/EstadoBadge';
 import Modal from '../components/Modal';
@@ -78,18 +79,18 @@ const TrashIcon = () => (
 );
 
 const actionBtn =
-  'text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-xl transition-all duration-150 cursor-pointer inline-flex items-center justify-center';
+  'text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-none transition-all duration-150 cursor-pointer inline-flex items-center justify-center';
 const actionBtnDanger =
-  'text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-all duration-150 cursor-pointer inline-flex items-center justify-center';
+  'text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-none transition-all duration-150 cursor-pointer inline-flex items-center justify-center';
 
 const badgeCls: Record<string, string> = {
   umss: 'bg-blue-50 text-blue-700 border-blue-200',
   externo: 'bg-orange-50 text-orange-700 border-orange-200',
-  aux: 'bg-gray-100 text-gray-700 border-gray-200',
+  aux: 'bg-gray-100 text-gray-700 border-line',
 };
 
 const th =
-  'py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap';
+  'py-3.5 px-4 font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em] whitespace-nowrap';
 const td = 'py-4 px-4 text-sm text-gray-600';
 
 const EnrollmentsPage = () => {
@@ -290,7 +291,7 @@ const EnrollmentsPage = () => {
     return inscritos.map((e) => {
       const tipo = tipos[e.idTipoEst];
       return (
-        <tr key={e.id} className="border-t border-gray-100 hover:bg-gray-50/60 transition-colors">
+        <tr key={e.id} className="border-t border-line hover:bg-gray-50/60 transition-colors">
           <td className={`${td} font-semibold text-gray-900`}>{e.estudiante.nombres}</td>
           <td className={td}>
             {e.estudiante.apPaterno} {e.estudiante.apMaterno}
@@ -359,12 +360,11 @@ const EnrollmentsPage = () => {
 
   return (
     <div className="p-8 font-sans">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Inscripciones</h1>
-        <p className="text-sm text-gray-500">
-          Busca un curso para ver sus grupos e inscritos
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Gestión académica"
+        title="Inscripciones"
+        subtitle="Busca un curso para ver sus grupos e inscritos"
+      />
 
       {errorCursos && (
         <div className="mb-4">
@@ -383,8 +383,8 @@ const EnrollmentsPage = () => {
       )}
 
       {cursoId === null ? (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-          <div className="p-4 border-b border-gray-100">
+        <div className="bg-white rounded-none border border-line shadow-xs overflow-hidden">
+          <div className="p-4 border-b border-line">
             <TextField
               placeholder="Buscar curso..."
               value={busqueda}
@@ -424,7 +424,7 @@ const EnrollmentsPage = () => {
       ) : (
         <>
           {/* Cambiar de curso sin volver al buscador. */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 mb-6">
+          <div className="bg-white rounded-none border border-line shadow-xs p-5 mb-6">
             <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end sm:justify-between">
               <Select
                 label="Curso"
@@ -463,12 +463,12 @@ const EnrollmentsPage = () => {
                 return (
                   <section
                     key={grupo.id}
-                    className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden"
+                    className="bg-white rounded-none border border-line shadow-xs overflow-hidden"
                   >
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 border-b border-gray-100">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-5 border-b border-line">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h2 className="text-base font-bold text-gray-900">
+                          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark">
                             Grupo {grupo.numGrupo}
                           </h2>
                           <EstadoBadge estado={grupo.estado} />
@@ -516,7 +516,7 @@ const EnrollmentsPage = () => {
 
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
-                        <thead className="border-b border-gray-100">
+                        <thead className="border-b-2 border-brand-dark">
                           <tr>
                             <th className={`${th} pl-6`}>Nombre</th>
                             <th className={th}>Apellidos</th>

@@ -8,6 +8,7 @@ import {
   btnPrimary, btnSecondary, cardCls, inputCls, labelCls, sectionTitleCls,
 } from '../components/formStyles';
 import BackButton from '../components/BackButton';
+import PageHeader from '../components/PageHeader';
 import {
   getEnrollments, getGroupWithCourse, getStudentTypes, updateEnrollment,
 } from '../services/enrollments';
@@ -105,19 +106,17 @@ const EditEnrollmentPage = () => {
   return (
     <form onSubmit={onSubmit} className="p-8 font-sans">
       <BackButton />
-      <p className="text-sm text-gray-400">
-        <Link to={listUrl} className="hover:underline">Estudiantes</Link> /{' '}
-        <span className="font-semibold text-gray-600">Editar estudiante</span>
-      </p>
+      <nav className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-5">
+        <Link to={listUrl} className="hover:text-brand-dark transition-colors">Estudiantes</Link>
+        <span className="text-line">/</span>
+        <span className="text-brand-dark">Editar estudiante</span>
+      </nav>
 
-      <div className="mb-6 mt-2 flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Editar Estudiante</h1>
-          <p className="text-sm text-gray-500">
-            {group.curso.nombreCurso} · Grupo {group.numGrupo}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={group.curso.nombreCurso}
+        title="Editar Estudiante"
+        subtitle={`Grupo ${group.numGrupo}`}
+      />
 
       <div className="space-y-6">
         <section className={cardCls}>

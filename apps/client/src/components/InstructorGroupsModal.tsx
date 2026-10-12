@@ -80,9 +80,9 @@ const InstructorGroupsModal = ({
 
       {!loading && !error && groups.length > 0 && (
         <>
-          <div className="mb-4 max-h-72 overflow-y-auto rounded-xl border border-gray-200">
+          <div className="mb-4 max-h-72 overflow-y-auto rounded-none border border-line">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-100 bg-gray-50">
+              <thead className="border-b-2 border-brand-dark bg-brand-bg">
                 <tr>
                   <th className={th}>Curso</th>
                   <th className={th}>Grupo</th>

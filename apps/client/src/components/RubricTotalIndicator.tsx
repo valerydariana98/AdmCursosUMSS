@@ -7,7 +7,7 @@ export interface RubricTotalIndicatorProps {
 }
 
 const STATE_STYLES: Record<RubricTotalState, string> = {
-  empty: 'bg-gray-50 text-gray-600 border-gray-200',
+  empty: 'bg-gray-50 text-gray-600 border-line',
   incomplete: 'bg-amber-50 text-amber-800 border-amber-300',
   complete: 'bg-emerald-50 text-emerald-800 border-emerald-300',
   exceeded: 'bg-red-50 text-red-800 border-red-300',
@@ -20,7 +20,7 @@ const RubricTotalIndicator: React.FC<RubricTotalIndicatorProps> = ({ total, stat
 
   return (
     <div
-      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border rounded-2xl px-5 py-4 ${STATE_STYLES[state]}`}
+      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border rounded-none px-5 py-4 ${STATE_STYLES[state]}`}
     >
       <div className="flex items-baseline gap-2">
         <span className="text-sm font-semibold">Suma de porcentajes</span>

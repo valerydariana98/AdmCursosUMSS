@@ -3,11 +3,11 @@ import Button from '../components/Button';
 
 const NotFoundPage = () => {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
-      <p className="text-5xl font-bold text-gray-200">404</p>
+    <div className="flex flex-col items-center justify-center h-full gap-6 p-8 text-center">
+      <p className="font-serif text-[7rem] leading-none font-bold text-line select-none">404</p>
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Página no encontrada</h1>
-        <p className="text-sm text-gray-500 mt-1">La ruta que buscas no existe.</p>
+        <h1 className="font-serif text-3xl font-semibold text-brand-dark">Página no encontrada</h1>
+        <p className="mt-2 text-sm text-brand-secondary">La ruta que buscas no existe.</p>
       </div>
       <Link to="/cursos">
         <Button variant="primary">Ir a Cursos</Button>

@@ -10,6 +10,7 @@ import Modal from '../../components/Modal';
 import RubricItemRemovalModals from '../../components/RubricItemRemovalModals';
 import RubricItemRow from '../../components/RubricItemRow';
 import RubricTotalIndicator from '../../components/RubricTotalIndicator';
+import PageHeader from '../../components/PageHeader';
 import { useRubric } from '../../hooks/useRubric';
 import { rubricFormSchema, type RubricFormData } from '../../schemas/rubricSchema';
 import { ApiError, type ApiFieldError } from '../../services/api';
@@ -411,46 +412,48 @@ const GroupRubricPage = () => {
   return (
     <div className="p-8 font-sans">
       <BackButton />
-      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-        <Link to="/cursos" className="hover:text-gray-600">
+      <nav className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-5">
+        <Link to="/cursos" className="hover:text-brand-dark transition-colors">
           Cursos
         </Link>
-        <span>/</span>
-        <Link to={backPath} className="hover:text-gray-600">
+        <span className="text-line">/</span>
+        <Link to={backPath} className="hover:text-brand-dark transition-colors">
           Grupos
         </Link>
-        <span>/</span>
-        <span className="text-gray-600 font-medium">Rúbrica</span>
+        <span className="text-line">/</span>
+        <span className="text-brand-dark">Rúbrica</span>
       </nav>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Rúbrica de evaluación · Grupo {view.group.number}
-          </h1>
-          <p className="text-sm text-gray-500">{view.group.courseName}</p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={view.group.courseName}
+        title={`Rúbrica de evaluación — Grupo ${view.group.number}`}
+      />
 
       <div className="space-y-6">
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-base font-bold text-gray-900 mb-1">Reglas del curso</h2>
+        <section className="bg-white rounded-none border border-line shadow-[0_1px_2px_rgba(12,16,60,0.04)] p-6">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark mb-1">
+            Reglas del curso
+          </h2>
           <p className="text-xs text-gray-500 mb-4">
             Estos valores se heredan del curso y no se editan desde la rúbrica.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <div className="border border-line rounded-none px-4 py-3 bg-brand-bg">
+              <p className="text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.14em]">
                 Nota mínima de aprobación
               </p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{view.policy.passingGrade}</p>
+              <p className="font-serif text-xl font-semibold text-brand-dark mt-1">
+                {view.policy.passingGrade}
+              </p>
             </div>
-            <div className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <div className="border border-line rounded-none px-4 py-3 bg-brand-bg">
+              <p className="text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.14em]">
                 Máximo de faltas
               </p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{view.policy.maxAbsences}</p>
+              <p className="font-serif text-xl font-semibold text-brand-dark mt-1">
+                {view.policy.maxAbsences}
+              </p>
             </div>
           </div>
         </section>
@@ -464,10 +467,10 @@ const GroupRubricPage = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <RubricTotalIndicator total={validation.totalPercentage} state={validation.state} />
 
-          <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
+          <section className="bg-white rounded-none border border-line shadow-[0_1px_2px_rgba(12,16,60,0.04)] p-6 space-y-5">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div>
-                <h2 className="text-base font-bold text-gray-900">
+                <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark">
                   Componentes de la evaluación
                 </h2>
                 <p className="text-xs text-gray-500">
@@ -485,13 +488,13 @@ const GroupRubricPage = () => {
             </div>
 
             <div className="hidden md:grid grid-cols-12 gap-3 px-1">
-              <p className="md:col-span-5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <p className="md:col-span-5 font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em]">
                 Evaluación
               </p>
-              <p className="md:col-span-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <p className="md:col-span-4 font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em]">
                 Categoría
               </p>
-              <p className="md:col-span-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <p className="md:col-span-2 font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em]">
                 Porcentaje
               </p>
             </div>

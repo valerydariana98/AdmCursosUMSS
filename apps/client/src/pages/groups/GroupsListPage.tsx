@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
+import PageHeader from '../../components/PageHeader';
 import Button from '../../components/Button';
 import EstadoBadge from '../../components/EstadoBadge';
 import InstructorGroupsModal from '../../components/InstructorGroupsModal';
@@ -216,7 +217,7 @@ const GroupsListPage = () => {
 
     return grupos.map((grupo) => (
       <tr key={grupo.id} className="hover:bg-gray-50/60 transition-colors">
-        <td className="py-4 px-6 font-bold text-gray-900">Grupo {grupo.numGrupo}</td>
+        <td className="py-4 px-6 font-bold text-gray-900 whitespace-nowrap">Grupo {grupo.numGrupo}</td>
         <td className="py-4 px-4">
           <button
             type="button"
@@ -248,7 +249,7 @@ const GroupsListPage = () => {
               title="Editar grupo"
               aria-label={`Editar grupo ${grupo.numGrupo}`}
               onClick={finalizada ? (e) => e.preventDefault() : undefined}
-              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-none transition-colors ${
                 finalizada
                   ? 'text-gray-300 cursor-not-allowed'
                   : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
@@ -262,7 +263,7 @@ const GroupsListPage = () => {
               title="Eliminar grupo"
               aria-label={`Eliminar grupo ${grupo.numGrupo}`}
               disabled={finalizada}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-none text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <TrashIcon />
             </button>
@@ -304,39 +305,38 @@ const GroupsListPage = () => {
         <span className="text-gray-600 font-medium">Grupos</span>
       </nav>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {loadingCurso ? 'Cargando curso...' : (curso?.nombreCurso ?? 'Grupos')}
-          </h1>
-          {curso && <p className="text-sm text-gray-500">Grupos ofertados para este curso</p>}
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          {!curso?.preinscripcionFinalizada && (
-            <Button
-              variant="secondary"
-              onClick={openFinalizacionModal}
-              disabled={!curso || loadingValidacion}
-            >
-              {loadingValidacion ? 'Validando...' : 'Finalizar preinscripción'}
-            </Button>
-          )}
-          <Link to={`/cursos/${cursoId}/estudiantes`}>
-            <Button variant="secondary" icon={<UserPlusIcon />} disabled={!curso}>
-              Inscribir
-            </Button>
-          </Link>
-          <Link to={`/cursos/${cursoId}/grupos/nuevo`}>
-            <Button
-              variant="primary"
-              icon={<PlusIcon />}
-              disabled={!curso || curso.preinscripcionFinalizada}
-            >
-              Nuevo Grupo
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Oferta académica"
+        title={loadingCurso ? 'Cargando curso...' : (curso?.nombreCurso ?? 'Grupos')}
+        subtitle="Grupos ofertados para el curso"
+        actions={
+          <>
+            {!curso?.preinscripcionFinalizada && (
+              <Button
+                variant="secondary"
+                onClick={openFinalizacionModal}
+                disabled={!curso || loadingValidacion}
+              >
+                {loadingValidacion ? 'Validando...' : 'Finalizar preinscripción'}
+              </Button>
+            )}
+            <Link to={`/cursos/${cursoId}/estudiantes`}>
+              <Button variant="secondary" icon={<UserPlusIcon />} disabled={!curso}>
+                Inscribir
+              </Button>
+            </Link>
+            <Link to={`/cursos/${cursoId}/grupos/nuevo`}>
+              <Button
+                variant="primary"
+                icon={<PlusIcon />}
+                disabled={!curso || curso.preinscripcionFinalizada}
+              >
+                Nuevo grupo
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       {curso?.preinscripcionFinalizada && (
         <div className="mb-4">
@@ -360,12 +360,12 @@ const GroupsListPage = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-none border border-line shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                <th className="py-3.5 px-6">Grupo</th>
+              <tr className="border-b-2 border-brand-dark font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em]">
+                <th className="py-3.5 px-6 whitespace-nowrap min-w-[8rem]">Grupo</th>
                 <th className="py-3.5 px-4">Instructor</th>
                 <th className="py-3.5 px-4">Horario</th>
                 <th className="py-3.5 px-4">Modalidad</th>
@@ -380,7 +380,7 @@ const GroupsListPage = () => {
           </table>
         </div>
 
-        <div className="p-4 border-t border-gray-100 text-xs text-gray-500">
+        <div className="p-4 border-t border-line text-xs text-gray-500">
           Mostrando {grupos.length} {grupos.length === 1 ? 'grupo' : 'grupos'} del curso
         </div>
       </div>

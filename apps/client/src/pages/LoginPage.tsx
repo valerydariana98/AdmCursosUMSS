@@ -5,7 +5,7 @@ import { ApiError } from '../services/api';
 import { homeForRol } from '../components/ProtectedRoute';
 
 const inputCls =
-  'w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 outline-none transition focus:border-brand-mid focus:ring-2 focus:ring-brand-mid/15';
+  'w-full px-4 py-3 border border-line bg-white text-sm text-brand-dark outline-none transition focus:border-brand-dark focus:ring-4 focus:ring-brand-dark/5 placeholder:text-gray-300';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -55,75 +55,127 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-bg px-4">
-      <div className="w-full max-w-md">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 bg-brand-dark text-white font-black rounded-2xl flex items-center justify-center text-2xl shadow-md">
-            U
-          </div>
-          <h1 className="mt-4 text-xl font-bold text-brand-dark">Formación Continua UMSS</h1>
-          <p className="text-sm text-gray-500 mt-1">Inicia sesión para continuar</p>
+    <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr]">
+      {/* Portada: panel editorial oscuro. Solo aparece en pantallas grandes. */}
+      <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-sidebar-bg text-white p-14">
+        <span className="absolute inset-y-0 left-0 w-1 bg-stamp" aria-hidden="true" />
+        <span
+          className="pointer-events-none absolute -right-24 -bottom-32 font-serif font-bold leading-none text-white/[0.04] select-none"
+          style={{ fontSize: '34rem' }}
+          aria-hidden="true"
+        >
+          U
+        </span>
+
+        <div className="relative flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.28em] text-white/50">
+          <span>Departamento de Informática</span>
+          <span>Bolivia</span>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7 space-y-5"
-        >
-          <div>
-            <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Nombre de Usuario
-            </label>
-            <input
-              id="username"
-              name="username"
-              type="text"
-              autoComplete="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className={inputCls}
-              placeholder="JhonnyRojas2026"
-            />
-            {fieldErrors.username && (
-              <p className="text-xs text-red-600 mt-1.5">{fieldErrors.username}</p>
-            )}
-          </div>
+        <div className="relative max-w-lg">
+          <span className="inline-block h-2 w-2 bg-stamp" aria-hidden="true" />
+          <h1 className="mt-5 font-serif text-5xl font-semibold leading-[1.04] tracking-[-0.01em]">
+            Universidad
+            <br />
+            Mayor de
+            <br />
+            San Simón
+          </h1>
+          <div className="mt-6 h-[3px] w-24 bg-white/90" />
+          <p className="mt-6 text-sm leading-relaxed text-white/60">
+            Sistema de gestión de cursos, grupos, inscripciones y certificación
+            del Departamento de Informática.
+          </p>
+        </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Contraseña
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputCls}
-              placeholder="••••••••"
-            />
-            {fieldErrors.password && (
-              <p className="text-xs text-red-600 mt-1.5">{fieldErrors.password}</p>
-            )}
-          </div>
+        <div className="relative flex items-end justify-between font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
+          <span>Cochabamba · Bolivia</span>
+          <span>Dpto. de Informática</span>
+        </div>
+      </div>
 
-          {error && (
-            <div
-              role="alert"
-              className="rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3"
-            >
-              {error}
+      {/* Acceso */}
+      <div className="flex items-center justify-center bg-brand-bg px-6 py-16">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 lg:hidden">
+            <div className="w-12 h-12 bg-brand-dark text-white font-serif font-semibold flex items-center justify-center text-2xl">
+              U
             </div>
-          )}
+          </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full py-3 rounded-xl bg-brand-dark text-white text-sm font-semibold hover:bg-brand-mid transition disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {submitting ? 'Verificando...' : 'Iniciar Sesión'}
-          </button>
-        </form>
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.26em] text-brand-secondary/80">
+            <span className="inline-block h-2 w-2 bg-stamp" aria-hidden="true" />
+            Acceso al sistema
+          </div>
+
+          <h1 className="mt-4 font-serif text-4xl font-semibold leading-tight tracking-[-0.01em] text-brand-dark">
+            Iniciar sesión
+          </h1>
+
+          <div className="mt-6 mb-8" aria-hidden="true">
+            <div className="h-[3px] bg-rule" />
+            <div className="mt-[3px] h-px bg-line" />
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <label className="block">
+              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-brand-secondary">
+                Usuario
+              </span>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Ej. admin"
+                autoComplete="username"
+                className={`mt-2 ${inputCls}`}
+              />
+              {fieldErrors.username && (
+                <span className="mt-1.5 block text-xs font-medium text-status-error-text">
+                  {fieldErrors.username}
+                </span>
+              )}
+            </label>
+
+            <label className="block">
+              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-brand-secondary">
+                Contraseña
+              </span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                className={`mt-2 ${inputCls}`}
+              />
+              {fieldErrors.password && (
+                <span className="mt-1.5 block text-xs font-medium text-status-error-text">
+                  {fieldErrors.password}
+                </span>
+              )}
+            </label>
+
+            {error && (
+              <div className="flex items-start gap-3 border border-status-error-text/25 border-l-4 border-l-status-error-text bg-status-error-bg px-4 py-3 text-sm font-medium text-status-error-text">
+                <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 bg-status-error-text rounded-full" />
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-brand-dark px-6 py-3.5 text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-colors hover:bg-brand-mid disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+            >
+              {submitting ? 'Verificando…' : 'Ingresar'}
+            </button>
+          </form>
+
+          <p className="mt-8 font-mono text-[9px] uppercase tracking-[0.22em] text-brand-secondary/50">
+            Universidad Mayor de San Simón
+          </p>
+        </div>
       </div>
     </div>
   );

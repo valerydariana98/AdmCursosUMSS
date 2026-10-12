@@ -18,15 +18,15 @@ export const Badge: React.FC<BadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${className} ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] border ${className} ${
         isActivo
-          ? 'bg-blue-50 text-blue-800 border-blue-800'
-          : 'bg-gray-100 text-gray-600 border-gray-200'
+          ? 'bg-brand-mid/10 text-brand-mid border-brand-mid/20'
+          : 'bg-gray-100 text-gray-500 border-line'
       }`}
     >
       <span
         className={`w-1.5 h-1.5 rounded-full ${
-          isActivo ? 'bg-blue-800' : 'bg-gray-400'
+          isActivo ? 'bg-brand-mid' : 'bg-gray-400'
         }`}
       />
       {isActivo ? activeLabel : inactiveLabel}

@@ -22,10 +22,10 @@ const Prueba = () => {
 
       {/* 2. CONTENIDO PRINCIPAL / SHOWCASE DE COMPONENTES */}
       <main className="flex-1 overflow-y-auto p-8 space-y-8">
-        <header className="border-b border-gray-200 pb-4 flex justify-between items-center">
+        <header className="border-b border-line pb-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Catálogo General de Componentes UI</h1>
-            <p className="text-sm text-gray-500">Formación Continua - UMSS</p>
+            <p className="text-sm text-gray-500">Universidad Mayor de San Simón</p>
           </div>
         </header>
 
@@ -33,7 +33,7 @@ const Prueba = () => {
         {/* COMPONENTE 1: BADGES */}
         {/* ------------------------------------------------------------------- */}
         <Card className="space-y-3">
-          <h2 className="text-base font-bold text-gray-900 border-b pb-2">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark border-b pb-2">
             1. Componente: <code className="text-blue-700">Badge</code>
           </h2>
           <div className="flex items-center gap-6">
@@ -52,12 +52,12 @@ const Prueba = () => {
         {/* COMPONENTE 2: BUTTONS */}
         {/* ------------------------------------------------------------------- */}
         <Card className="space-y-4">
-          <h2 className="text-base font-bold text-gray-900 border-b pb-2">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark border-b pb-2">
             2. Componente: <code className="text-blue-700">Button</code>
           </h2>
           
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Variantes de Color</p>
+            <p className="font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em] mb-2">Variantes de Color</p>
             <div className="flex flex-wrap gap-3">
               <Button
                 variant="primary"
@@ -81,7 +81,7 @@ const Prueba = () => {
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Tamaños (size)</p>
+            <p className="font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em] mb-2">Tamaños (size)</p>
             <div className="flex flex-wrap items-center gap-3">
               <Button size="sm">Pequeño (sm)</Button>
               <Button size="md">Mediano (md)</Button>
@@ -90,7 +90,7 @@ const Prueba = () => {
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Estados Especiales</p>
+            <p className="font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em] mb-2">Estados Especiales</p>
             <div className="flex flex-wrap gap-3">
               <Button disabled>Deshabilitado</Button>
               <Button fullWidth>Ancho Completo (fullWidth)</Button>
@@ -102,7 +102,7 @@ const Prueba = () => {
         {/* COMPONENTE 3: TEXTFIELD */}
         {/* ------------------------------------------------------------------- */}
         <Card className="space-y-4">
-          <h2 className="text-base font-bold text-gray-900 border-b pb-2">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark border-b pb-2">
             3. Componente: <code className="text-blue-700">TextField</code>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -145,7 +145,7 @@ const Prueba = () => {
         {/* COMPONENTE 4: SELECT */}
         {/* ------------------------------------------------------------------- */}
         <Card className="space-y-4">
-          <h2 className="text-base font-bold text-gray-900 border-b pb-2">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark border-b pb-2">
             4. Componente: <code className="text-blue-700">Select</code>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -181,7 +181,7 @@ const Prueba = () => {
         {/* COMPONENTE 5: TOGGLE */}
         {/* ------------------------------------------------------------------- */}
         <Card className="space-y-4">
-          <h2 className="text-base font-bold text-gray-900 border-b pb-2">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark border-b pb-2">
             5. Componente: <code className="text-blue-700">Toggle</code>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -204,7 +204,7 @@ const Prueba = () => {
         {/* COMPONENTE 6: ALERTINFO (VARIANTES) */}
         {/* ------------------------------------------------------------------- */}
         <Card className="space-y-4">
-          <h2 className="text-base font-bold text-gray-900 border-b pb-2">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark border-b pb-2">
             6. Componente: <code className="text-blue-700">AlertInfo</code>
           </h2>
           <div className="space-y-3">
@@ -235,7 +235,7 @@ const Prueba = () => {
         {/* COMPONENTE 7: RADIOGROUP */}
         {/* ------------------------------------------------------------------- */}
         <Card className="space-y-4">
-          <h2 className="text-base font-bold text-gray-900 border-b pb-2">
+          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark border-b pb-2">
             7. Componente: <code className="text-blue-700">RadioGroup</code>
           </h2>
           <RadioGroup
