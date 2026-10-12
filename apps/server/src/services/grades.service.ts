@@ -22,6 +22,7 @@ import {
   rubricItems,
   tipos,
 } from '../db/schema.js';
+import { getStudentAttendanceSummary } from './attendance.service.js';
 import { resolveGroupOwnershipFailure } from './groupOwnership.js';
 import { getRubricForTeacher } from './rubrics.service.js';
 import type { SaveGradesInput } from '../schemas/grade.schema.js';
@@ -52,14 +53,19 @@ export const cellKey = (idEstudiante: number, idRubricItem: number): string =>
 // Un libro de notas está completo cuando cada estudiante inscrito tiene
 // registrada cada evaluación de la rúbrica. Sin estudiantes o sin ítems no hay
 // nada pendiente por calificar. Lo usa la finalización del curso (HU #37) para
-// impedir el cierre mientras falten notas.
+// impedir el cierre mientras falten notas. Los ítems de asistencia no cuentan:
+// su nota se calcula sola a partir de las jornadas y nunca se guarda en
+// `notas`, así que exigirla acá dejaría el cierre imposible.
 export const isGradeBookComplete = (
   studentIds: number[],
   itemIds: number[],
-  gradeMap: Map<string, number>
+  gradeMap: Map<string, number>,
+  attendanceItemIds: ReadonlySet<number> = new Set()
 ): boolean =>
   studentIds.every((studentId) =>
-    itemIds.every((itemId) => gradeMap.has(cellKey(studentId, itemId)))
+    itemIds
+      .filter((itemId) => !attendanceItemIds.has(itemId))
+      .every((itemId) => gradeMap.has(cellKey(studentId, itemId)))
   );
 
 // La pertenencia del grupo al docente la decide la rúbrica: un grupo ajeno
@@ -243,13 +249,28 @@ export const loadGradeMap = async (
   return new Map(rows.map((row) => [cellKey(row.idEstudiante, row.idRubricItem), row.nota]));
 };
 
+// Porcentaje de asistencia por estudiante para la vista de notas: los ítems de
+// categoría `attendance` muestran este número en vez de una nota cargada a mano.
+// Sin jornadas registradas el porcentaje es `null` y la celda queda vacía, igual
+// que el reporte.
+type AttendancePercentageByStudent = Map<number, number | null>;
+
+const loadAttendancePercentages = async (groupId: number): Promise<AttendancePercentageByStudent> => {
+  const summary = await getStudentAttendanceSummary(groupId);
+
+  if (!summary) return new Map();
+
+  return new Map(summary.summaries.map((row) => [row.studentId, row.percentage]));
+};
+
 // La nota final la calcula el servidor con la misma función compartida que el
 // cliente usa para la vista previa: no puede haber dos versiones del número que
 // el docente mira para aprobar.
 const buildView = (
   source: RubricView,
   students: EnrolledRow[],
-  gradeMap: Map<string, number>
+  gradeMap: Map<string, number>,
+  attendanceByStudent: AttendancePercentageByStudent
 ): GradesView => {
   const items = source.rubric?.items ?? [];
 
@@ -260,7 +281,12 @@ const buildView = (
     students: students.map((student) => {
       const cells: GradeCell[] = items.map((item) => ({
         idRubricItem: item.id,
-        nota: gradeMap.get(cellKey(student.idEstudiante, item.id)) ?? null,
+        // Los ítems de asistencia no se cargan a mano: su nota sale del
+        // porcentaje de jornadas presentes del estudiante.
+        nota:
+          item.category === 'attendance'
+            ? (attendanceByStudent.get(student.idEstudiante) ?? null)
+            : (gradeMap.get(cellKey(student.idEstudiante, item.id)) ?? null),
       }));
 
       return {
@@ -310,7 +336,12 @@ export const getGradesForTeacher = async (
       loadGradeMap(tx, groupId),
     ]);
 
-    return { ok: true, view: buildView(rubricView.view, students, gradeMap) };
+    const attendanceByStudent = await loadAttendancePercentages(groupId);
+
+    return {
+      ok: true,
+      view: buildView(rubricView.view, students, gradeMap, attendanceByStudent),
+    };
   });
 };
 
@@ -353,6 +384,9 @@ export const saveGradesForTeacher = async (
     await syncEvaluacionesFromRubric(tx, groupId, items);
 
     const knownItems = new Set(items.map((item) => item.id));
+    const attendanceItemIds = new Set(
+      items.filter((item) => item.category === 'attendance').map((item) => item.id)
+    );
     const enrolled = await tx
       .select({ idEstudiante: inscripciones.idEst })
       .from(inscripciones)
@@ -366,9 +400,14 @@ export const saveGradesForTeacher = async (
       if (!knownItems.has(entry.idRubricItem)) return { ok: false, reason: 'unknown_rubric_item' };
     }
 
+    // Los ítems de asistencia se calculan solos a partir de las jornadas: su
+    // nota nunca se escribe en `notas`. Un payload que intente tocarlos se
+    // ignora en vez de rechazar el guardado completo.
+    const writableGrades = data.grades.filter((entry) => !attendanceItemIds.has(entry.idRubricItem));
+
     const evaluacionByItem = await loadEvaluacionIds(tx, groupId);
 
-    for (const entry of data.grades) {
+    for (const entry of writableGrades) {
       await writeGrade(tx, entry, evaluacionByItem);
     }
 
@@ -377,7 +416,12 @@ export const saveGradesForTeacher = async (
       loadGradeMap(tx, groupId),
     ]);
 
-    return { ok: true, view: buildView(rubricView.view, students, gradeMap) };
+    const attendanceByStudent = await loadAttendancePercentages(groupId);
+
+    return {
+      ok: true,
+      view: buildView(rubricView.view, students, gradeMap, attendanceByStudent),
+    };
   });
 };
 

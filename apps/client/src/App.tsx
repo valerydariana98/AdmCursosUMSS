@@ -16,7 +16,6 @@ import GroupsPage from "./pages/groups/GroupsPage";
 import GroupsListPage from "./pages/groups/GroupsListPage";
 import GroupStudentsPage from "./pages/groups/GroupStudentsPage";
 import MyGroupsPage from "./pages/groups/MyGroupsPage";
-import TempStudentsRedirect from "./pages/groups/TempStudentsRedirect";
 import InstructorsContainer from "./pages/instructors/InstructorsContainer";
 import EditEnrollmentPage from "./pages/EditEnrollmentPage";
 import EnrollmentPage from "./pages/EnrollmentPage";
@@ -125,10 +124,6 @@ export default function App() {
           <Route
             path="/cursos/:idCurso/estudiantes"
             element={soloAdmin(<GroupStudentsPage />)}
-          />
-          <Route
-            path="/groups/:groupId/students-temp"
-            element={autenticado(<TempStudentsRedirect />)}
           />
 
           {/* Instructores (otra HU) */}

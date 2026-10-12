@@ -12,7 +12,7 @@ import { useGroups } from '../../hooks/useGroups';
 import { ApiError } from '../../services/api';
 import { courseService } from '../../services/courseService';
 import type { Modality } from 'shared';
-import { TOGGLEABLE_STATES, type GroupListItem, type GroupStatus } from '../../types/group';
+import { type GroupListItem, type GroupStatus } from '../../types/group';
 import type { ValidacionFinalizacion } from '../../services/courseService';
 
 const MODALITY_LABELS: Record<Modality, string> = {
@@ -28,8 +28,6 @@ const PlusIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
   </svg>
 );
-
-const isToggleable = (estado: GroupStatus) => TOGGLEABLE_STATES.includes(estado);
 
 // El reporte académico (HU #35) necesita estudiantes inscritos y solo tiene
 // sentido para grupos habilitados o ya finalizados.
@@ -286,7 +284,7 @@ const GroupsListPage = () => {
               size="sm"
               variant="accent"
               onClick={() => openEstadoModal(grupo)}
-              disabled={finalizada || !isToggleable(grupo.estado)}
+              disabled={finalizada || grupo.estado !== 'preinscripcion'}
             >
              Finalizar preinscripción
             </Button>

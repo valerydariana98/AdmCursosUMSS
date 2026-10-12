@@ -159,4 +159,22 @@ describe('libro de notas completo (HU #37)', () => {
     expect(isGradeBookComplete([], [1, 2], new Map())).toBe(true);
     expect(isGradeBookComplete([1, 2], [], new Map())).toBe(true);
   });
+
+  it('ignora los ítems de asistencia: su nota se calcula sola', () => {
+    // El ítem 1 es asistencia y no tiene nota guardada; el ítem 2 sí.
+    const gradeMap = new Map([
+      ['1:2', 70],
+      ['2:2', 50],
+    ]);
+
+    expect(isGradeBookComplete([1, 2], [1, 2], gradeMap, new Set([1]))).toBe(true);
+    // Sin el set de asistencia el libro queda incompleto.
+    expect(isGradeBookComplete([1, 2], [1, 2], gradeMap)).toBe(false);
+  });
+
+  it('un ítem de asistencia no esconde una nota manual que falte en otro ítem', () => {
+    const gradeMap = new Map([['1:2', 70]]);
+
+    expect(isGradeBookComplete([1, 2], [1, 2], gradeMap, new Set([1]))).toBe(false);
+  });
 });

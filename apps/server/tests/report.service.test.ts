@@ -64,21 +64,24 @@ const input = (overrides: Partial<Parameters<typeof buildReportStudent>[0]> = {}
 describe('fila del reporte por estudiante', () => {
   it('arma notas y nota final de un estudiante con todas las celdas registradas', () => {
     const row = buildReportStudent(
-      input({ gradeMap: gradeMap([42, 1, 80], [42, 2, 70], [42, 3, 90]) })
+      input({ gradeMap: gradeMap([42, 2, 70], [42, 3, 90]) })
     );
 
-    expect(row.notas).toEqual({ '1': 80, '2': 70, '3': 90 });
-    // 80·10% + 70·30% + 90·60% = 83.
-    expect(row.notaFinal).toBe(83);
+    // La celda de asistencia (ítem 1) no sale del mapa: se calcula sola con el
+    // 100% de asistencia de fullAttendance().
+    expect(row.notas).toEqual({ '1': 100, '2': 70, '3': 90 });
+    // 100·10% + 70·30% + 90·60% = 85.
+    expect(row.notaFinal).toBe(85);
     expect(row.condicion).toBe('aprobacion');
   });
 
   it('la celda faltante aporta 0 y no figura en el record de notas', () => {
-    const row = buildReportStudent(input({ gradeMap: gradeMap([42, 1, 80], [42, 2, 70]) }));
+    const row = buildReportStudent(input({ gradeMap: gradeMap([42, 2, 70]) }));
 
-    expect(row.notas).toEqual({ '1': 80, '2': 70 });
-    // 80·10% + 70·30% + 0·60% = 29: la celda vacía rinde igual que un 0.
-    expect(row.notaFinal).toBe(29);
+    // La asistencia sigue figurando aunque no haya nota manual.
+    expect(row.notas).toEqual({ '1': 100, '2': 70 });
+    // 100·10% + 70·30% + 0·60% = 31: la celda vacía rinde igual que un 0.
+    expect(row.notaFinal).toBe(31);
     // Cumple asistencia pero no llega a la nota mínima.
     expect(row.condicion).toBe('asistencia');
   });
@@ -86,10 +89,12 @@ describe('fila del reporte por estudiante', () => {
   it('con rúbrica pero sin notas registradas deja el record vacío y nota final 0', () => {
     const row = buildReportStudent(input());
 
-    expect(row.notas).toEqual({});
-    expect(row.notaFinal).toBe(0);
+    // Sólo la celda de asistencia figura: no hay notas manuales que mostrar.
+    expect(row.notas).toEqual({ '1': 100 });
+    // 100·10% + 0·30% + 0·60% = 10.
+    expect(row.notaFinal).toBe(10);
     // Con rúbrica las notas ya están "disponibles": la condición se decide con
-    // lo que hay (0) en vez de quedarse pendiente.
+    // lo que hay en vez de quedarse pendiente.
     expect(row.condicion).toBe('asistencia');
   });
 
@@ -109,11 +114,12 @@ describe('fila del reporte por estudiante', () => {
           { studentId: 42, presentSessions: 4, totalSessions: 10 },
           3
         ),
-        gradeMap: gradeMap([42, 1, 100], [42, 2, 100], [42, 3, 100]),
+        gradeMap: gradeMap([42, 2, 100], [42, 3, 100]),
       })
     );
 
-    expect(row.notaFinal).toBe(100);
+    // 40·10% + 100·30% + 100·60% = 94.
+    expect(row.notaFinal).toBe(94);
     expect(row.asistencia.requirement.meetsRequirement).toBe(false);
     expect(row.condicion).toBe('sin_certificado');
   });
@@ -132,7 +138,56 @@ describe('fila del reporte por estudiante', () => {
     const row = buildReportStudent(input({ gradeMap: gradeMap([42, 3, 90], [7, 3, 55]) }));
 
     // La nota de otro estudiante no se cuela en esta fila.
-    expect(row.notas).toEqual({ '3': 90 });
-    expect(row.notaFinal).toBe(54);
+    expect(row.notas).toEqual({ '1': 100, '3': 90 });
+    // 100·10% + 0·30% + 90·60% = 64.
+    expect(row.notaFinal).toBe(64);
+  });
+});
+
+describe('celdas de asistencia calculadas solas', () => {
+  it('usa el porcentaje de jornadas del estudiante como nota del ítem de asistencia', () => {
+    // 8 de 10 jornadas presentes = 80%; la celda de asistencia no se carga a mano.
+    const row = buildReportStudent(
+      input({
+        summary: buildStudentAttendanceSummary(
+          { studentId: 42, presentSessions: 8, totalSessions: 10 },
+          3
+        ),
+        gradeMap: gradeMap([42, 2, 70], [42, 3, 90]),
+      })
+    );
+
+    expect(row.notas).toEqual({ '1': 80, '2': 70, '3': 90 });
+    // 80·10% + 70·30% + 90·60% = 83.
+    expect(row.notaFinal).toBe(83);
+  });
+
+  it('ignora una nota manual en la celda de asistencia', () => {
+    // Aunque el mapa traiga un valor, el ítem de asistencia manda el porcentaje.
+    const row = buildReportStudent(
+      input({
+        gradeMap: gradeMap([42, 1, 99], [42, 2, 70], [42, 3, 90]),
+      })
+    );
+
+    // fullAttendance() es 10/10 = 100%.
+    expect(row.notas).toEqual({ '1': 100, '2': 70, '3': 90 });
+  });
+
+  it('sin jornadas la celda de asistencia queda vacía y rinde 0', () => {
+    const row = buildReportStudent(
+      input({
+        summary: buildStudentAttendanceSummary(
+          { studentId: 42, presentSessions: 0, totalSessions: 0 },
+          3
+        ),
+        gradeMap: gradeMap([42, 2, 70], [42, 3, 90]),
+      })
+    );
+
+    // Sin porcentaje no hay celda registrada, pero la nota final pondera 0.
+    expect(row.notas).toEqual({ '2': 70, '3': 90 });
+    // 0·10% + 70·30% + 90·60% = 75.
+    expect(row.notaFinal).toBe(75);
   });
 });

@@ -159,6 +159,20 @@ interface ReportStudentInput {
   totalSessions: number;
 }
 
+// Nota de un ítem para el estudiante. Los ítems de asistencia no se cargan a
+// mano: muestran el porcentaje de jornadas presentes, el mismo número que la
+// vista de notas. Sin jornadas el porcentaje es `null` y la celda no figura.
+const itemGradeFor = (
+  item: ReportRubricItem,
+  studentId: number,
+  summary: AttendanceStudentSummary,
+  gradeMap: Map<string, number>
+): number | null => {
+  if (item.category === 'attendance') return summary.percentage;
+
+  return gradeMap.get(cellKey(studentId, item.id)) ?? null;
+};
+
 // Fila por estudiante del reporte, separada de la base de datos para poder
 // probarla directamente. La nota final se calcula con la misma función
 // compartida que la vista de notas: una celda sin registrar entra como 0, así
@@ -188,12 +202,14 @@ export const buildReportStudent = ({
   const notasDisponibles = rubric !== null;
 
   // Sólo las celdas registradas entran al record: el cliente muestra 0 por
-  // omisión para las que faltan, así como la vista de notas.
+  // omisión para las que faltan, así como la vista de notas. Los ítems de
+  // asistencia con porcentaje disponible también figuran, aunque no estén en
+  // `notas`.
   const notas: Record<string, number> | null = notasDisponibles
     ? items.reduce<Record<string, number>>((record, item) => {
-        const nota = gradeMap.get(cellKey(student.studentId, item.id));
+        const nota = itemGradeFor(item, student.studentId, asistencia, gradeMap);
 
-        if (nota !== undefined) record[String(item.id)] = nota;
+        if (nota !== null) record[String(item.id)] = nota;
 
         return record;
       }, {})
@@ -202,7 +218,7 @@ export const buildReportStudent = ({
   const notaFinal = notasDisponibles
     ? computeFinalGrade(
         items.map((item) => ({
-          nota: gradeMap.get(cellKey(student.studentId, item.id)) ?? null,
+          nota: itemGradeFor(item, student.studentId, asistencia, gradeMap),
           percentageHundredths: toPercentageHundredths(item.percentage),
         }))
       )
