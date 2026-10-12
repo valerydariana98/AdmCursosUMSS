@@ -4,6 +4,7 @@ import { PAYMENT_TYPES, PAYMENT_TYPE_LABEL, STUDENT_TYPE_LABEL, type PaymentType
 import {
   btnPrimary, btnSecondary, cardCls, inputCls, labelCls, sectionTitleCls,
 } from '../components/formStyles';
+import BackButton from '../components/BackButton';
 import useEnrollmentForm from '../hooks/useEnrollmentForm';
 
 const EnrollmentPage = () => {
@@ -25,6 +26,7 @@ const EnrollmentPage = () => {
 
   return (
     <form onSubmit={onSubmit} className="p-8 font-sans">
+      <BackButton />
       <p className="text-sm text-gray-400">
         <Link to={listUrl} className="hover:underline">Estudiantes</Link> /{' '}
         <span className="font-semibold text-gray-600">Inscribir estudiante</span>

@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { AttendanceStatus } from 'shared';
 import AlertInfo from '../../components/AlertInfo';
 import AttendanceStatusToggle from '../../components/AttendanceStatusToggle';
+import BackButton from '../../components/BackButton';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import TextField from '../../components/TextField';
@@ -214,6 +215,7 @@ const GroupAttendancePage = () => {
 
   return (
     <div className="p-8 font-sans">
+      <BackButton />
       <nav className="flex items-center gap-2 text-xs text-gray-400 mb-3">
         <Link to="/cursos" className="hover:text-gray-600">
           Cursos
