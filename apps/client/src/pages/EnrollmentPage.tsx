@@ -12,8 +12,8 @@ const EnrollmentPage = () => {
   const { form, setField, types, group, monto, isLoading, isSaving, error, submit } =
     useEnrollmentForm(groupId);
 
-  // Provisional: vuelve a la lista temporal. Cambiar a la ruta definitiva cuando exista la HU #41
-  const listUrl = `/groups/${groupId}/students-temp`;
+  // Vuelve a Inscripciones con el curso del grupo preseleccionado.
+  const listUrl = group ? `/estudiantes?curso=${group.idCurso}` : '/estudiantes';
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();

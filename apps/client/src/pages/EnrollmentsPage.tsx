@@ -3,7 +3,7 @@
 // grupos, se listan los estudiantes inscritos con sus acciones. Las altas solo
 // se permiten mientras el grupo sigue en preinscripción (regla del servidor).
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   STUDENT_TYPE_LABEL,
   type EnrolledStudent,
@@ -93,11 +93,17 @@ const th =
 const td = 'py-4 px-4 text-sm text-gray-600';
 
 const EnrollmentsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [cursos, setCursos] = useState<Course[]>([]);
   const [loadingCursos, setLoadingCursos] = useState(true);
   const [errorCursos, setErrorCursos] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState('');
-  const [cursoId, setCursoId] = useState<number | null>(null);
+  // El curso viaja en la query (?curso=) para poder volver aqui desde los
+  // formularios de inscripción con el curso ya seleccionado.
+  const [cursoId, setCursoId] = useState<number | null>(() => {
+    const param = Number(searchParams.get('curso'));
+    return Number.isInteger(param) && param > 0 ? param : null;
+  });
 
   const {
     grupos,
@@ -121,6 +127,13 @@ const EnrollmentsPage = () => {
   const [borrar, setBorrar] = useState<EnrolledStudent | null>(null);
   const [eliminando, setEliminando] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Mantiene el curso seleccionado en la query (?curso=) para que la vista sea
+  // enlazable y para volver aqui desde los formularios de inscripción.
+  const seleccionarCurso = (id: number | null) => {
+    setCursoId(id);
+    setSearchParams(id === null ? {} : { curso: String(id) }, { replace: true });
+  };
 
   useEffect(() => {
     courseService
@@ -390,7 +403,7 @@ const EnrollmentsPage = () => {
                 <li key={curso.id}>
                   <button
                     type="button"
-                    onClick={() => setCursoId(curso.id)}
+                    onClick={() => seleccionarCurso(curso.id)}
                     className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left hover:bg-gray-50/60 transition-colors cursor-pointer"
                   >
                     <div>
@@ -416,7 +429,7 @@ const EnrollmentsPage = () => {
               <Select
                 label="Curso"
                 value={cursoId}
-                onChange={(event) => setCursoId(Number(event.target.value))}
+                onChange={(event) => seleccionarCurso(Number(event.target.value))}
                 options={cursos.map((curso) => ({
                   value: curso.id,
                   label: curso.nombreCurso,
@@ -426,7 +439,7 @@ const EnrollmentsPage = () => {
               <Button
                 variant="secondary"
                 onClick={() => {
-                  setCursoId(null);
+                  seleccionarCurso(null);
                   setBusqueda('');
                 }}
               >

@@ -29,7 +29,6 @@ const EditEnrollmentPage = () => {
   const groupId = Number(params.groupId);
   const enrollmentId = Number(params.enrollmentId);
   const navigate = useNavigate();
-  const listUrl = `/groups/${groupId}/students-temp`; // Ajustado a la ruta correcta del monorepo
 
   const [group, setGroup] = useState<GroupWithCourse | null>(null);
   const [types, setTypes] = useState<StudentType[]>([]);
@@ -38,6 +37,9 @@ const EditEnrollmentPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Vuelve a Inscripciones con el curso del grupo preseleccionado.
+  const listUrl = group ? `/estudiantes?curso=${group.idCurso}` : '/estudiantes';
 
   useEffect(() => {
     Promise.all([getGroupWithCourse(groupId), getStudentTypes(), getEnrollments(groupId)])
