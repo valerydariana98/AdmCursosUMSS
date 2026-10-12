@@ -2,8 +2,8 @@
 import type { NextFunction, Request, Response } from 'express';
 import { getCurrentTeacherForUser } from '../auth/currentTeacher.js';
 import {
-  getAttendanceForTeacher,
-  saveAttendanceForTeacher,
+  getAttendanceGridForTeacher,
+  saveAttendanceGridForTeacher,
   type AttendanceFailure,
 } from '../services/attendance.service.js';
 
@@ -15,6 +15,7 @@ const FAILURE_STATUS: Record<AttendanceFailure, number> = {
   no_enrolled_students: 400,
   invalid_date: 400,
   future_date: 400,
+  weekend_date: 400,
   invalid_status: 400,
   unknown_student: 400,
 };
@@ -26,9 +27,10 @@ const FAILURE_MESSAGE: Record<AttendanceFailure, string> = {
   group_finalized: 'El grupo ya fue finalizado: su asistencia no se puede modificar',
   no_enrolled_students: 'El grupo no tiene estudiantes inscritos para registrar asistencia',
   invalid_date: 'La fecha de la jornada no es válida',
-  future_date: 'No se puede registrar asistencia de una jornada futura',
-  invalid_status: 'El estado de asistencia debe ser presente o ausente',
-  unknown_student: 'Solo se puede registrar asistencia de estudiantes inscritos en el grupo',
+  future_date: 'No se puede registrar asistencia de una fecha futura',
+  weekend_date: 'Las jornadas son de lunes a viernes: no se registra fin de semana',
+  invalid_status: 'El estado de asistencia no es válido',
+  unknown_student: 'El estudiante no pertenece al grupo',
 };
 
 // Quién registra la asistencia: el docente del token, o el ADMIN que administra
@@ -70,7 +72,7 @@ export const getAttendance = async (req: Request, res: Response, next: NextFunct
 
     if (!actor) return;
 
-    const result = await getAttendanceForTeacher(groupId, actor.teacherId, req.query.date as string, actor.isAdmin);
+    const result = await getAttendanceGridForTeacher(groupId, actor.teacherId, actor.isAdmin);
 
     if (!result.ok) {
       res.status(FAILURE_STATUS[result.reason]).json({ message: FAILURE_MESSAGE[result.reason] });
@@ -90,7 +92,7 @@ export const saveAttendance = async (req: Request, res: Response, next: NextFunc
 
     if (!actor) return;
 
-    const result = await saveAttendanceForTeacher(groupId, actor.teacherId, req.body, actor.isAdmin);
+    const result = await saveAttendanceGridForTeacher(groupId, actor.teacherId, req.body, actor.isAdmin);
 
     if (!result.ok) {
       res.status(FAILURE_STATUS[result.reason]).json({ message: FAILURE_MESSAGE[result.reason] });

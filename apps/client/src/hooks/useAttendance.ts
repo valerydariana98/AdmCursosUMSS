@@ -1,31 +1,34 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApiError } from '../services/api';
+import { attendanceGridPayloadSchema } from '../schemas/attendanceSchema';
 import { attendanceService } from '../services/attendanceService';
 import {
-  todayAttendanceDate,
-  type AttendanceStudentFormValues,
-  type AttendanceView,
-  type UpsertAttendance,
+  cycleAttendanceCell,
+  hasUnsavedAttendanceChanges,
+  toAttendanceGridMarks,
+  toAttendanceGridPayload,
+  type AttendanceGridMarks,
+  type AttendanceGridView,
+  type AttendanceStatus,
 } from '../types/attendance';
-import { toAttendanceFormValues } from '../types/attendance';
 
 const NO_GROUP_ERROR = 'No se pudo identificar el grupo';
 
 export const useAttendance = (groupId: number) => {
-  // La fecha se guarda en la URL de la página, no acá: la jornada consultada
-  // tiene que sobrevivir a un recarga.
-  const [date, setDate] = useState<string>(todayAttendanceDate());
-  const [view, setView] = useState<AttendanceView | null>(null);
-  const [students, setStudents] = useState<AttendanceStudentFormValues[]>([]);
+  const [view, setView] = useState<AttendanceGridView | null>(null);
+  // Celdas editables y su línea base. La línea base se vuelve a fijar en cada
+  // respuesta del servidor: carga o guardado.
+  const [marks, setMarks] = useState<AttendanceGridMarks>({});
+  const [baseline, setBaseline] = useState<AttendanceGridMarks>({});
   const [loading, setLoading] = useState(true);
-  // Se guarda el ApiError completo (y no solo su mensaje) para poder distinguir
-  // un 403 de grupo ajeno de un 404 o de un fallo de conexión.
   const [error, setError] = useState<ApiError | null>(null);
   const [saving, setSaving] = useState(false);
 
   const fetchAttendance = useCallback(async () => {
     if (!Number.isInteger(groupId) || groupId <= 0) {
       setView(null);
+      setMarks({});
+      setBaseline({});
       setError(new ApiError(400, NO_GROUP_ERROR));
       setLoading(false);
       return;
@@ -35,44 +38,89 @@ export const useAttendance = (groupId: number) => {
     setError(null);
 
     try {
-      const loaded = await attendanceService.getByGroup(groupId, date);
+      const loaded = await attendanceService.getByGroup(groupId);
+      const loadedMarks = toAttendanceGridMarks(loaded);
+
       setView(loaded);
-      setStudents(toAttendanceFormValues(loaded));
+      setMarks(loadedMarks);
+      setBaseline(loadedMarks);
     } catch (caught) {
       setView(null);
-      setStudents([]);
+      setMarks({});
+      setBaseline({});
       setError(
         caught instanceof ApiError ? caught : new ApiError(500, 'No se pudo cargar la asistencia')
       );
     } finally {
       setLoading(false);
     }
-  }, [groupId, date]);
+  }, [groupId]);
 
   useEffect(() => {
     fetchAttendance();
   }, [fetchAttendance]);
 
-  const setStatus = (studentId: number, status: AttendanceStudentFormValues['status']) => {
-    setStudents((previous) =>
-      previous.map((student) =>
-        student.studentId === studentId ? { ...student, status } : student
-      )
-    );
+  // Alterna una celda: vacío → presente → ausente → vacío. Dejar la celda vacía
+  // hace que el guardado la mande como presente, igual que el valor por omisión.
+  const toggleCell = (studentId: number, date: string) => {
+    setMarks((previous) => {
+      const studentMarks = { ...(previous[studentId] ?? {}) };
+      const next = cycleAttendanceCell(studentMarks[date]);
+
+      if (next === undefined) delete studentMarks[date];
+      else studentMarks[date] = next;
+
+      return { ...previous, [studentId]: studentMarks };
+    });
   };
 
-  // Acciones rápidas: las dos escriben el mismo estado en toda la lista, así que
-  // van por el mismo camino que marcar un estudiante uno por uno.
-  const setStatusForAll = (status: AttendanceStudentFormValues['status']) => {
-    setStudents((previous) => previous.map((student) => ({ ...student, status })));
+  const studentIds = useMemo(
+    () => (view ? view.students.map((student) => student.studentId) : []),
+    [view]
+  );
+
+  // Acción de columna: marca toda una jornada como presente o ausente. Pasa por el
+  // mismo estado editable que las celdas, así que la detección de cambios es la
+  // misma.
+  const setColumnStatus = (date: string, status: AttendanceStatus) => {
+    setMarks((previous) => {
+      const next = { ...previous };
+
+      for (const studentId of studentIds) {
+        next[studentId] = { ...(next[studentId] ?? {}), [date]: status };
+      }
+
+      return next;
+    });
   };
 
-  const saveAttendance = async (data: UpsertAttendance) => {
+  const hasUnsavedChanges = useMemo(
+    () => hasUnsavedAttendanceChanges(marks, baseline),
+    [marks, baseline]
+  );
+
+  const saveAttendance = async () => {
+    const payload = toAttendanceGridPayload(marks, baseline, studentIds);
+
+    if (payload.sessions.length === 0) return view;
+
+    const parsed = attendanceGridPayloadSchema.safeParse(payload);
+
+    if (!parsed.success) {
+      throw new ApiError(
+        400,
+        parsed.error.issues[0]?.message ?? 'Revisa la asistencia antes de guardar'
+      );
+    }
+
     setSaving(true);
     try {
-      const saved = await attendanceService.save(groupId, data);
+      const saved = await attendanceService.saveGrid(groupId, parsed.data);
+      const savedMarks = toAttendanceGridMarks(saved);
+
       setView(saved);
-      setStudents(toAttendanceFormValues(saved));
+      setMarks(savedMarks);
+      setBaseline(savedMarks);
       return saved;
     } finally {
       setSaving(false);
@@ -80,17 +128,15 @@ export const useAttendance = (groupId: number) => {
   };
 
   return {
-    date,
-    setDate,
     view,
-    students,
+    marks,
     loading,
     error,
     saving,
     isForbidden: error?.status === 403,
-    setStatus,
-    setStatusForAll,
+    hasUnsavedChanges,
+    toggleCell,
+    setColumnStatus,
     saveAttendance,
-    refetch: fetchAttendance,
   };
 };
