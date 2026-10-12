@@ -22,7 +22,6 @@ import EnrollmentPage from "./pages/EnrollmentPage";
 import EnrollmentsPage from "./pages/EnrollmentsPage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
-import Prueba from "./pages/Prueba";
 import ProtectedRoute, { homeForRol } from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
 
@@ -129,11 +128,7 @@ export default function App() {
           {/* Instructores (otra HU) */}
           <Route path="/instructores" element={soloAdmin(<InstructorsContainer />)} />
 
-          {/* Catálogo de componentes y secciones generales */}
-          <Route path="/prueba" element={autenticado(<Prueba />)} />
-
           {/* Secciones de otros colaboradores */}
-          <Route path="/dashboard" element={autenticado(<Prueba />)} />
           <Route path="/grupos" element={soloAdmin(<GroupsPage />)} />
           <Route
             path="/estudiantes"

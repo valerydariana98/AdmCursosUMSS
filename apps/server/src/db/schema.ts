@@ -9,6 +9,7 @@ import {
   timestamp,
   pgEnum,
   bigint,
+  jsonb,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
@@ -109,6 +110,10 @@ export const grupos = pgTable(
     minimEst: integer('minim_est').notNull(),
     maxEst: integer('max_est').notNull(),
     estado: estadoGrupoEnum('estado').notNull(),
+    // Plan de fechas de la grilla de asistencia. null = todavía no se guardó un
+    // plan propio: la vista usa las primeras `DEFAULT_GRID_DAYS` fechas hábiles
+    // desde el inicio del curso.
+    attendanceDates: jsonb('attendance_dates').$type<string[]>(),
   },
   (table) => [uniqueIndex('grupos_curso_num_unico').on(table.idCurso, table.numGrupo)]
 );
