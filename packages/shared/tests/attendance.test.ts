@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_GRID_DAYS,
   buildStudentAttendanceSummary,
   calculateAttendancePercentage,
+  firstBusinessDays,
   isAttendanceDate,
   isAttendanceDateInFuture,
   isWeekendDate,
+  nextBusinessDay,
   roundAttendancePercentage,
   resolveAttendanceRequirement,
   weekdaysBetween,
@@ -162,5 +165,50 @@ describe('fechas de la grilla', () => {
   it('un rango invertido o inválido queda vacío', () => {
     expect(weekdaysBetween('2026-03-09', '2026-03-05')).toEqual([]);
     expect(weekdaysBetween('nope', '2026-03-09')).toEqual([]);
+  });
+});
+
+describe('plan de la grilla', () => {
+  it('toma las primeras fechas hábiles desde el inicio del curso, sin fines de semana', () => {
+    // El curso inicia jueves 2026-03-05: los tres primeros días hábiles saltan el
+    // sábado y el domingo.
+    expect(firstBusinessDays('2026-03-05', 3)).toEqual([
+      '2026-03-05',
+      '2026-03-06',
+      '2026-03-09',
+    ]);
+  });
+
+  it('arranca en la próxima fecha hábil si el inicio cae en fin de semana', () => {
+    // 2026-03-07 es sábado y 2026-03-08 domingo.
+    expect(firstBusinessDays('2026-03-07', 2)).toEqual(['2026-03-09', '2026-03-10']);
+  });
+
+  it('diez días hábiles cubren dos semanas de lunes a viernes', () => {
+    const plan = firstBusinessDays('2026-03-05', DEFAULT_GRID_DAYS);
+
+    expect(plan).toHaveLength(10);
+    expect(plan[0]).toBe('2026-03-05');
+    expect(plan[plan.length - 1]).toBe('2026-03-18');
+    expect(plan.every((date) => !isWeekendDate(date))).toBe(true);
+  });
+
+  it('un conteo no positivo o una fecha inválida quedan vacíos', () => {
+    expect(firstBusinessDays('2026-03-05', 0)).toEqual([]);
+    expect(firstBusinessDays('nope', 3)).toEqual([]);
+  });
+
+  it('el día siguiente hábil salta el fin de semana', () => {
+    // 2026-03-06 es viernes: el próximo día hábil es el lunes.
+    expect(nextBusinessDay('2026-03-06')).toBe('2026-03-09');
+  });
+
+  it('desde un fin de semana llega al lunes', () => {
+    expect(nextBusinessDay('2026-03-07')).toBe('2026-03-09');
+    expect(nextBusinessDay('2026-03-08')).toBe('2026-03-09');
+  });
+
+  it('una fecha inválida se devuelve tal cual', () => {
+    expect(nextBusinessDay('nope')).toBe('nope');
   });
 });

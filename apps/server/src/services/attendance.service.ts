@@ -1,13 +1,14 @@
 // apps/server/src/services/attendance.service.ts
 // Asistencia de un grupo en grilla: carga, guardado masivo y resumen acumulado.
-import { and, count, eq } from 'drizzle-orm';
+import { and, count, eq, inArray } from 'drizzle-orm';
 import {
   ATTENDANCE_STATUSES,
+  DEFAULT_GRID_DAYS,
   buildStudentAttendanceSummary,
+  firstBusinessDays,
   isAttendanceDate,
   isAttendanceDateInFuture,
   isWeekendDate,
-  weekdaysBetween,
   type AttendanceGridStudent,
   type AttendanceGridView,
   type AttendanceRecordInput,
@@ -60,9 +61,13 @@ interface AttendanceContext {
   courseName: string;
   instructorId: number;
   maxAbsences: number;
-  // Rango de dictado del curso, que arma las columnas de la grilla.
+  // Rango de dictado del curso. Las columnas de la grilla salen del inicio del
+  // curso (primeras `DEFAULT_GRID_DAYS` fechas hábiles), no del rango completo.
   fechaIni: string;
   fechaFin: string;
+  // Plan de fechas de la grilla persistido en el grupo. null = todavía no se
+  // guardó: se arma con las primeras fechas hábiles desde el inicio del curso.
+  attendanceDates: string[] | null;
   // El estado del grupo decide si la asistencia todavía admite cambios: una vez
   // finalizado (HU #37) queda en solo lectura.
   estado: string;
@@ -85,6 +90,7 @@ const loadAttendanceContext = async (
       maxAbsences: cursos.maxFaltas,
       fechaIni: cursos.fechaIni,
       fechaFin: cursos.fechaFin,
+      attendanceDates: grupos.attendanceDates,
       estado: grupos.estado,
     })
     .from(grupos)
@@ -103,6 +109,7 @@ const loadAttendanceContext = async (
     maxAbsences: row.maxAbsences,
     fechaIni: row.fechaIni,
     fechaFin: row.fechaFin,
+    attendanceDates: row.attendanceDates,
     estado: row.estado,
   };
 };
@@ -265,6 +272,25 @@ export const getStudentAttendanceSummary = async (
   };
 };
 
+// Fechas que arman las columnas de la grilla: el plan persistido del grupo si
+// existe (el "+"/"-" del docente), o las primeras `DEFAULT_GRID_DAYS` fechas
+// hábiles desde el inicio del curso. Se unen las fechas que ya tienen sesiones
+// para que nada registrado quede fuera de la vista.
+//
+// El plan del grupo tiene prioridad porque es la fuente de verdad de qué días se
+// dictó (o se va a dictar): el rango del curso es solo el punto de partida.
+const resolveGridDates = (
+  context: AttendanceContext,
+  sessionDates: string[]
+): string[] => {
+  const base =
+    context.attendanceDates && context.attendanceDates.length > 0
+      ? context.attendanceDates
+      : firstBusinessDays(context.fechaIni, DEFAULT_GRID_DAYS);
+
+  return [...new Set([...base, ...sessionDates])].sort();
+};
+
 // El ejecutor se recibe como parámetro porque dentro del guardado hay que leer con
 // la misma transacción que escribe: si se leyera con `db` se abriría otra conexión
 // y la vista devolvería el estado anterior a lo que se acaba de guardar.
@@ -311,7 +337,7 @@ const buildGridView = async (
     },
     maxAbsences: context.maxAbsences,
     courseRange: { fechaIni: context.fechaIni, fechaFin: context.fechaFin },
-    dates: weekdaysBetween(context.fechaIni, context.fechaFin),
+    dates: resolveGridDates(context, [...marksByDate.keys()]),
     students,
     totalSessions,
   };
@@ -340,6 +366,16 @@ export const getAttendanceGridForTeacher = async (
   return { ok: true, view: await buildGridView(db, context!) };
 };
 
+// Un día del plan de la grilla tiene que ser una fecha válida y no caer en fin de
+// semana, pero SÍ puede ser futura: el "+" propone la próxima jornada para
+// planificar, aunque la asistencia de ese día todavía no se pueda marcar.
+const resolveGridDateFailure = (date: string): AttendanceFailure | null => {
+  if (!isAttendanceDate(date)) return 'invalid_date';
+  if (isWeekendDate(date)) return 'weekend_date';
+
+  return null;
+};
+
 // El guardado es atómico: todas las jornadas que el docente tocó entran en una
 // sola transacción, así que la grilla nunca queda a medio guardar.
 //
@@ -353,6 +389,18 @@ export const saveAttendanceGridForTeacher = async (
   isAdmin = false
 ): Promise<AttendanceGridResult> => {
   const currentToday = today();
+
+  for (const date of data.dates) {
+    const gridDateFailure = resolveGridDateFailure(date);
+
+    if (gridDateFailure) return { ok: false, reason: gridDateFailure };
+  }
+
+  for (const date of data.removedDates) {
+    const removedFailure = resolveGridDateFailure(date);
+
+    if (removedFailure) return { ok: false, reason: removedFailure };
+  }
 
   for (const session of data.sessions) {
     const dateFailure = resolveAttendanceDateFailure(session.date, currentToday);
@@ -369,6 +417,32 @@ export const saveAttendanceGridForTeacher = async (
     // Un grupo finalizado (HU #37) conserva sus asistencias intactas: se puede
     // consultar, pero no se vuelve a escribir sobre ellas.
     if (context!.estado === 'finalizado') return { ok: false, reason: 'group_finalized' };
+
+    // El plan de fechas de la grilla se persiste en el grupo: el "+" y el borrado
+    // de fechas (feriados) sobreviven a las recargas.
+    await tx
+      .update(grupos)
+      .set({ attendanceDates: data.dates })
+      .where(eq(grupos.id, groupId));
+
+    // Las fechas quitadas de la grilla borran su sesión y, en cascada, sus
+    // registros: un día que se eliminó no puede seguir contando faltas.
+    if (data.removedDates.length > 0) {
+      await tx
+        .delete(attendanceSessions)
+        .where(
+          and(
+            eq(attendanceSessions.groupId, groupId),
+            inArray(attendanceSessions.date, data.removedDates)
+          )
+        );
+    }
+
+    // Si solo cambió el plan de fechas (sin marcas), no hay jornadas que guardar:
+    // ya se persiste el plan arriba y se devuelve la vista.
+    if (data.sessions.length === 0) {
+      return { ok: true, view: await buildGridView(tx, context!) };
+    }
 
     const enrolled = await loadEnrolledStudents(tx, groupId);
 

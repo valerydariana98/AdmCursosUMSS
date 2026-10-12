@@ -13,19 +13,22 @@ const attendanceStudentSchema = z.object({
   status: z.enum(ATTENDANCE_STATUSES, { error: 'El estado de asistencia no es válido' }),
 });
 
-// La grilla se valida entera antes de enviarla: todas las jornadas tocadas viajan
-// en una sola petición y el servidor las guarda en una sola transacción.
+// La grilla se valida entera antes de enviarla: el plan de fechas actual, las
+// fechas quitadas y las jornadas tocadas viajan en una sola petición y el servidor
+// las guarda en una sola transacción.
 export const attendanceGridPayloadSchema = z.object({
-  sessions: z
-    .array(
-      z.object({
-        date: attendanceDateSchema,
-        records: z
-          .array(attendanceStudentSchema)
-          .min(1, 'Una jornada necesita al menos un registro'),
-      })
-    )
-    .min(1, 'Marca la asistencia de al menos un estudiante'),
+  dates: z
+    .array(attendanceDateSchema)
+    .min(1, 'La grilla necesita al menos una fecha'),
+  removedDates: z.array(attendanceDateSchema),
+  sessions: z.array(
+    z.object({
+      date: attendanceDateSchema,
+      records: z
+        .array(attendanceStudentSchema)
+        .min(1, 'Una jornada necesita al menos un registro'),
+    })
+  ),
 });
 
 export type AttendanceGridPayloadInput = z.infer<typeof attendanceGridPayloadSchema>;

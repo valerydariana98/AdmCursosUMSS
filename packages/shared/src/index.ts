@@ -624,6 +624,59 @@ export const weekdaysBetween = (from: string, to: string): string[] => {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+// Días de clase que se muestran por omisión en la grilla: las primeras "N"
+// fechas hábiles desde el inicio del curso. El docente puede agregar más con "+"
+// o quitar fechas (feriados, reprogramaciones), y ese plan se persiste en el grupo.
+export const DEFAULT_GRID_DAYS = 10;
+
+// Primitivas "N" fechas hábiles (lun–vie) a partir de `from` (inclusive). Es lo
+// que arma las columnas de la grilla de asistencia cuando el grupo todavía no
+// tiene un plan propio: el curso se dicta de lunes a viernes. Si la fecha es
+// inválida o el conteo no es positivo, devuelve una lista vacía.
+export const firstBusinessDays = (from: string, count: number): string[] => {
+  if (!isAttendanceDate(from) || count <= 0) return [];
+
+  const dates: string[] = [];
+  let time = new Date(`${from}T12:00:00Z`).getTime();
+
+  while (dates.length < count) {
+    const date = new Date(time);
+    const day = date.getUTCDay();
+
+    if (day !== 0 && day !== 6) {
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const dayOfMonth = String(date.getUTCDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${dayOfMonth}`);
+    }
+
+    time += MS_PER_DAY;
+  }
+
+  return dates;
+};
+
+// Siguiente día hábil después de `date` (exclusive). Lo usa el "+" de la grilla
+// para proponer la próxima jornada cuando el curso se extiende: salta el fin de
+// semana si cae en él. Devuelve la misma fecha si no es válida.
+export const nextBusinessDay = (date: string): string => {
+  if (!isAttendanceDate(date)) return date;
+
+  let time = new Date(`${date}T12:00:00Z`).getTime() + MS_PER_DAY;
+  let candidate = new Date(time);
+
+  while (candidate.getUTCDay() === 0 || candidate.getUTCDay() === 6) {
+    time += MS_PER_DAY;
+    candidate = new Date(time);
+  }
+
+  const year = candidate.getUTCFullYear();
+  const month = String(candidate.getUTCMonth() + 1).padStart(2, '0');
+  const dayOfMonth = String(candidate.getUTCDate()).padStart(2, '0');
+
+  return `${year}-${month}-${dayOfMonth}`;
+};
+
 export interface AttendanceStudentSummary {
   studentId: number;
   // Jornadas del grupo en las que el estudiante tiene registro. El total es el del
@@ -735,16 +788,24 @@ export interface AttendanceGridView {
   maxAbsences: number;
   // Rango de dictado del curso, tal como está en el curso.
   courseRange: { fechaIni: string; fechaFin: string };
-  // Fechas hábiles (lun–vie) entre `fechaIni` y `fechaFin`, ambas inclusive.
+  // Fechas que arman la grilla: las siguientes `DEFAULT_GRID_DAYS` fechas hábiles
+  // desde `fechaIni` (o el plan persistido del grupo, si el docente agregó o
+  // quitó días), más las fechas que ya tienen sesiones registradas.
   dates: string[];
   students: AttendanceGridStudent[];
   // Total de jornadas registradas del grupo, que es el denominador del porcentaje.
   totalSessions: number;
 }
 
-// Guardado masivo de la grilla: todas las jornadas que el docente tocó, en una
-// sola petición y una sola transacción.
+// Guardado masivo de la grilla: el plan de fechas actual (tras agregar/quitar
+// días), las fechas que se quitaron para borrar sus sesiones y las jornadas tocadas.
 export interface UpsertAttendanceGrid {
+  // Plan de fechas actual de la grilla, en orden. El server lo persiste en el
+  // grupo para que el "+" y el borrado de fechas sobrevivan a recargas.
+  dates: string[];
+  // Fechas que se quitaron de la grilla (feriado, reprogramación): se borran sus
+  // sesiones y registros asociados.
+  removedDates: string[];
   sessions: UpsertAttendance[];
 }
 
