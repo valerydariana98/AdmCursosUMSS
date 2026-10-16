@@ -10,6 +10,7 @@ import {
   pgEnum,
   bigint,
   jsonb,
+  index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
@@ -254,6 +255,97 @@ export const rubricItems = pgTable('rubric_items', {
   position: integer('position').notNull(),
 });
 
+// 13. Firmas de certificados (HU-03)
+// El archivo en disco es siempre WebP aunque lo que se suba sea PNG o JPG: la
+// conversión la hace el servidor con sharp para no repetirla en cada vista y
+// conservar la transparencia del original. La tabla guarda solo la ruta
+// relativa; la imagen nunca entra en la base de datos.
+export const firmas = pgTable(
+  'firmas',
+  {
+    id: serial('id').primaryKey(),
+    // Etiqueta para el docente en el diagramador, ej. "Firma Rector - Juan Pérez".
+    nombre: varchar('nombre', { length: 255 }).notNull(),
+    ruta: varchar('ruta', { length: 500 }).notNull(),
+    // Nombre del archivo que se subió. Solo para referencia: en disco está el
+    // WebP convertido.
+    originalNombre: varchar('original_nombre', { length: 255 }).notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [index('firmas_nombre_idx').on(table.nombre)]
+);
+
+// 14. Plantillas de certificados (HU-01, HU-02)
+// Una plantilla es una imagen de fondo más los elementos colocados encima. El
+// fondo se guarda como archivo (ruta relativa) y el tamaño real se conserva en
+// `ancho`/`alto` para que el cliente mantenga la proporción y el servidor
+// escalar la imagen sin deformarla.
+//
+// `idGrupo` en null significa plantilla general del curso; con valor es una
+// plantilla propia del grupo. El índice único sobre `idGrupo` garantiza que un
+// grupo tenga como máximo una plantilla efectiva, igual que hace `rubrics` con
+// su grupo: si no hay específica, se usa la general del curso.
+export const plantillasCertificado = pgTable(
+  'plantillas_certificado',
+  {
+    id: serial('id').primaryKey(),
+    nombre: varchar('nombre', { length: 255 }).notNull(),
+    idCurso: integer('id_curso')
+      .notNull()
+      .references(() => cursos.id, { onDelete: 'cascade' }),
+    idGrupo: integer('id_grupo').references(() => grupos.id, { onDelete: 'cascade' }),
+    rutaFondo: varchar('ruta_fondo', { length: 500 }).notNull(),
+    ancho: integer('ancho').notNull(),
+    alto: integer('alto').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    // Un grupo, como mucho, con una plantilla propia.
+    uniqueIndex('plantillas_certificado_grupo_unico').on(table.idGrupo),
+    // El listado filtra por curso, casi siempre sin grupo.
+    index('plantillas_certificado_curso_idx').on(table.idCurso),
+  ]
+);
+
+// 15. Elementos de una plantilla (HU-02)
+// Un elemento es un bloque de texto con variables o una firma superpuesta. Las
+// posiciones van en centésimas de porcentaje (0-10000) para que el mismo diseño
+// funcione a cualquier tamaño de pantalla y para que el viaje de ida y vuelta
+// al servidor no pierda precisión.
+export const plantillaElementoTipoEnum = pgEnum('plantilla_elemento_tipo', ['texto', 'firma']);
+export const plantillaAlineacionEnum = pgEnum('plantilla_alineacion', [
+  'izquierda',
+  'centro',
+  'derecha',
+]);
+
+export const plantillaElementos = pgTable(
+  'plantilla_elementos',
+  {
+    id: serial('id').primaryKey(),
+    idPlantilla: integer('id_plantilla')
+      .notNull()
+      .references(() => plantillasCertificado.id, { onDelete: 'cascade' }),
+    tipo: plantillaElementoTipoEnum('tipo').notNull(),
+    // Contenido con variables `{...}` sin resolver. Solo en elementos de texto.
+    texto: text('texto'),
+    // Firma superpuesta. Solo en elementos de tipo firma.
+    idFirma: integer('id_firma').references(() => firmas.id),
+    xPercent: integer('x_percent').notNull(),
+    yPercent: integer('y_percent').notNull(),
+    anchoPercent: integer('ancho_percent').notNull(),
+    alineacion: plantillaAlineacionEnum('alineacion').notNull(),
+    fontSize: integer('font_size').notNull(),
+    fontFamily: varchar('font_family', { length: 100 }).notNull(),
+    color: varchar('color', { length: 9 }).notNull(),
+    // Orden de dibujo: lo último queda encima.
+    position: integer('position').notNull(),
+  },
+  (table) => [index('plantilla_elementos_plantilla_idx').on(table.idPlantilla)]
+);
+
 // ==========================================
 // RELACIONES DRIZZLE (Completas y Bidireccionales)
 // ==========================================
@@ -275,6 +367,8 @@ export const instructoresRelations = relations(instructores, ({ one, many }) => 
 
 export const cursosRelations = relations(cursos, ({ many }) => ({
   grupos: many(grupos),
+  // Plantillas de certificado que le son generales al curso.
+  plantillas: many(plantillasCertificado),
 }));
 
 export const gruposRelations = relations(grupos, ({ one, many }) => ({
@@ -285,6 +379,9 @@ export const gruposRelations = relations(grupos, ({ one, many }) => ({
   asistencias: many(asistencias),
   attendanceSessions: many(attendanceSessions),
   rubric: one(rubrics, { fields: [grupos.id], references: [rubrics.groupId] }),
+  // Plantilla de certificado específica del grupo. A lo sumo una, por el índice
+  // único sobre `plantillas_certificado.idGrupo`.
+  plantillas: many(plantillasCertificado),
 }));
 
 export const attendanceSessionsRelations = relations(attendanceSessions, ({ one, many }) => ({
@@ -351,4 +448,33 @@ export const notasRelations = relations(notas, ({ one }) => ({
 export const asistenciasRelations = relations(asistencias, ({ one }) => ({
   grupo: one(grupos, { fields: [asistencias.idGrupo], references: [grupos.id] }),
   estudiante: one(estudiantes, { fields: [asistencias.idEstudiante], references: [estudiantes.id] }),
+}));
+
+// ---- Certificados ----
+
+export const firmasRelations = relations(firmas, ({ many }) => ({
+  elementos: many(plantillaElementos),
+}));
+
+export const plantillasCertificadoRelations = relations(plantillasCertificado, ({ one, many }) => ({
+  curso: one(cursos, {
+    fields: [plantillasCertificado.idCurso],
+    references: [cursos.id],
+  }),
+  grupo: one(grupos, {
+    fields: [plantillasCertificado.idGrupo],
+    references: [grupos.id],
+  }),
+  elementos: many(plantillaElementos),
+}));
+
+export const plantillaElementosRelations = relations(plantillaElementos, ({ one }) => ({
+  plantilla: one(plantillasCertificado, {
+    fields: [plantillaElementos.idPlantilla],
+    references: [plantillasCertificado.id],
+  }),
+  firma: one(firmas, {
+    fields: [plantillaElementos.idFirma],
+    references: [firmas.id],
+  }),
 }));

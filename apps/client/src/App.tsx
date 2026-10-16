@@ -1,10 +1,13 @@
 // apps/client/src/App.tsx
 import { Navigate, Route, Routes } from "react-router-dom";
 import Sidebar from "./layout/Sidebar";
-import ComingSoonPage from "./pages/ComingSoonPage";
 import CourseCreatePage from "./pages/courses/CourseCreatePage";
 import CourseEditPage from "./pages/courses/CourseEditPage";
 import CoursesListPage from "./pages/courses/CoursesListPage";
+import CertificateEditorPage from "./pages/certificates/CertificateEditorPage";
+import CertificatesListPage from "./pages/certificates/CertificatesListPage";
+import GenerateCertificatesPage from "./pages/certificates/GenerateCertificatesPage";
+import SignaturesPage from "./pages/certificates/SignaturesPage";
 import GroupCreatePage from "./pages/groups/GroupCreatePage";
 import GroupDetailPage from "./pages/groups/GroupDetailPage";
 import GroupEditPage from "./pages/groups/GroupEditPage";
@@ -134,9 +137,27 @@ export default function App() {
             path="/estudiantes"
             element={soloAdmin(<EnrollmentsPage />)}
           />
+          {/* Certificados (HU-01 a HU-04). El menú ya declara estas rutas para
+              ADMIN y DOCENTE, así que todas comparten el mismo guard. */}
           <Route
             path="/certificados"
-            element={autenticado(<ComingSoonPage title="Certificados" />)}
+            element={autenticado(<CertificatesListPage />)}
+          />
+          <Route
+            path="/certificados/nuevo"
+            element={autenticado(<CertificateEditorPage />)}
+          />
+          <Route
+            path="/certificados/firmas"
+            element={autenticado(<SignaturesPage />)}
+          />
+          <Route
+            path="/certificados/generar"
+            element={autenticado(<GenerateCertificatesPage />)}
+          />
+          <Route
+            path="/certificados/:id/editar"
+            element={autenticado(<CertificateEditorPage />)}
           />
 
           {/* Rutas de Estudiantes por Grupo */}
