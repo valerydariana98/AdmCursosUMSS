@@ -1,3 +1,6 @@
+// Debe ser el primer import: carga el .env antes de que cualquier módulo lea
+// `process.env` al evaluarse. Ver la nota de `src/env.ts`.
+import './env.js';
 import express from 'express';
 import cors from 'cors';
 import healthRouter from './routes/health.routes.js';
@@ -11,8 +14,10 @@ import gradesRouter from './routes/grades.routes.js';
 import attendanceRouter from './routes/attendance.routes.js';
 import reportsRouter from './routes/reports.routes.js';
 import studentTypesRouter from './routes/studentTypes.routes.js';
+import certificatesRouter from './routes/certificates.routes.js';
 import { requireAuth } from './middlewares/auth.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
+import { prepararUploads, toUrlPrefix, uploadsDir } from './services/imagen.service.js';
 
 
 const app = express();
@@ -33,6 +38,17 @@ app.use('/api', requireAuth);
 
 app.use('/api/courses', coursesRouter);
 app.use('/api/instructores', instructorsRouter);
+
+// Certificados (HU-01 a HU-04). Es un módulo propio y no un sub-recurso de un
+// grupo: las plantillas se administran por curso y solo se filtran por grupo, así
+// que viven en su propio prefijo.
+app.use('/api/certificados', certificatesRouter);
+
+// Las imágenes de los certificados (fondos y firmas en WebP) se sirven como
+// estáticos. Los ZIP generados NO se sirven por acá: se descargan por un endpoint
+// que valida la sesión, porque un certificado es un documento oficial y no puede
+// quedar accesible solo por conocer la URL.
+app.use(toUrlPrefix(), express.static(uploadsDir()));
 
 // Grupos y sus sub-recursos conviven en el mismo prefijo: un grupo es la entidad
 // padre y sus endpoints cuelgan de /api/grupos/:id/...
