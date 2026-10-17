@@ -28,8 +28,8 @@ const BCRYPT_ROUNDS = 10;
 
 const getJwtSecret = (): string => {
   const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('JWT_SECRET no está definida en el archivo .env');
+  if (!secret || secret.trim().length < 32) {
+    throw new Error('JWT_SECRET no está definida o es demasiado corta');
   }
   return secret;
 };
