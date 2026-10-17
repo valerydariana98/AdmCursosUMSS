@@ -1,0 +1,1 @@
+ALTER TABLE "grupos" ADD COLUMN "attendance_dates" jsonb;

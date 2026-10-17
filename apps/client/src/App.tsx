@@ -9,6 +9,7 @@ import CertificatesListPage from "./pages/certificates/CertificatesListPage";
 import GenerateCertificatesPage from "./pages/certificates/GenerateCertificatesPage";
 import SignaturesPage from "./pages/certificates/SignaturesPage";
 import GroupCreatePage from "./pages/groups/GroupCreatePage";
+import GroupCreateGlobalPage from "./pages/groups/GroupCreateGlobalPage";
 import GroupDetailPage from "./pages/groups/GroupDetailPage";
 import GroupEditPage from "./pages/groups/GroupEditPage";
 import GroupAttendancePage from "./pages/groups/GroupAttendancePage";
@@ -25,6 +26,7 @@ import EnrollmentPage from "./pages/EnrollmentPage";
 import EnrollmentsPage from "./pages/EnrollmentsPage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import Prueba from "./pages/Prueba";
 import ProtectedRoute, { homeForRol } from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
 
@@ -131,8 +133,16 @@ export default function App() {
           {/* Instructores (otra HU) */}
           <Route path="/instructores" element={soloAdmin(<InstructorsContainer />)} />
 
+          {/* Catálogo de componentes y secciones generales */}
+          <Route path="/prueba" element={autenticado(<Prueba />)} />
+
           {/* Secciones de otros colaboradores */}
+          <Route path="/dashboard" element={autenticado(<Prueba />)} />
           <Route path="/grupos" element={soloAdmin(<GroupsPage />)} />
+          <Route
+            path="/grupos/nuevo"
+            element={soloAdmin(<GroupCreateGlobalPage />)}
+          />
           <Route
             path="/estudiantes"
             element={soloAdmin(<EnrollmentsPage />)}
