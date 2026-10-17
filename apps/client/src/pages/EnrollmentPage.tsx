@@ -5,7 +5,6 @@ import {
   btnPrimary, btnSecondary, cardCls, inputCls, labelCls, sectionTitleCls,
 } from '../components/formStyles';
 import BackButton from '../components/BackButton';
-import PageHeader from '../components/PageHeader';
 import useEnrollmentForm from '../hooks/useEnrollmentForm';
 
 const EnrollmentPage = () => {
@@ -28,17 +27,19 @@ const EnrollmentPage = () => {
   return (
     <form onSubmit={onSubmit} className="p-8 font-sans">
       <BackButton />
-      <nav className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-5">
-        <Link to={listUrl} className="hover:text-brand-dark transition-colors">Estudiantes</Link>
-        <span className="text-line">/</span>
-        <span className="text-brand-dark">Inscribir estudiante</span>
-      </nav>
+      <p className="text-sm text-gray-400">
+        <Link to={listUrl} className="hover:underline">Estudiantes</Link> /{' '}
+        <span className="font-semibold text-gray-600">Inscribir estudiante</span>
+      </p>
 
-      <PageHeader
-        eyebrow={group.curso.nombreCurso}
-        title="Inscribir Estudiante"
-        subtitle={`Grupo ${group.numGrupo}`}
-      />
+      <div className="mb-6 mt-2 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Inscribir Estudiante</h1>
+          <p className="text-sm text-gray-500">
+            {group.curso.nombreCurso} · Grupo {group.numGrupo}
+          </p>
+        </div>
+      </div>
 
      <div className="space-y-3">
         <section className={cardCls}>

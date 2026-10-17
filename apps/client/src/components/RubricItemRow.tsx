@@ -83,7 +83,7 @@ const RubricItemRow: React.FC<RubricItemRowProps> = ({
           title="Eliminar evaluación"
           aria-label="Eliminar evaluación"
           disabled={disabled}
-          className="inline-flex items-center justify-center w-9 h-9 rounded-none text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         >
           <TrashIcon />
         </button>

@@ -15,7 +15,7 @@ const CONDITION_BADGE: Record<CertificateCondition, string> = {
   aprobacion: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   asistencia: 'bg-sky-50 text-sky-700 border-sky-200',
   sin_certificado: 'bg-red-50 text-red-700 border-red-200',
-  pendiente: 'bg-gray-100 text-gray-500 border-line',
+  pendiente: 'bg-gray-100 text-gray-500 border-gray-200',
 };
 
 const fullName = (student: ReportStudent): string =>
@@ -25,7 +25,7 @@ const formatNumber = (value: number): string =>
   Number.isInteger(value) ? String(value) : value.toFixed(1);
 
 const th =
-  'py-3.5 px-4 font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em] whitespace-nowrap';
+  'py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap';
 const td = 'py-4 px-4 text-sm text-gray-600 whitespace-nowrap';
 
 interface ReportTableProps {
@@ -37,7 +37,7 @@ const ReportTable = ({ view }: ReportTableProps) => {
 
   return (
     <table className="w-full text-left border-collapse">
-      <thead className="border-b-2 border-brand-dark">
+      <thead className="border-b border-gray-100">
         <tr>
           <th className={`${th} pl-6`}>Estudiante</th>
           <th className={th}>Asistencias</th>
@@ -56,7 +56,7 @@ const ReportTable = ({ view }: ReportTableProps) => {
         {view.students.map((student) => (
           <tr
             key={student.studentId}
-            className="border-t border-line hover:bg-gray-50/60 transition-colors"
+            className="border-t border-gray-100 hover:bg-gray-50/60 transition-colors"
           >
             <td className={`${td} pl-6`}>
               <p className="font-semibold text-gray-900">{fullName(student)}</p>

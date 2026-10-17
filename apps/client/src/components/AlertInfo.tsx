@@ -60,7 +60,7 @@ const AlertInfo: React.FC<AlertInfoProps> = ({
   const currentVariant = variantStyles[type];
 
   return (
-    <div className={`border border-l-4 p-4 flex items-start gap-3.5 ${currentVariant.container} ${className}`}>
+    <div className={`border-l-4 rounded-r-xl p-4 flex items-start gap-3.5 shadow-sm ${currentVariant.container} ${className}`}>
       <div className={`${currentVariant.iconColor} mt-0.5 shrink-0`}>
         {currentVariant.icon}
       </div>

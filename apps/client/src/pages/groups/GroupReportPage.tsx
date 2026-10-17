@@ -13,7 +13,6 @@ import BackButton from '../../components/BackButton';
 import Button from '../../components/Button';
 import PrintButton from '../../components/PrintButton';
 import ReportTable from '../../components/ReportTable';
-import PageHeader from '../../components/PageHeader';
 import { api, ApiError } from '../../services/api';
 
 const GroupReportPage = () => {
@@ -91,31 +90,32 @@ const GroupReportPage = () => {
       <div className="no-print">
         <BackButton />
       </div>
-      <div className="no-print">
-        <nav className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-5">
-          <Link to="/cursos" className="hover:text-brand-dark transition-colors">
-            Cursos
-          </Link>
-          <span className="text-line">/</span>
-          <Link to={backPath} className="hover:text-brand-dark transition-colors">
-            Grupo
-          </Link>
-          <span className="text-line">/</span>
-          <span className="text-brand-dark">Reporte académico</span>
-        </nav>
+      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-3 no-print">
+        <Link to="/cursos" className="hover:text-gray-600">
+          Cursos
+        </Link>
+        <span>/</span>
+        <Link to={backPath} className="hover:text-gray-600">
+          Grupo
+        </Link>
+        <span>/</span>
+        <span className="text-gray-600 font-medium">Reporte académico</span>
+      </nav>
 
-        <PageHeader
-          eyebrow={view.group.courseName}
-          title={`Reporte académico — Grupo ${view.group.number}`}
-          actions={
-            <>
-              <Link to={backPath}>
-                <Button variant="secondary">Volver al grupo</Button>
-              </Link>
-              <PrintButton />
-            </>
-          }
-        />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 no-print">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Reporte académico · Grupo {view.group.number}
+          </h1>
+          <p className="text-sm text-gray-500">{view.group.courseName}</p>
+        </div>
+
+        <div className="flex gap-2">
+          <Link to={backPath}>
+            <Button variant="secondary">Volver al grupo</Button>
+          </Link>
+          <PrintButton />
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -127,40 +127,34 @@ const GroupReportPage = () => {
           />
         )}
 
-        <section className="bg-white rounded-none border border-line shadow-[0_1px_2px_rgba(12,16,60,0.04)] p-6">
+        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="border border-line rounded-none px-4 py-3 bg-brand-bg">
-              <p className="text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.14em]">
+            <div className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Nota mínima
               </p>
-              <p className="font-serif text-xl font-semibold text-brand-dark mt-1">
-                {view.policy.passingGrade}
-              </p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{view.policy.passingGrade}</p>
             </div>
 
-            <div className="border border-line rounded-none px-4 py-3 bg-brand-bg">
-              <p className="text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.14em]">
+            <div className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Máximo de faltas
               </p>
-              <p className="font-serif text-xl font-semibold text-brand-dark mt-1">
-                {view.policy.maxAbsences}
-              </p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{view.policy.maxAbsences}</p>
             </div>
 
-            <div className="border border-line rounded-none px-4 py-3 bg-brand-bg">
-              <p className="text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.14em]">
+            <div className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Jornadas registradas
               </p>
-              <p className="font-serif text-xl font-semibold text-brand-dark mt-1">
-                {view.totalSessions}
-              </p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{view.totalSessions}</p>
             </div>
 
-            <div className="border border-line rounded-none px-4 py-3 bg-brand-bg">
-              <p className="text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.14em]">
+            <div className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Peso de la asistencia
               </p>
-              <p className="font-serif text-xl font-semibold text-brand-dark mt-1">
+              <p className="text-2xl font-bold text-gray-900 mt-1">
                 {view.rubric?.attendancePercentage !== null &&
                 view.rubric?.attendancePercentage !== undefined
                   ? `${view.rubric.attendancePercentage}%`
@@ -184,12 +178,12 @@ const GroupReportPage = () => {
           />
         )}
 
-        <div className="bg-white rounded-none border border-line shadow-[0_1px_2px_rgba(12,16,60,0.04)] overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <ReportTable view={view} />
           </div>
 
-          <div className="p-4 border-t border-line text-xs text-gray-500">
+          <div className="p-4 border-t border-gray-100 text-xs text-gray-500">
             {view.students.length} estudiante{view.students.length === 1 ? '' : 's'} inscrito
             {view.students.length === 1 ? '' : 's'} · nota mínima {view.policy.passingGrade} · máximo
             de {view.policy.maxAbsences} faltas

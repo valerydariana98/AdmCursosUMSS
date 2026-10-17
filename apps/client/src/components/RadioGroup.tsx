@@ -18,21 +18,17 @@ interface RadioGroupProps {
 const RadioGroup: React.FC<RadioGroupProps> = ({ name, label, value, onChange, options, error }) => {
   return (
     <div className="flex flex-col gap-2 w-full">
-      {label && (
-        <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-secondary">
-          {label}
-        </label>
-      )}
+      {label && <label className="text-sm font-semibold text-gray-900">{label}</label>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {options.map((opt) => {
           const isSelected = value === opt.value;
           return (
             <label
               key={opt.value}
-              className={`flex items-start p-3.5 rounded-none border cursor-pointer transition-all ${
+              className={`flex items-start p-3.5 rounded-xl border cursor-pointer transition-all ${
                 isSelected
-                  ? 'border-brand-mid bg-brand-mid/[0.04] ring-1 ring-brand-mid'
-                  : 'border-line bg-white hover:bg-gray-50'
+                  ? 'border-brand-accent bg-blue-50/30 ring-1 ring-brand-accent'
+                  : 'border-gray-200 bg-white hover:bg-gray-50'
               }`}
             >
               <input
@@ -44,7 +40,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({ name, label, value, onChange, o
                 className="mt-0.5 h-4 w-4 text-brand-accent border-gray-300 focus:ring-brand-accent"
               />
               <div className="ml-3 flex flex-col">
-                <span className="text-sm font-medium text-brand-dark">{opt.label}</span>
+                <span className="text-sm font-medium text-gray-900">{opt.label}</span>
                 {opt.description && (
                   <span className="text-xs text-gray-500 mt-0.5">{opt.description}</span>
                 )}

@@ -8,7 +8,6 @@ import {
 import AlertInfo from '../../components/AlertInfo';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
-import PageHeader from '../../components/PageHeader';
 import { api, ApiError } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -151,7 +150,7 @@ export default function GroupDetailPage() {
         >
           Volver a Mis Grupos
         </button>
-        <div className="rounded-none bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+        <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
           {error || 'Grupo no encontrado'}
         </div>
       </div>
@@ -180,36 +179,33 @@ export default function GroupDetailPage() {
       <button
         type="button"
         onClick={() => navigate('/mis-grupos')}
-        className="group mb-5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-secondary hover:text-brand-dark transition-colors"
+        className="text-sm text-brand-mid hover:underline mb-5 inline-flex items-center gap-1.5"
       >
-        <svg
-          className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
         </svg>
         Mis Grupos
       </button>
 
-      <PageHeader
-        eyebrow={`Grupo ${grupo.numGrupo} · ${grupo.cursoPeriodo}`}
-        title={grupo.cursoNombre}
-        actions={
-          <span
-            className={`text-[10px] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-md border ${
-              yaFinalizado
-                ? 'bg-brand-mid/10 text-brand-mid border-brand-mid/20'
-                : estado === 'habilitado'
-                  ? 'bg-status-active-bg text-status-active-text border-status-active-text/20'
-                  : 'bg-gray-100 text-gray-500 border-line'
-            }`}
-          >
-            {ESTADO_LABEL[estado]}
-          </span>
-        }
-      />
+      <header className="flex items-start justify-between gap-4 flex-wrap mb-7">
+        <div>
+          <h1 className="text-2xl font-bold text-brand-dark">{grupo.cursoNombre}</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Grupo {grupo.numGrupo} · {grupo.cursoPeriodo}
+          </p>
+        </div>
+        <span
+          className={`text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full ${
+            yaFinalizado
+              ? 'bg-brand-mid text-white'
+              : estado === 'habilitado'
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-gray-100 text-gray-500'
+          }`}
+        >
+          {ESTADO_LABEL[estado]}
+        </span>
+      </header>
 
       {aviso && (
         <div className="mb-6">
@@ -217,7 +213,7 @@ export default function GroupDetailPage() {
         </div>
       )}
 
-      <section className="bg-white rounded-none border border-line shadow-[0_1px_2px_rgba(12,16,60,0.04)] p-6 mb-6">
+      <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
         <h2 className="text-sm font-bold text-brand-dark uppercase tracking-wide mb-4">
           Información general
         </h2>
@@ -297,7 +293,7 @@ export default function GroupDetailPage() {
             const esCierre = m.key === 'finalizar' && permitido && esDocente;
 
             const interactiva = Boolean(destino) || esCierre;
-            const clases = `bg-white rounded-none border border-line shadow-[0_1px_2px_rgba(12,16,60,0.04)] p-5 flex flex-col text-left ${
+            const clases = `bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col text-left ${
               interactiva ? 'hover:border-brand-mid/30 hover:shadow transition cursor-pointer' : ''
             }`;
 
@@ -388,7 +384,7 @@ export default function GroupDetailPage() {
           </p>
 
           {pendientes.length > 0 && (
-            <div className="rounded-none bg-amber-50 border border-amber-200 p-3">
+            <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
               <p className="text-xs font-semibold text-amber-800 mb-1">
                 El grupo todavía no se puede finalizar:
               </p>

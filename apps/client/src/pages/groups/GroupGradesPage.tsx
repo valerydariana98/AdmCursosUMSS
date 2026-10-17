@@ -6,7 +6,6 @@ import AlertInfo from '../../components/AlertInfo';
 import BackButton from '../../components/BackButton';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
-import PageHeader from '../../components/PageHeader';
 import { useGrades } from '../../hooks/useGrades';
 import { saveGradesSchema } from '../../schemas/gradeSchema';
 import { ApiError } from '../../services/api';
@@ -220,39 +219,40 @@ const GroupGradesPage = () => {
   }
 
   const th =
-    'py-3.5 px-4 font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em] whitespace-nowrap';
+    'py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap';
   const td = 'py-4 px-4 text-sm text-gray-600';
   const hasStudents = students.length > 0;
 
   return (
     <div className="p-8 font-sans">
       <BackButton />
-      <nav className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-5">
-        <Link to="/cursos" className="hover:text-brand-dark transition-colors">
+      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-3">
+        <Link to="/cursos" className="hover:text-gray-600">
           Cursos
         </Link>
-        <span className="text-line">/</span>
-        <Link to={backPath} className="hover:text-brand-dark transition-colors">
+        <span>/</span>
+        <Link to={backPath} className="hover:text-gray-600">
           Grupos
         </Link>
-        <span className="text-line">/</span>
-        <span className="text-brand-dark">Notas</span>
+        <span>/</span>
+        <span className="text-gray-600 font-medium">Notas</span>
       </nav>
 
-      <PageHeader
-        eyebrow={view.group.courseName}
-        title={`Notas — Grupo ${view.group.number}`}
-        actions={
-          <div className="rounded-none border border-line bg-white px-4 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-secondary">
-              Nota mínima del curso
-            </p>
-            <p className="font-serif text-xl font-semibold text-brand-dark">
-              {view.policy.passingGrade}
-            </p>
-          </div>
-        }
-      />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Notas · Grupo {view.group.number}
+          </h1>
+          <p className="text-sm text-gray-500">{view.group.courseName}</p>
+        </div>
+
+        <div className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Nota mínima del curso
+          </p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{view.policy.passingGrade}</p>
+        </div>
+      </div>
 
       <div className="space-y-6">
         {submitError && <AlertInfo type="error" title={submitError} />}
@@ -267,10 +267,10 @@ const GroupGradesPage = () => {
           />
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="bg-white rounded-none border border-line shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                  <thead className="border-b-2 border-brand-dark">
+                  <thead className="border-b border-gray-100">
                     <tr>
                       <th className={`${th} pl-6`}>Estudiante</th>
                       {items.map((item) => (
@@ -288,7 +288,7 @@ const GroupGradesPage = () => {
                     {students.map((student) => (
                       <tr
                         key={student.idEstudiante}
-                        className="border-t border-line hover:bg-gray-50/60 transition-colors"
+                        className="border-t border-gray-100 hover:bg-gray-50/60 transition-colors"
                       >
                         <td className={`${td} pl-6`}>
                           <p className="font-semibold text-gray-900">
@@ -327,7 +327,7 @@ const GroupGradesPage = () => {
                                     isAttendance
                                   )
                                 }
-                                className="w-20 border border-line rounded-none px-3 py-2 text-sm text-right text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
+                                className="w-20 border border-gray-200 rounded-lg px-3 py-2 text-sm text-right text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
                               />
                               <p className="text-[11px] text-gray-400 mt-1 h-4">
                                 {weighted === null
@@ -347,7 +347,7 @@ const GroupGradesPage = () => {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="border-t border-line bg-gray-50/60">
+                  <tfoot className="border-t border-gray-100 bg-gray-50/60">
                     <tr>
                       <td className={`${td} pl-6 text-xs text-gray-400`}>Porcentaje</td>
                       {items.map((item) => (
@@ -361,7 +361,7 @@ const GroupGradesPage = () => {
                 </table>
               </div>
 
-              <div className="p-4 border-t border-line text-xs text-gray-500">
+              <div className="p-4 border-t border-gray-100 text-xs text-gray-500">
                 Las notas van de 0 a 100. Dejar una celda vacía equivale a 0. Las columnas de
                 asistencia se calculan solas según las jornadas registradas.
               </div>

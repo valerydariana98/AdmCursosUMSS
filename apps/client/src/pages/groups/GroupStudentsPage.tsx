@@ -8,7 +8,6 @@ import {
   type StudentTypeName,
 } from 'shared';
 import AlertInfo from '../../components/AlertInfo';
-import PageHeader from '../../components/PageHeader';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Select from '../../components/Select';
@@ -55,14 +54,14 @@ const TrashIcon = () => (
 );
 
 const actionBtn =
-  'text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-none transition-all duration-150 cursor-pointer inline-flex items-center justify-center';
+  'text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-xl transition-all duration-150 cursor-pointer inline-flex items-center justify-center';
 const actionBtnDanger =
-  'text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-none transition-all duration-150 cursor-pointer inline-flex items-center justify-center';
+  'text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-all duration-150 cursor-pointer inline-flex items-center justify-center';
 
 const badgeCls: Record<string, string> = {
   umss: 'bg-blue-50 text-blue-700 border-blue-200',
   externo: 'bg-orange-50 text-orange-700 border-orange-200',
-  aux: 'bg-gray-100 text-gray-700 border-line',
+  aux: 'bg-gray-100 text-gray-700 border-gray-200',
 };
 
 const GroupStudentsPage = () => {
@@ -178,7 +177,7 @@ const GroupStudentsPage = () => {
 
   const seleccionarGrupo = (id: string) => setSearchParams({ grupo: id });
 
-  const th = 'py-3.5 px-4 font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em] whitespace-nowrap';
+  const th = 'py-3.5 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap';
   const td = 'py-4 px-4 text-sm text-gray-600';
 
   const cuerpoTabla = () => {
@@ -217,7 +216,7 @@ const GroupStudentsPage = () => {
     return inscritos.map((e) => {
       const tipo = tipos[e.idTipoEst];
       return (
-        <tr key={e.id} className="border-t border-line hover:bg-gray-50/60 transition-colors">
+        <tr key={e.id} className="border-t border-gray-100 hover:bg-gray-50/60 transition-colors">
           <td className={`${td} font-semibold text-gray-900`}>{e.estudiante.nombres}</td>
           <td className={td}>
             {e.estudiante.apPaterno} {e.estudiante.apMaterno}
@@ -295,39 +294,40 @@ const GroupStudentsPage = () => {
         <span className="text-gray-600 font-medium">Estudiantes</span>
       </nav>
 
-      <PageHeader
-        eyebrow="Oferta académica"
-        title={loadingCurso ? 'Cargando curso...' : (curso?.nombreCurso ?? 'Estudiantes')}
-        subtitle={
-          grupoActual
-            ? `Grupo ${grupoActual.numGrupo} · ${grupoActual.inscritos} de ${grupoActual.maxEst} inscritos`
-            : 'Este curso no tiene grupos registrados'
-        }
-        actions={
-          grupoActual ? (
-            <>
-              {/* Asistencia, notas y rúbrica son de docente: el admin solo inscribe
-                  y consulta (Fase 2). */}
-              {inscritos.length > 0 ? (
-                <Link to={`/cursos/${cursoId}/grupos/${grupoActual.id}/reporte`}>
-                  <Button variant="secondary">Ver reporte</Button>
-                </Link>
-              ) : (
-                <Button
-                  variant="secondary"
-                  disabled
-                  title="El grupo necesita tener estudiantes inscritos para generar su reporte"
-                >
-                  Ver reporte
-                </Button>
-              )}
-              <Link to={`/groups/${grupoActual.id}/enroll`}>
-                <Button variant="primary">+ Inscribir estudiante</Button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {loadingCurso ? 'Cargando curso...' : (curso?.nombreCurso ?? 'Estudiantes')}
+          </h1>
+          <p className="text-sm text-gray-500">
+            {grupoActual
+              ? `Grupo ${grupoActual.numGrupo} · ${grupoActual.inscritos} de ${grupoActual.maxEst} inscritos`
+              : 'Este curso no tiene grupos registrados'}
+          </p>
+        </div>
+        {grupoActual && (
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* Asistencia, notas y rúbrica son de docente: el admin solo inscribe
+                y consulta (Fase 2). */}
+            {inscritos.length > 0 ? (
+              <Link to={`/cursos/${cursoId}/grupos/${grupoActual.id}/reporte`}>
+                <Button variant="secondary">Ver reporte</Button>
               </Link>
-            </>
-          ) : undefined
-        }
-      />
+            ) : (
+              <Button
+                variant="secondary"
+                disabled
+                title="El grupo necesita tener estudiantes inscritos para generar su reporte"
+              >
+                Ver reporte
+              </Button>
+            )}
+            <Link to={`/groups/${grupoActual.id}/enroll`}>
+              <Button variant="primary">+ Inscribir estudiante</Button>
+            </Link>
+          </div>
+        )}
+      </div>
 
       {cursoError && (
         <div className="mb-4">
@@ -346,7 +346,7 @@ const GroupStudentsPage = () => {
         </div>
       ) : (
         grupos.length > 0 && (
-          <div className="bg-white rounded-none border border-line shadow-xs p-5 mb-6">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 mb-6">
             <Select
               label="Grupo"
               value={grupoActual?.id ?? ''}
@@ -360,10 +360,10 @@ const GroupStudentsPage = () => {
         )
       )}
 
-      <div className="bg-white rounded-none border border-line shadow-xs overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="border-b-2 border-brand-dark">
+            <thead className="border-b border-gray-100">
               <tr>
                 <th className={`${th} pl-6`}>Nombre</th>
                 <th className={th}>Apellidos</th>
@@ -378,7 +378,7 @@ const GroupStudentsPage = () => {
           </table>
         </div>
 
-        <div className="p-4 border-t border-line text-xs text-gray-500">
+        <div className="p-4 border-t border-gray-100 text-xs text-gray-500">
           Mostrando {inscritos.length}{' '}
           {inscritos.length === 1 ? 'estudiante' : 'estudiantes'}
           {grupoActual ? ` en el grupo ${grupoActual.numGrupo}` : ''}

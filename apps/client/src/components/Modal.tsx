@@ -83,16 +83,16 @@ const Modal: React.FC<ModalProps> = ({ isOpen, title, children, footer, onClose,
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`w-full ${WIDTH[size]} bg-white border border-line border-t-2 border-t-brand-dark shadow-2xl overflow-hidden focus:outline-none`}
+        className={`w-full ${WIDTH[size]} bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden focus:outline-none`}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="px-6 py-4 border-b border-line">
-          <h2 className="font-serif text-lg font-semibold tracking-tight text-brand-dark">{title}</h2>
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="text-base font-bold text-gray-900">{title}</h2>
         </div>
 
         {children && <div className="px-6 py-4 text-sm text-gray-600">{children}</div>}
 
-        <div className="px-6 py-4 bg-brand-bg border-t border-line flex justify-end gap-2">
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
           {footer}
         </div>
       </div>

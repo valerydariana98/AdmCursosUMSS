@@ -29,21 +29,17 @@ const Select: React.FC<SelectProps> = ({
 }) => {
   return (
     <div className={`flex flex-col gap-1.5 w-full ${className}`}>
-      {label && (
-        <label className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-brand-secondary">
-          {label}
-        </label>
-      )}
+      {label && <label className="text-sm font-semibold text-gray-900">{label}</label>}
       <div className="relative">
         <select
           value={value}
           onChange={onChange}
           disabled={disabled}
-          className={`w-full px-4 py-2.5 border outline-none transition-all duration-200 text-sm appearance-none bg-white font-medium cursor-pointer ${
+          className={`w-full px-4 py-2.5 border rounded-xl outline-none transition-all duration-200 text-sm appearance-none bg-white font-medium cursor-pointer ${
             error
-              ? 'border-status-error-text focus:ring-4 focus:ring-status-error-text/10 bg-status-error-bg/30 text-brand-dark'
-              : 'border-line hover:border-brand-secondary focus:border-brand-dark focus:ring-4 focus:ring-brand-dark/5 text-brand-dark'
-          } ${disabled ? 'opacity-50 cursor-not-allowed bg-brand-bg' : ''}`}
+              ? 'border-red-500 focus:ring-2 focus:ring-red-500/20 bg-red-50/30 text-gray-900'
+              : 'border-gray-300 hover:border-gray-400 focus:border-brand-mid focus:ring-2 focus:ring-brand-mid/20 text-gray-900 shadow-sm'
+          } ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
         >
           {placeholder && (
             <option value="" disabled className="text-gray-400">

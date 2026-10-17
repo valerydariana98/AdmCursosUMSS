@@ -6,7 +6,6 @@ import {
   type TeacherGroupCard,
 } from 'shared';
 import { api, ApiError } from '../../services/api';
-import PageHeader from '../../components/PageHeader';
 
 const ESTADO_LABEL: Record<GroupStatus, string> = {
   preinscripcion: 'En preinscripción',
@@ -49,21 +48,22 @@ export default function MyGroupsPage() {
 
   return (
     <div className="p-8 font-sans">
-      <PageHeader
-        eyebrow="Gestión docente"
-        title="Mis Grupos"
-        subtitle="Grupos activos que tenés asignados en el período académico actual."
-      />
+      <header className="mb-7">
+        <h1 className="text-2xl font-bold text-brand-dark">Mis Grupos</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Grupos activos que tenés asignados en el período académico actual.
+        </p>
+      </header>
 
       {error && (
-        <div className="rounded-none bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 mb-6">
+        <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 mb-6">
           {error}
         </div>
       )}
 
       {!error && grupos.length === 0 && (
-        <div className="bg-white rounded-none border border-line shadow-sm px-6 py-14 text-center">
-          <div className="w-14 h-14 mx-auto rounded-none bg-gray-100 text-gray-400 flex items-center justify-center">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-14 text-center">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center">
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -90,7 +90,7 @@ export default function MyGroupsPage() {
               key={grupo.id}
               type="button"
               onClick={() => navigate(`/grupos/${grupo.id}/gestion`)}
-              className="text-left bg-white rounded-none border border-line shadow-sm p-5 hover:border-brand-mid/40 hover:shadow-md transition-all duration-150"
+              className="text-left bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:border-brand-mid/40 hover:shadow-md transition-all duration-150"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -133,7 +133,7 @@ export default function MyGroupsPage() {
                 </div>
               </dl>
 
-              <p className="mt-4 pt-3 border-t border-line text-[11px] text-gray-400">
+              <p className="mt-4 pt-3 border-t border-gray-100 text-[11px] text-gray-400">
                 {formatDate(grupo.cursoFechaIni)} - {formatDate(grupo.cursoFechaFin)}
               </p>
             </button>

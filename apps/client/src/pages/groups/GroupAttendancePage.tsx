@@ -7,7 +7,6 @@ import AlertInfo from '../../components/AlertInfo';
 import BackButton from '../../components/BackButton';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
-import PageHeader from '../../components/PageHeader';
 import { useAttendance } from '../../hooks/useAttendance';
 import { ApiError } from '../../services/api';
 import {
@@ -47,7 +46,7 @@ const statusLabel = (student: AttendanceGridStudent): string => {
 // Aspecto de la celda según su estado. Vacío queda neutro para que lo marcado
 // resalte; el ciclo completo lo maneja el hook.
 const cellStyles: Record<'empty' | 'present' | 'absent', string> = {
-  empty: 'bg-white text-gray-300 border-line hover:border-gray-300',
+  empty: 'bg-white text-gray-300 border-gray-200 hover:border-gray-300',
   present: 'bg-emerald-50 text-emerald-700 border-emerald-300',
   absent: 'bg-red-50 text-red-700 border-red-300',
 };
@@ -184,56 +183,48 @@ const GroupAttendancePage = () => {
   const hasDates = dates.length > 0;
   const saveDisabled = saving || !hasStudents || !hasUnsavedChanges;
 
-  const th = 'py-3 px-3 text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.14em] whitespace-nowrap';
+  const th = 'py-3 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap';
   const td = 'py-3 px-3 text-sm text-gray-600';
 
   return (
     <div className="p-8 font-sans">
       <BackButton />
-      <nav className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-5">
-        <Link to="/cursos" className="hover:text-brand-dark transition-colors">
+      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-4">
+        <Link to="/cursos" className="hover:text-gray-600">
           Cursos
         </Link>
-        <span className="text-line">/</span>
-        <Link to={backPath} className="hover:text-brand-dark transition-colors">
+        <span>/</span>
+        <Link to={backPath} className="hover:text-gray-600">
           Grupo
         </Link>
-        <span className="text-line">/</span>
-        <span className="text-brand-dark">Asistencia</span>
+        <span>/</span>
+        <span className="text-gray-600 font-medium">Asistencia</span>
       </nav>
 
-      <PageHeader
-        eyebrow={
-          hasDates
-            ? `Período ${view.courseRange.fechaIni} — ${view.courseRange.fechaFin}`
-            : 'Período no definido'
-        }
-        title={`Asistencia — Grupo ${view.group.number}`}
-        subtitle={
-          <>
-            {view.group.courseName}
-            {hasDates && (
-              <span className="text-gray-400"> · {dates.length} jornadas hábiles</span>
-            )}
-          </>
-        }
-        actions={
-          <>
-            <div className="rounded-none border border-line bg-white px-4 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-secondary">
-                Jornadas registradas
-              </p>
-              <p className="font-serif text-xl font-semibold text-brand-dark">{view.totalSessions}</p>
-            </div>
-            <div className="rounded-none border border-line bg-white px-4 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-secondary">
-                Máximo de faltas
-              </p>
-              <p className="font-serif text-xl font-semibold text-brand-dark">{view.maxAbsences}</p>
-            </div>
-          </>
-        }
-      />
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Asistencia — Grupo {view.group.number}
+          </h1>
+          <p className="text-sm text-gray-500">{view.group.courseName}</p>
+          {hasDates && (
+            <p className="text-xs text-gray-400 mt-1">
+              Del {view.courseRange.fechaIni} al {view.courseRange.fechaFin} · {dates.length}{' '}
+              jornadas hábiles
+            </p>
+          )}
+        </div>
+        <div className="flex gap-3 text-sm">
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-2">
+            <p className="text-xs text-gray-400 uppercase tracking-wider">Jornadas registradas</p>
+            <p className="font-semibold text-gray-900">{view.totalSessions}</p>
+          </div>
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-2">
+            <p className="text-xs text-gray-400 uppercase tracking-wider">Máximo de faltas</p>
+            <p className="font-semibold text-gray-900">{view.maxAbsences}</p>
+          </div>
+        </div>
+      </div>
 
       {submitError && <AlertInfo type="error" title={submitError} className="mb-4" />}
 
@@ -253,10 +244,10 @@ const GroupAttendancePage = () => {
         />
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="bg-white rounded-none border border-line shadow-[0_1px_2px_rgba(12,16,60,0.04)] overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="text-left border-collapse">
-                <thead className="border-b-2 border-brand-dark">
+                <thead className="border-b border-gray-100">
                   <tr>
                     <th className={`${th} sticky left-0 z-20 bg-white pl-6 text-left`}>
                       Estudiante
@@ -310,7 +301,7 @@ const GroupAttendancePage = () => {
                   {students.map((student) => (
                     <tr
                       key={student.studentId}
-                      className="border-t border-line hover:bg-brand-bg/60 transition-colors"
+                      className="border-t border-gray-100 hover:bg-gray-50/60 transition-colors"
                     >
                       <td className={`${td} sticky left-0 z-10 bg-white pl-6 align-top`}>
                         <p className="font-semibold text-gray-900">{fullStudentName(student)}</p>
@@ -337,7 +328,7 @@ const GroupAttendancePage = () => {
                                   ? 'No se puede registrar una jornada futura'
                                   : 'Clic para cambiar: presente / ausente / sin marcar'
                               }
-                              className={`h-8 w-8 rounded-none border text-xs font-semibold transition-colors ${
+                              className={`h-8 w-8 rounded-lg border text-xs font-semibold transition-colors ${
                                 cellStyles[key]
                               } ${isFuture ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
@@ -389,7 +380,7 @@ const GroupAttendancePage = () => {
                 Ausente
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-line bg-white text-[10px] text-gray-300">
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-gray-200 bg-white text-[10px] text-gray-300">
                   ·
                 </span>
                 Sin marcar (cuenta como presente)

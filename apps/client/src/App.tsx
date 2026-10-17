@@ -6,6 +6,7 @@ import CourseCreatePage from "./pages/courses/CourseCreatePage";
 import CourseEditPage from "./pages/courses/CourseEditPage";
 import CoursesListPage from "./pages/courses/CoursesListPage";
 import GroupCreatePage from "./pages/groups/GroupCreatePage";
+import GroupCreateGlobalPage from "./pages/groups/GroupCreateGlobalPage";
 import GroupDetailPage from "./pages/groups/GroupDetailPage";
 import GroupEditPage from "./pages/groups/GroupEditPage";
 import GroupAttendancePage from "./pages/groups/GroupAttendancePage";
@@ -135,6 +136,10 @@ export default function App() {
           {/* Secciones de otros colaboradores */}
           <Route path="/dashboard" element={autenticado(<Prueba />)} />
           <Route path="/grupos" element={soloAdmin(<GroupsPage />)} />
+          <Route
+            path="/grupos/nuevo"
+            element={soloAdmin(<GroupCreateGlobalPage />)}
+          />
           <Route
             path="/estudiantes"
             element={soloAdmin(<EnrollmentsPage />)}

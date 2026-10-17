@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
-import PageHeader from '../../components/PageHeader';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
@@ -140,7 +139,7 @@ const CoursesListPage = () => {
               <button
                 type="button"
                 onClick={() => navigate(`/cursos/${course.id}/editar`)}
-                className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-none transition-all duration-150 cursor-pointer inline-flex items-center justify-center"
+                className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-xl transition-all duration-150 cursor-pointer inline-flex items-center justify-center"
                 title="Editar curso"
               >
                 <PencilIcon />
@@ -151,7 +150,7 @@ const CoursesListPage = () => {
                   setDeleteError(null);
                   setCourseToDelete(course);
                 }}
-                className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-none transition-all duration-150 cursor-pointer inline-flex items-center justify-center"
+                className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-all duration-150 cursor-pointer inline-flex items-center justify-center"
                 title="Eliminar curso"
               >
                 <TrashIcon />
@@ -165,31 +164,32 @@ const CoursesListPage = () => {
 
   return (
     <div className="p-8 font-sans">
-      <PageHeader
-        eyebrow="Oferta académica"
-        title="Gestión de Cursos"
-        subtitle="Cursos ofertados por el departamento de informática"
-        actions={
-          <Link to="/cursos/nuevo">
-            <Button variant="primary" icon={<PlusIcon />}>
-              Nuevo Curso
-            </Button>
-          </Link>
-        }
-      />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Gestión de Cursos</h1>
+          <p className="text-sm text-gray-500">
+            Cursos ofertados por el departamento de informática
+          </p>
+        </div>
+        <Link to="/cursos/nuevo">
+          <Button variant="primary" icon={<PlusIcon />}>
+            Nuevo Curso
+          </Button>
+        </Link>
+      </div>
 
-      <div className="bg-white rounded-none border border-line shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-line flex flex-col sm:flex-row gap-4 items-center">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-4 items-center">
           <div className="flex gap-2">
             {(Object.keys(TAB_LABELS) as CourseView[]).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setView(tab)}
-                className={`px-4 py-2 rounded-none text-sm font-semibold transition-all duration-150 cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer ${
                   view === tab
                     ? 'bg-brand-primary text-white shadow-sm'
-                    : 'bg-white text-gray-600 border border-line hover:bg-gray-50'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                 }`}
               >
                 {TAB_LABELS[tab]}
@@ -229,7 +229,7 @@ const CoursesListPage = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b-2 border-brand-dark font-mono text-[10px] font-semibold text-brand-secondary uppercase tracking-[0.18em]">
+              <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 <th className="py-3.5 px-6">Curso</th>
                 <th className="py-3.5 px-4">Duración</th>
                 <th className="py-3.5 px-4">{isArchived ? 'Fecha Fin' : 'Fechas'}</th>
@@ -242,7 +242,7 @@ const CoursesListPage = () => {
           </table>
         </div>
 
-        <div className="p-4 border-t border-line flex items-center justify-between text-xs text-gray-500">
+        <div className="p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
           <span>Mostrando {courses.length} de {total} cursos</span>
           <div className="flex gap-2">
             <Button

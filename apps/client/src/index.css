@@ -10,13 +10,9 @@
 @theme {
   /* Fuentes corporativas centralizadas */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  /* Serif editorial: títulos y mastheads. Le da carácter institucional al
-     documento sin salir de la paleta UMSS. */
-  --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
-  /* Monoespaciada para folios, cifras y metadatos de "boletín". */
-  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --font-nunito: 'Nunito', system-ui, -apple-system, sans-serif;
 
-  /* ===== Paleta corporativa UMSS ===== */
+  /* ===== Paleta corporativa UMSS - Formación Continua ===== */
 
   /* Azules corporativos */
   --color-brand-dark: #0C103C;         /* Azul marino profundo: sidebar, títulos, logo */
@@ -25,18 +21,8 @@
   --color-brand-primary: #111827;      /* Botón e interacción principal */
   --color-brand-primary-hover: #1F2937;
   --color-brand-secondary: #626C7A;    /* Subtítulos y textos secundarios */
-  --color-brand-bg: #FAF8F3;           /* Papel cálido: fondo general editorial */
+  --color-brand-bg: #F8FAFC;           /* Fondo gris claro general */
   --color-brand-card: #FFFFFF;         /* Fondo de tarjetas y tablas */
-
-  /* Línea fina editorial: separadores hairline de tablas y tarjetas */
-  --color-line: #E4E1D8;
-  /* Regla fuerte para títulos y cierres de sección. */
-  --color-rule: #0C103C;
-
-  /* Sello editorial: se usa con cuentagotas para folios, marcas y acentos */
-  --color-stamp: #B0182B;
-  --color-stamp-soft: #F6E7E9;
-  --color-gold: #B98A2F;
 
   /* Barra lateral */
   --color-sidebar-bg: #0C103C;         /* Azul marino profundo de la barra lateral */
@@ -64,37 +50,6 @@ html, body {
   color: #0F172A !important;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-}
-
-::selection {
-  background: var(--color-brand-dark);
-  color: #fff;
-}
-
-/* Área de lectura: papel cálido con retícula tenue, como una hoja cuadriculada
-   de boletín. Le quita el aire "flat" de dashboard genérico. */
-.app-content {
-  background-color: var(--color-brand-bg);
-  background-image:
-    linear-gradient(to right, rgba(12, 16, 60, 0.028) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(12, 16, 60, 0.028) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
-
-/* Barra de scroll discreta, en tinta. */
-.app-content::-webkit-scrollbar {
-  width: 11px;
-}
-.app-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-.app-content::-webkit-scrollbar-thumb {
-  background: rgba(12, 16, 60, 0.18);
-  border: 3px solid var(--color-brand-bg);
-  border-radius: 9999px;
-}
-.app-content::-webkit-scrollbar-thumb:hover {
-  background: var(--color-brand-mid);
 }
 
 /* ---- Impresión (HU #36) ----
