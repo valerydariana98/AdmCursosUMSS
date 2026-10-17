@@ -1,10 +1,9 @@
 // apps/client/src/pages/groups/GroupsPage.tsx
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
 import Button from '../../components/Button';
 import EstadoBadge from '../../components/EstadoBadge';
-import GroupCreateModal from '../../components/GroupCreateModal';
 import Modal from '../../components/Modal';
 import { ApiError } from '../../services/api';
 import { groupService } from '../../services/groupService';
@@ -50,7 +49,7 @@ interface CursoConGrupos {
 const GroupsPage = () => {
   const { courses, loading: loadingCursos, error: cursosError } = useCourses();
   const { grupos, loading, error, refetch } = useGroupsGlobal();
-  const [cursoParaCrear, setCursoParaCrear] = useState<Course | null>(null);
+  const navigate = useNavigate();
   const [grupoToDelete, setGrupoToDelete] = useState<GroupListItem | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -258,7 +257,7 @@ const GroupsPage = () => {
                 </div>
                 <Button
                   variant="primary"
-                  onClick={() => setCursoParaCrear(curso)}
+                  onClick={() => navigate(`/grupos/nuevo?curso=${curso.id}`)}
                   disabled={curso.preinscripcionFinalizada}
                   title={
                     curso.preinscripcionFinalizada
@@ -421,13 +420,6 @@ const GroupsPage = () => {
           </p>
         )}
       </Modal>
-
-      <GroupCreateModal
-        isOpen={cursoParaCrear !== null}
-        cursoId={cursoParaCrear?.id ?? null}
-        onClose={() => setCursoParaCrear(null)}
-        onCreated={refetch}
-      />
     </div>
   );
 };

@@ -27,12 +27,14 @@ interface GroupFormPageProps {
   /** Solo en modo edición: el grupo que se está editando. */
   grupo?: Group;
   loadingGrupo?: boolean;
+  /** ID del curso por prop cuando la ruta no lo trae (/grupos/nuevo?curso={id}). */
+  cursoIdOverride?: number;
 }
 
-const GroupFormPage = ({ mode, grupo, loadingGrupo }: GroupFormPageProps) => {
+const GroupFormPage = ({ mode, grupo, loadingGrupo, cursoIdOverride }: GroupFormPageProps) => {
   const { idCurso } = useParams();
   const navigate = useNavigate();
-  const cursoId = Number(idCurso);
+  const cursoId = cursoIdOverride ?? Number(idCurso);
 
   const isEdit = mode === 'edit';
 
