@@ -23,10 +23,17 @@ export const upsertAttendanceSchema = z.object({
   records: z.array(attendanceRecordSchema).min(1, 'Una jornada necesita al menos un registro'),
 });
 
-// La grilla viaja entera: todas las jornadas que el docente tocó en una sola
-// petición, que el servicio guarda en una sola transacción.
+const attendanceDateSchema = z
+  .string({ error: 'La fecha de la jornada es obligatoria' })
+  .regex(ATTENDANCE_DATE_PATTERN, 'La fecha debe tener el formato YYYY-MM-DD');
+
+// La grilla viaja entera: el plan de fechas actual (tras agregar/quitar días), las
+// fechas que se quitaron (para borrar sus sesiones) y las jornadas que el docente
+// tocó, todo en una sola petición que el servicio guarda en una sola transacción.
 export const upsertAttendanceGridSchema = z.object({
-  sessions: z.array(upsertAttendanceSchema).min(1, 'No hay jornadas para guardar'),
+  dates: z.array(attendanceDateSchema).min(1, 'La grilla necesita al menos una fecha'),
+  removedDates: z.array(attendanceDateSchema).default([]),
+  sessions: z.array(upsertAttendanceSchema).default([]),
 });
 
 export type UpsertAttendanceInput = z.infer<typeof upsertAttendanceSchema>;

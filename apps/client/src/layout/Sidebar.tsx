@@ -14,7 +14,6 @@ interface MenuItem {
 // el DOCENTE solo entra a lo que le corresponde.
 const menuItems: MenuItem[] = [
   { to: '/mis-grupos', label: 'Mis Grupos', icon: 'users', roles: ['DOCENTE'] },
-  { to: '/dashboard', label: 'Dashboard', icon: 'grid', roles: ['ADMIN'] },
   { to: '/cursos', label: 'Cursos', icon: 'document', roles: ['ADMIN'] },
   { to: '/grupos', label: 'Grupos', icon: 'clipboard', roles: ['ADMIN'] },
   { to: '/estudiantes', label: 'Inscripciones', icon: 'user', roles: ['ADMIN'] },
@@ -23,9 +22,6 @@ const menuItems: MenuItem[] = [
 ];
 
 const icons: Record<string, React.ReactNode> = {
-  grid: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-  ),
   document: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 2 0 01.707.293l5.414 5.414a1 2 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
   ),
@@ -51,14 +47,6 @@ export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
 
   const visibles = menuItems.filter((item) => user && item.roles.includes(user.rol));
-
-  const iniciales =
-    user?.username
-      .split(/[\s._-]+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase() ?? '')
-      .join('') || '??';
 
   const handleLogout = () => {
     logout();
@@ -101,16 +89,11 @@ export const Sidebar: React.FC = () => {
       </div>
 
       <div className="border-t border-white/10 pt-4 px-2">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-blue-100 text-brand-dark font-bold flex items-center justify-center text-xs shrink-0">
-            {iniciales}
-          </div>
-          <div className="flex flex-col text-xs overflow-hidden min-w-0 flex-1">
-            <p className="font-bold text-white truncate">{user?.username ?? '—'}</p>
-            <p className="text-gray-400 truncate">
-              {user ? ROL_LABEL[user.rol] : ''}
-            </p>
-          </div>
+        <div className="flex flex-col text-xs overflow-hidden min-w-0">
+          <p className="font-bold text-white truncate">{user?.username ?? '—'}</p>
+          <p className="text-gray-400 truncate">
+            {user ? ROL_LABEL[user.rol] : ''}
+          </p>
         </div>
         <button
           type="button"
