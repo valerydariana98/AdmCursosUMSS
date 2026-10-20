@@ -1,4 +1,4 @@
-// apps/client/src/pages/groups/GroupCreateGlobalPage.tsx
+// apps/client/src/pages/groups/admin/GroupCreateGlobalPage.tsx
 // Alta de un grupo desde la vista global de Grupos (/grupos). El curso llega
 // por query (?curso={id}) y el alta vive bajo /grupos para que el sidebar
 // siga resaltando "Grupos" en lugar de saltar a "Cursos".

@@ -1,4 +1,4 @@
-// apps/client/src/pages/groups/GroupStudentsPage.tsx
+// apps/client/src/pages/groups/admin/GroupStudentsPage.tsx
 // Vista de Administrators: estudiantes inscritos por grupo de un curso.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
@@ -7,18 +7,18 @@ import {
   type EnrolledStudent,
   type StudentTypeName,
 } from 'shared';
-import AlertInfo from '../../components/AlertInfo';
-import Button from '../../components/Button';
-import Modal from '../../components/Modal';
-import Select from '../../components/Select';
-import { useCourse } from '../../hooks/useCourse';
-import { useGroups } from '../../hooks/useGroups';
+import AlertInfo from '../../../components/AlertInfo';
+import Button from '../../../components/Button';
+import Modal from '../../../components/Modal';
+import Select from '../../../components/Select';
+import { useCourse } from '../../../hooks/useCourse';
+import { useGroups } from '../../../hooks/useGroups';
 import {
   deleteEnrollment,
   getEnrollments,
   getStudentTypes,
   moveEnrollment,
-} from '../../services/enrollments';
+} from '../../../services/enrollments';
 
 const PencilIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

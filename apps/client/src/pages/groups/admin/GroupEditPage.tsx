@@ -1,7 +1,7 @@
-// apps/client/src/pages/groups/GroupEditPage.tsx
+// apps/client/src/pages/groups/admin/GroupEditPage.tsx
 import { useParams } from 'react-router-dom';
-import AlertInfo from '../../components/AlertInfo';
-import { useGroup } from '../../hooks/useGroup';
+import AlertInfo from '../../../components/AlertInfo';
+import { useGroup } from '../../../hooks/useGroup';
 import GroupFormPage from './GroupFormPage';
 
 const GroupEditPage = () => {

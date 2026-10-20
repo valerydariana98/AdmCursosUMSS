@@ -1,21 +1,21 @@
-// apps/client/src/pages/groups/GroupAttendancePage.tsx
+// apps/client/src/pages/groups/academic/GroupAttendancePage.tsx
 // Asistencia del grupo en grilla: filas = estudiantes, columnas = fechas hábiles
 // del curso.
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import AlertInfo from '../../components/AlertInfo';
-import BackButton from '../../components/BackButton';
-import Button from '../../components/Button';
-import Modal from '../../components/Modal';
-import { useAttendance } from '../../hooks/useAttendance';
-import { ApiError } from '../../services/api';
+import AlertInfo from '../../../components/AlertInfo';
+import BackButton from '../../../components/BackButton';
+import Button from '../../../components/Button';
+import Modal from '../../../components/Modal';
+import { useAttendance } from '../../../hooks/useAttendance';
+import { ApiError } from '../../../services/api';
 import {
   attendanceWeekdayLabel,
   fullStudentName,
   shortAttendanceDate,
   todayIsoDate,
   type AttendanceGridStudent,
-} from '../../types/attendance';
+} from '../../../types/attendance';
 
 const SAVE_ERROR = 'No se pudo guardar la asistencia';
 

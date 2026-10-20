@@ -1,18 +1,18 @@
-// apps/client/src/pages/groups/GroupRubricPage.tsx
+// apps/client/src/pages/groups/academic/GroupRubricPage.tsx
 // Vista de configuración y gestión de la rúbrica de evaluación de un grupo.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { RUBRIC_TOTAL_MESSAGE, validateRubric, type RubricItemIssue } from 'shared';
-import AlertInfo from '../../components/AlertInfo';
-import BackButton from '../../components/BackButton';
-import Button from '../../components/Button';
-import Modal from '../../components/Modal';
-import RubricItemRemovalModals from '../../components/RubricItemRemovalModals';
-import RubricItemRow from '../../components/RubricItemRow';
-import RubricTotalIndicator from '../../components/RubricTotalIndicator';
-import { useRubric } from '../../hooks/useRubric';
-import { rubricFormSchema, type RubricFormData } from '../../schemas/rubricSchema';
-import { ApiError, type ApiFieldError } from '../../services/api';
+import AlertInfo from '../../../components/AlertInfo';
+import BackButton from '../../../components/BackButton';
+import Button from '../../../components/Button';
+import Modal from '../../../components/Modal';
+import RubricItemRemovalModals from '../../../components/RubricItemRemovalModals';
+import RubricItemRow from '../../../components/RubricItemRow';
+import RubricTotalIndicator from '../../../components/RubricTotalIndicator';
+import { useRubric } from '../../../hooks/useRubric';
+import { rubricFormSchema, type RubricFormData } from '../../../schemas/rubricSchema';
+import { ApiError, type ApiFieldError } from '../../../services/api';
 import {
   RUBRIC_CATEGORY_OPTIONS,
   createRubricItemForm,
@@ -24,7 +24,7 @@ import {
   type RubricItemInput,
   type RubricRemovalCheck,
   type RubricRemovalStage,
-} from '../../types/rubric';
+} from '../../../types/rubric';
 
 type ItemErrors = { name?: string; category?: string; percentage?: string };
 type FieldErrors = Record<string, ItemErrors>;

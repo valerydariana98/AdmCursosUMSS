@@ -1,19 +1,19 @@
-// apps/client/src/pages/groups/GroupsListPage.tsx
+// apps/client/src/pages/groups/admin/GroupsListPage.tsx
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import AlertInfo from '../../components/AlertInfo';
-import Button from '../../components/Button';
-import EstadoBadge from '../../components/EstadoBadge';
-import InstructorGroupsModal from '../../components/InstructorGroupsModal';
-import Modal from '../../components/Modal';
-import Toggle from '../../components/Toggle';
-import { useCourse } from '../../hooks/useCourse';
-import { useGroups } from '../../hooks/useGroups';
-import { ApiError } from '../../services/api';
-import { courseService } from '../../services/courseService';
+import AlertInfo from '../../../components/AlertInfo';
+import Button from '../../../components/Button';
+import EstadoBadge from '../../../components/EstadoBadge';
+import InstructorGroupsModal from '../../../components/InstructorGroupsModal';
+import Modal from '../../../components/Modal';
+import Toggle from '../../../components/Toggle';
+import { useCourse } from '../../../hooks/useCourse';
+import { useGroups } from '../../../hooks/useGroups';
+import { ApiError } from '../../../services/api';
+import { courseService } from '../../../services/courseService';
 import type { Modality } from 'shared';
-import { type GroupListItem, type GroupStatus } from '../../types/group';
-import type { ValidacionFinalizacion } from '../../services/courseService';
+import { type GroupListItem, type GroupStatus } from '../../../types/group';
+import type { ValidacionFinalizacion } from '../../../services/courseService';
 
 const MODALITY_LABELS: Record<Modality, string> = {
   presencial: 'Presencial',

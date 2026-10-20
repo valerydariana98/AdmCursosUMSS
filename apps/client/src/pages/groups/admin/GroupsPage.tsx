@@ -1,17 +1,17 @@
-// apps/client/src/pages/groups/GroupsPage.tsx
+// apps/client/src/pages/groups/admin/GroupsPage.tsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import AlertInfo from '../../components/AlertInfo';
-import Button from '../../components/Button';
-import EstadoBadge from '../../components/EstadoBadge';
-import Modal from '../../components/Modal';
-import { ApiError } from '../../services/api';
-import { groupService } from '../../services/groupService';
-import { useCourses } from '../../hooks/useCourses';
-import { useGroupsGlobal } from '../../hooks/useGroupsGlobal';
+import AlertInfo from '../../../components/AlertInfo';
+import Button from '../../../components/Button';
+import EstadoBadge from '../../../components/EstadoBadge';
+import Modal from '../../../components/Modal';
+import { ApiError } from '../../../services/api';
+import { groupService } from '../../../services/groupService';
+import { useCourses } from '../../../hooks/useCourses';
+import { useGroupsGlobal } from '../../../hooks/useGroupsGlobal';
 import type { Modality } from 'shared';
-import type { Course } from '../../types/course';
-import { type GroupListItem, type GroupStatus } from '../../types/group';
+import type { Course } from '../../../types/course';
+import { type GroupListItem, type GroupStatus } from '../../../types/group';
 
 const PencilIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

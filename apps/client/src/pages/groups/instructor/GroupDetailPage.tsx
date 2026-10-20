@@ -5,11 +5,11 @@ import {
   type GroupDetail,
   type GroupStatus,
 } from 'shared';
-import AlertInfo from '../../components/AlertInfo';
-import Button from '../../components/Button';
-import Modal from '../../components/Modal';
-import { api, ApiError } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import AlertInfo from '../../../components/AlertInfo';
+import Button from '../../../components/Button';
+import Modal from '../../../components/Modal';
+import { api, ApiError } from '../../../services/api';
+import { useAuth } from '../../../context/AuthContext';
 
 const MODULO_BADGE: Record<string, { label: string; clases: string }> = {
   abrir: { label: 'Abrir', clases: 'bg-brand-mid/10 text-brand-mid' },

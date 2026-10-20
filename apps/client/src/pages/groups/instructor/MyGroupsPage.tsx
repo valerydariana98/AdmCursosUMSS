@@ -5,7 +5,7 @@ import {
   type GroupStatus,
   type TeacherGroupCard,
 } from 'shared';
-import { api, ApiError } from '../../services/api';
+import { api, ApiError } from '../../../services/api';
 
 const ESTADO_LABEL: Record<GroupStatus, string> = {
   preinscripcion: 'En preinscripción',
