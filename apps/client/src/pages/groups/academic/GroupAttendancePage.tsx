@@ -3,12 +3,12 @@
 // El docente marca presentes (verde ✓); la celda sin marcar es la falta (gris).
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import AlertInfo from '../../components/AlertInfo';
-import BackButton from '../../components/BackButton';
-import Button from '../../components/Button';
-import Modal from '../../components/Modal';
-import { useAttendance } from '../../hooks/useAttendance';
-import { ApiError } from '../../services/api';
+import AlertInfo from '../../../components/AlertInfo';
+import BackButton from '../../../components/BackButton';
+import Button from '../../../components/Button';
+import Modal from '../../../components/Modal';
+import { useAttendance } from '../../../hooks/useAttendance';
+import { ApiError } from '../../../services/api';
 import {
   attendanceWeekdayLabel,
   fullStudentName,

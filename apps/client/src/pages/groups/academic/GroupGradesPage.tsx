@@ -1,22 +1,22 @@
-// apps/client/src/pages/groups/GroupGradesPage.tsx
+// apps/client/src/pages/groups/academic/GroupGradesPage.tsx
 // Grilla de notas por estudiante e ítem de la rúbrica del grupo seleccionado.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import AlertInfo from '../../components/AlertInfo';
-import BackButton from '../../components/BackButton';
-import Button from '../../components/Button';
-import Modal from '../../components/Modal';
-import { useGrades } from '../../hooks/useGrades';
-import { saveGradesSchema } from '../../schemas/gradeSchema';
-import { ApiError } from '../../services/api';
+import AlertInfo from '../../../components/AlertInfo';
+import BackButton from '../../../components/BackButton';
+import Button from '../../../components/Button';
+import Modal from '../../../components/Modal';
+import { useGrades } from '../../../hooks/useGrades';
+import { saveGradesSchema } from '../../../schemas/gradeSchema';
+import { ApiError } from '../../../services/api';
 import {
   findGradeIssue,
   liveFinalGrade,
   liveWeighted,
   toGradesPayload,
   toGradesSnapshot,
-} from '../../types/grades';
-import { fullStudentName } from '../../types/attendance';
+} from '../../../types/grades';
+import { fullStudentName } from '../../../types/attendance';
 
 const SAVE_ERROR = 'No se pudieron guardar las notas';
 

@@ -134,6 +134,10 @@ export default function App() {
           {/* Secciones de otros colaboradores */}
           <Route path="/grupos" element={soloAdmin(<GroupsPage />)} />
           <Route
+            path="/grupos/nuevo"
+            element={soloAdmin(<GroupCreateGlobalPage />)}
+          />
+          <Route
             path="/estudiantes"
             element={soloAdmin(<EnrollmentsPage />)}
           />

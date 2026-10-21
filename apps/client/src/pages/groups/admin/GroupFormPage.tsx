@@ -1,24 +1,24 @@
-// apps/client/src/pages/groups/GroupFormPage.tsx
+// apps/client/src/pages/groups/admin/GroupFormPage.tsx
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import AlertInfo from '../../components/AlertInfo';
-import Button from '../../components/Button';
-import EstadoBadge from '../../components/EstadoBadge';
-import RadioGroup from '../../components/RadioGroup';
-import Select from '../../components/Select';
-import TextField from '../../components/TextField';
-import { useCourse } from '../../hooks/useCourse';
-import { useGroups } from '../../hooks/useGroups';
-import { useInstructorOptions } from '../../hooks/useInstructorOptions';
-import { groupSchema } from '../../schemas/groupSchema';
-import { ApiError } from '../../services/api';
-import { MODALITY_OPTIONS, type Group, type GroupFormValues } from '../../types/group';
+import AlertInfo from '../../../components/AlertInfo';
+import Button from '../../../components/Button';
+import EstadoBadge from '../../../components/EstadoBadge';
+import RadioGroup from '../../../components/RadioGroup';
+import Select from '../../../components/Select';
+import TextField from '../../../components/TextField';
+import { useCourse } from '../../../hooks/useCourse';
+import { useGroups } from '../../../hooks/useGroups';
+import { useInstructorOptions } from '../../../hooks/useInstructorOptions';
+import { groupSchema } from '../../../schemas/groupSchema';
+import { ApiError } from '../../../services/api';
+import { MODALITY_OPTIONS, type Group, type GroupFormValues } from '../../../types/group';
 import {
   emptyGroupForm,
   toCreateGroupPayload,
   toGroupFormValues,
   toUpdateGroupPayload,
-} from '../../utils/group';
+} from '../../../utils/group';
 
 type FieldErrors = Record<string, string>;
 
@@ -27,12 +27,14 @@ interface GroupFormPageProps {
   /** Solo en modo edición: el grupo que se está editando. */
   grupo?: Group;
   loadingGrupo?: boolean;
+  /** ID del curso por prop cuando la ruta no lo trae (/grupos/nuevo?curso={id}). */
+  cursoIdOverride?: number;
 }
 
-const GroupFormPage = ({ mode, grupo, loadingGrupo }: GroupFormPageProps) => {
+const GroupFormPage = ({ mode, grupo, loadingGrupo, cursoIdOverride }: GroupFormPageProps) => {
   const { idCurso } = useParams();
   const navigate = useNavigate();
-  const cursoId = Number(idCurso);
+  const cursoId = cursoIdOverride ?? Number(idCurso);
 
   const isEdit = mode === 'edit';
 

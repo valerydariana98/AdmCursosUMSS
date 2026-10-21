@@ -1,4 +1,4 @@
-// apps/client/src/pages/groups/GroupReportPage.tsx
+// apps/client/src/pages/groups/academic/GroupReportPage.tsx
 // Reporte académico del grupo seleccionado (HU #35).
 //
 // Muestra la asistencia, la ponderación de la rúbrica, las notas registradas
@@ -8,12 +8,12 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useParams } from 'react-router-dom';
 import { type GroupReportView } from 'shared';
-import AlertInfo from '../../components/AlertInfo';
-import BackButton from '../../components/BackButton';
-import Button from '../../components/Button';
-import PrintButton from '../../components/PrintButton';
-import ReportTable from '../../components/ReportTable';
-import { api, ApiError } from '../../services/api';
+import AlertInfo from '../../../components/AlertInfo';
+import BackButton from '../../../components/BackButton';
+import Button from '../../../components/Button';
+import PrintButton from '../../../components/PrintButton';
+import ReportTable from '../../../components/ReportTable';
+import { api, ApiError } from '../../../services/api';
 
 const GroupReportPage = () => {
   const { idGrupo } = useParams();

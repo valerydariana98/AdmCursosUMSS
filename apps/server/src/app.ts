@@ -3,6 +3,8 @@
 import './env.js';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import healthRouter from './routes/health.routes.js';
 import coursesRouter from './routes/courses.routes.js';
 import instructorsRouter from './routes/instructors.routes.js';
@@ -19,10 +21,35 @@ import { requireAuth } from './middlewares/auth.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 import { prepararUploads, toUrlPrefix, uploadsDir } from './services/imagen.service.js';
 
-
 const app = express();
+app.set('trust proxy', 1);
 
-app.use(cors());
+const corsOrigin = process.env.CORS_ORIGIN;
+app.use(
+  cors({
+    origin: corsOrigin ? corsOrigin.split(',').map((s) => s.trim()) : '*',
+    credentials: corsOrigin ? true : false,
+  })
+);
+
+app.use(helmet());
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { message: 'Demasiados intentos, inténtelo más tarde' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(generalLimiter);
 app.use(express.json());
 
 app.get("/", (_req, res) => {
@@ -30,7 +57,7 @@ app.get("/", (_req, res) => {
 });
 
 app.use('/api/health', healthRouter);
-app.use('/api/auth', authRouter);
+app.use('/api/auth', authLimiter, authRouter);
 
 // A partir de aquí todo exige sesión. Se declara después de /health y /auth
 // porque esos dos endpoints son precisamente la puerta de entrada.
