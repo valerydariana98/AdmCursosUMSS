@@ -16,35 +16,48 @@ export type {
 export {
   ATTENDANCE_STATUSES,
   ATTENDANCE_STATUS_LABEL,
+  DEFAULT_GRID_DAYS,
   calculateAttendancePercentage,
+  firstBusinessDays,
   isAttendanceDateInFuture,
   isWeekendDate,
+  nextBusinessDay,
   resolveAttendanceRequirement,
-  weekdaysBetween,
 } from 'shared';
 
 // Marcas editables de la grilla: `studentId -> date -> estado`. Solo existen las
-// celdas marcadas; una fecha sin clave es una celda vacía (sin registro).
+// celdas marcadas como presentes; una celda sin clave está sin marcar (falta).
 export type AttendanceGridMarks = Record<number, Record<string, AttendanceStatus>>;
 
-// Estado visual de una celda: `present`, `absent` o nada todavía.
-export type AttendanceCellStatus = AttendanceStatus | undefined;
+// Estado visual de una celda: presente o nada todavía (gris = falta).
+export type AttendanceCellStatus = 'present' | undefined;
 
-// Estado de la celda que sigue en el ciclo vacío → presente → ausente → vacío.
-export const cycleAttendanceCell = (current: AttendanceCellStatus): AttendanceCellStatus => {
-  if (current === undefined) return 'present';
-  if (current === 'present') return 'absent';
+// Estado de la celda que sigue en el ciclo sin marcar → presente → sin marcar. La
+// celda sin marcar es la falta por omisión: no hay estado "ausente" aparte. Un
+// `absent` guardado (de un guardado anterior) se trata como sin marcar.
+export const cycleAttendanceCell = (
+  current: AttendanceStatus | undefined
+): AttendanceCellStatus => {
+  if (current === undefined || current === 'absent') return 'present';
 
   return undefined;
 };
 
 // Copia las marcas de la vista para editarlas aparte sin tocar la respuesta del
-// servidor, que sigue siendo la base para detectar cambios.
+// servidor, que sigue siendo la base para detectar cambios. El estado `absent` del
+// servidor se normaliza a "sin marcar": en la grilla la falta es la celda gris por
+// omisión, no un estado intermedio.
 export const toAttendanceGridMarks = (view: AttendanceGridView): AttendanceGridMarks => {
   const marks: AttendanceGridMarks = {};
 
   for (const student of view.students) {
-    marks[student.studentId] = { ...student.marks };
+    const studentMarks: Record<string, AttendanceStatus> = {};
+
+    for (const [date, status] of Object.entries(student.marks)) {
+      if (status === 'present') studentMarks[date] = status;
+    }
+
+    marks[student.studentId] = studentMarks;
   }
 
   return marks;
@@ -77,18 +90,22 @@ export const hasUnsavedAttendanceChanges = (
 ): boolean => dirtyAttendanceDates(marks, baseline).length > 0;
 
 // Payload del guardado masivo. Cada jornada tocada lleva a todos los estudiantes
-// del grupo: una celda vacía se guarda como presente, que es el valor por omisión
-// de siempre (el estudiante asistió salvo que se marque lo contrario).
+// del grupo: una celda sin marcar se guarda como ausente, que es el valor por
+// omisión (el estudiante faltó salvo que se marque presente).
 export const toAttendanceGridPayload = (
   marks: AttendanceGridMarks,
   baseline: AttendanceGridMarks,
-  studentIds: number[]
+  studentIds: number[],
+  dates: string[],
+  removedDates: string[]
 ): UpsertAttendanceGrid => ({
+  dates,
+  removedDates,
   sessions: dirtyAttendanceDates(marks, baseline).map((date) => ({
     date,
     records: studentIds.map((studentId) => ({
       studentId,
-      status: (marks[studentId]?.[date] ?? 'present') as AttendanceStatus,
+      status: (marks[studentId]?.[date] ?? 'absent') as AttendanceStatus,
     })),
   })),
 });

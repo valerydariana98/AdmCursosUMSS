@@ -111,9 +111,6 @@ const GroupReportPage = () => {
         </div>
 
         <div className="flex gap-2">
-          <Link to={backPath}>
-            <Button variant="secondary">Volver al grupo</Button>
-          </Link>
           <PrintButton />
         </div>
       </div>

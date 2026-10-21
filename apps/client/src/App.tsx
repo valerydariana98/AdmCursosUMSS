@@ -1,29 +1,30 @@
 // apps/client/src/App.tsx
 import { Navigate, Route, Routes } from "react-router-dom";
 import Sidebar from "./layout/Sidebar";
-import ComingSoonPage from "./pages/ComingSoonPage";
 import CourseCreatePage from "./pages/courses/CourseCreatePage";
 import CourseEditPage from "./pages/courses/CourseEditPage";
 import CoursesListPage from "./pages/courses/CoursesListPage";
-import GroupCreatePage from "./pages/groups/admin/GroupCreatePage";
-import GroupCreateGlobalPage from "./pages/groups/admin/GroupCreateGlobalPage";
-import GroupDetailPage from "./pages/groups/instructor/GroupDetailPage";
-import GroupEditPage from "./pages/groups/admin/GroupEditPage";
-import GroupAttendancePage from "./pages/groups/academic/GroupAttendancePage";
-import GroupGradesPage from "./pages/groups/academic/GroupGradesPage";
-import GroupRubricPage from "./pages/groups/academic/GroupRubricPage";
-import GroupReportPage from "./pages/groups/academic/GroupReportPage";
-import GroupsPage from "./pages/groups/admin/GroupsPage";
-import GroupsListPage from "./pages/groups/admin/GroupsListPage";
-import GroupStudentsPage from "./pages/groups/admin/GroupStudentsPage";
-import MyGroupsPage from "./pages/groups/instructor/MyGroupsPage";
+import CertificateEditorPage from "./pages/certificates/CertificateEditorPage";
+import CertificatesListPage from "./pages/certificates/CertificatesListPage";
+import GenerateCertificatesPage from "./pages/certificates/GenerateCertificatesPage";
+import SignaturesPage from "./pages/certificates/SignaturesPage";
+import GroupCreatePage from "./pages/groups/GroupCreatePage";
+import GroupDetailPage from "./pages/groups/GroupDetailPage";
+import GroupEditPage from "./pages/groups/GroupEditPage";
+import GroupAttendancePage from "./pages/groups/GroupAttendancePage";
+import GroupGradesPage from "./pages/groups/GroupGradesPage";
+import GroupRubricPage from "./pages/groups/GroupRubricPage";
+import GroupReportPage from "./pages/groups/GroupReportPage";
+import GroupsPage from "./pages/groups/GroupsPage";
+import GroupsListPage from "./pages/groups/GroupsListPage";
+import GroupStudentsPage from "./pages/groups/GroupStudentsPage";
+import MyGroupsPage from "./pages/groups/MyGroupsPage";
 import InstructorsContainer from "./pages/instructors/InstructorsContainer";
 import EditEnrollmentPage from "./pages/EditEnrollmentPage";
 import EnrollmentPage from "./pages/EnrollmentPage";
 import EnrollmentsPage from "./pages/EnrollmentsPage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
-import Prueba from "./pages/Prueba";
 import ProtectedRoute, { homeForRol } from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
 
@@ -130,11 +131,7 @@ export default function App() {
           {/* Instructores (otra HU) */}
           <Route path="/instructores" element={soloAdmin(<InstructorsContainer />)} />
 
-          {/* Catálogo de componentes y secciones generales */}
-          <Route path="/prueba" element={autenticado(<Prueba />)} />
-
           {/* Secciones de otros colaboradores */}
-          <Route path="/dashboard" element={autenticado(<Prueba />)} />
           <Route path="/grupos" element={soloAdmin(<GroupsPage />)} />
           <Route
             path="/grupos/nuevo"
@@ -144,9 +141,27 @@ export default function App() {
             path="/estudiantes"
             element={soloAdmin(<EnrollmentsPage />)}
           />
+          {/* Certificados (HU-01 a HU-04). El menú ya declara estas rutas para
+              ADMIN y DOCENTE, así que todas comparten el mismo guard. */}
           <Route
             path="/certificados"
-            element={autenticado(<ComingSoonPage title="Certificados" />)}
+            element={autenticado(<CertificatesListPage />)}
+          />
+          <Route
+            path="/certificados/nuevo"
+            element={autenticado(<CertificateEditorPage />)}
+          />
+          <Route
+            path="/certificados/firmas"
+            element={autenticado(<SignaturesPage />)}
+          />
+          <Route
+            path="/certificados/generar"
+            element={autenticado(<GenerateCertificatesPage />)}
+          />
+          <Route
+            path="/certificados/:id/editar"
+            element={autenticado(<CertificateEditorPage />)}
           />
 
           {/* Rutas de Estudiantes por Grupo */}

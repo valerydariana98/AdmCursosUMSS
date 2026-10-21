@@ -3,3 +3,8 @@ dist
 .vite
 .env
 *.log
+
+# Imágenes subidas por los usuarios: fondos de plantilla, firmas convertidas a
+# WebP y ZIPs de certificados generados. Son datos del despliegue, no del
+# repositorio, y nunca deben subirse al control de versiones.
+apps/server/uploads/

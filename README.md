@@ -74,6 +74,76 @@ pnpm --filter server db:seed       # inserta los catálogos base (tipo_estudiant
 
 ---
 
+## Módulo de Certificados
+
+Permite diseñar plantillas de certificado sobre una imagen base, asociarlas a un curso o a un
+grupo, y generar en lote los certificados de los estudiantes aprobados, descargables como un
+`.zip` de PDFs.
+
+### Rutas de la interfaz
+
+| Ruta | Qué hace |
+|---|---|
+| `/certificados` | Listado de plantillas con filtro de curso y grupo |
+| `/certificados/nuevo` | Diagramador para crear una plantilla |
+| `/certificados/:id/editar` | Diagramador para editar una plantilla existente |
+| `/certificados/firmas` | Repositorio de firmas digitalizadas |
+| `/certificados/generar` | Vista previa, generación masiva y descarga del `.zip` |
+
+### Endpoints
+
+```bash
+GET    /api/certificados/plantillas?cursoId&grupoId
+POST   /api/certificados/plantillas                      # multipart: fondo + campos
+GET    /api/certificados/plantillas/:id
+PUT    /api/certificados/plantillas/:id
+DELETE /api/certificados/plantillas/:id
+POST   /api/certificados/plantillas/:id/duplicar
+GET    /api/certificados/firmas
+POST   /api/certificados/firmas                          # multipart
+PUT    /api/certificados/firmas/:id
+DELETE /api/certificados/firmas/:id                      # 409 si está en uso
+GET    /api/certificados/generar/previa?grupoId
+POST   /api/certificados/generar                          # devuelve un jobId
+GET    /api/certificados/generar/:jobId                   # progreso
+GET    /api/certificados/generar/:jobId/descargar         # el .zip
+```
+
+### Estándares que aplica
+
+* **Imagen base**: PNG o JPG, entre `1200x800` y `2500x1750` px. Para imprimir sin pérdida
+  use `1920x1080` (16:9) o `2000x1414` (A4 horizontal) a 300 DPI.
+* **Firmas**: se convierten a **WebP** en el servidor (`sharp`), conservando la
+  transparencia. No se puede eliminar una firma que esté en uso.
+* **Salida**: un `.zip` con un **PDF** por estudiante, en carta horizontal (`792x612` pt) con
+  texto vectorial.
+* **Aprobado**: `notaFinal >= cursos.notaMin` **y** faltas `<= cursos.maxFaltas`, la misma
+  condición que aplica el reporte de notas (`resolveCertificateCondition`).
+* **Almacenamiento**: `apps/server/uploads/` (gitignored), servido como estático en `/uploads`.
+  La base de datos guarda solo la ruta relativa.
+
+### Variables de entorno del servidor
+
+```bash
+UPLOADS_DIR=./uploads        # carpeta de fondos, firmas y ZIPs generados
+UPLOADS_URL_PREFIX=/uploads  # prefijo con el que se sirven como estáticos
+```
+
+> Los ZIP generados **no** se sirven como estáticos: se descargan por un endpoint que valida
+> la sesión, porque un certificado es un documento oficial.
+
+### Documentación
+
+* `docs/plan-certificados.md` — plan de implementación, decisiones técnicas y riesgos.
+* `docs/HU_Certificados.docx` — historias de usuario, con los criterios de aceptación
+  adaptados a los datos reales del sistema.
+
+```bash
+python scripts/generar_hu_certificados.py   # regenera el .docx y los .md de las issues
+```
+
+---
+
 ## Reglas de Oro del Monorepo
 
 Para evitar desincronizaciones en el proyecto, sigue siempre estas reglas:

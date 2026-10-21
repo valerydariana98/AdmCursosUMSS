@@ -624,6 +624,59 @@ export const weekdaysBetween = (from: string, to: string): string[] => {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+// Días de clase que se muestran por omisión en la grilla: las primeras "N"
+// fechas hábiles desde el inicio del curso. El docente puede agregar más con "+"
+// o quitar fechas (feriados, reprogramaciones), y ese plan se persiste en el grupo.
+export const DEFAULT_GRID_DAYS = 10;
+
+// Primitivas "N" fechas hábiles (lun–vie) a partir de `from` (inclusive). Es lo
+// que arma las columnas de la grilla de asistencia cuando el grupo todavía no
+// tiene un plan propio: el curso se dicta de lunes a viernes. Si la fecha es
+// inválida o el conteo no es positivo, devuelve una lista vacía.
+export const firstBusinessDays = (from: string, count: number): string[] => {
+  if (!isAttendanceDate(from) || count <= 0) return [];
+
+  const dates: string[] = [];
+  let time = new Date(`${from}T12:00:00Z`).getTime();
+
+  while (dates.length < count) {
+    const date = new Date(time);
+    const day = date.getUTCDay();
+
+    if (day !== 0 && day !== 6) {
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const dayOfMonth = String(date.getUTCDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${dayOfMonth}`);
+    }
+
+    time += MS_PER_DAY;
+  }
+
+  return dates;
+};
+
+// Siguiente día hábil después de `date` (exclusive). Lo usa el "+" de la grilla
+// para proponer la próxima jornada cuando el curso se extiende: salta el fin de
+// semana si cae en él. Devuelve la misma fecha si no es válida.
+export const nextBusinessDay = (date: string): string => {
+  if (!isAttendanceDate(date)) return date;
+
+  let time = new Date(`${date}T12:00:00Z`).getTime() + MS_PER_DAY;
+  let candidate = new Date(time);
+
+  while (candidate.getUTCDay() === 0 || candidate.getUTCDay() === 6) {
+    time += MS_PER_DAY;
+    candidate = new Date(time);
+  }
+
+  const year = candidate.getUTCFullYear();
+  const month = String(candidate.getUTCMonth() + 1).padStart(2, '0');
+  const dayOfMonth = String(candidate.getUTCDate()).padStart(2, '0');
+
+  return `${year}-${month}-${dayOfMonth}`;
+};
+
 export interface AttendanceStudentSummary {
   studentId: number;
   // Jornadas del grupo en las que el estudiante tiene registro. El total es el del
@@ -735,16 +788,24 @@ export interface AttendanceGridView {
   maxAbsences: number;
   // Rango de dictado del curso, tal como está en el curso.
   courseRange: { fechaIni: string; fechaFin: string };
-  // Fechas hábiles (lun–vie) entre `fechaIni` y `fechaFin`, ambas inclusive.
+  // Fechas que arman la grilla: las siguientes `DEFAULT_GRID_DAYS` fechas hábiles
+  // desde `fechaIni` (o el plan persistido del grupo, si el docente agregó o
+  // quitó días), más las fechas que ya tienen sesiones registradas.
   dates: string[];
   students: AttendanceGridStudent[];
   // Total de jornadas registradas del grupo, que es el denominador del porcentaje.
   totalSessions: number;
 }
 
-// Guardado masivo de la grilla: todas las jornadas que el docente tocó, en una
-// sola petición y una sola transacción.
+// Guardado masivo de la grilla: el plan de fechas actual (tras agregar/quitar
+// días), las fechas que se quitaron para borrar sus sesiones y las jornadas tocadas.
 export interface UpsertAttendanceGrid {
+  // Plan de fechas actual de la grilla, en orden. El server lo persiste en el
+  // grupo para que el "+" y el borrado de fechas sobrevivan a recargas.
+  dates: string[];
+  // Fechas que se quitaron de la grilla (feriado, reprogramación): se borran sus
+  // sesiones y registros asociados.
+  removedDates: string[];
   sessions: UpsertAttendance[];
 }
 
@@ -1026,3 +1087,336 @@ export const calcularMonto = (
   tipo: StudentTypeName,
   c: Pick<Course, 'costoUmss' | 'costoAux' | 'costoExterno'>,
 ): number => ({ externo: c.costoExterno, umss: c.costoUmss, aux: c.costoAux })[tipo];
+
+// ------------------------------------------------------------------
+// Certificados (HU-01, HU-02, HU-03, HU-04)
+// ------------------------------------------------------------------
+
+// Tamaño de página del PDF: carta horizontal (11in x 8.5in) en puntos, que es
+// lo que se usa para imprimir. Vive aquí porque el render del servidor y la
+// previsualización del cliente tienen que caer en la misma proporción.
+export const CERTIFICATE_PAGE_WIDTH = 792;
+export const CERTIFICATE_PAGE_HEIGHT = 612;
+
+// Límites de la imagen base. Por debajo el certificado se ve pixelado al
+// imprimir; por encima no gana nitidez y encarece el almacenamiento.
+export const CERTIFICATE_IMAGE_MIN_WIDTH = 1200;
+export const CERTIFICATE_IMAGE_MIN_HEIGHT = 800;
+export const CERTIFICATE_IMAGE_MAX_WIDTH = 2500;
+export const CERTIFICATE_IMAGE_MAX_HEIGHT = 1750;
+
+// La imagen base se diseña en Canva y se exporta como PNG o JPG. La firma
+// además suele venir con fondo transparente, que el WebP conserva.
+export const CERTIFICATE_IMAGE_FORMATS = ['image/png', 'image/jpeg'] as const;
+export const CERTIFICATE_FORMAT_LABEL: Record<string, string> = {
+  'image/png': 'PNG',
+  'image/jpeg': 'JPG',
+};
+
+export const CERTIFICATE_MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+export const CERTIFICATE_SIGNATURE_MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+
+// Las posiciones y los tamaños viajan como enteros en centésimas de porcentaje
+// (0-10000), el mismo truco de `percentageHundredths`: el viaje del servidor al
+// cliente y de vuelta no arrastra error de coma flotante, que sí lo haría
+// guardar 42.33% como decimal.
+export const CERTIFICATE_PERCENT_SCALE = 10000;
+
+export const toPercentHundredths = (percent: number): number =>
+  Math.round(percent * CERTIFICATE_PERCENT_SCALE);
+
+export const fromPercentHundredths = (hundredths: number): number =>
+  hundredths / CERTIFICATE_PERCENT_SCALE;
+
+// ------------------------------------------------------------------------
+// Variables dinámicas
+// ------------------------------------------------------------------------
+
+// Los valores que se sustituyen en cada variable. El nombre de la clave es el
+// texto exacto que el usuario escribe entre llaves en el diagramador.
+export interface CertificateVariable {
+  key: string;
+  label: string;
+  // Dato del sistema que rellena la variable. Se documenta para que el editor
+  // pueda mostrar un ejemplo de cómo se verá en el certificado.
+  origen: string;
+  ejemplo: string;
+}
+
+export const CERTIFICATE_VARIABLES: CertificateVariable[] = [
+  {
+    key: '{nombre_estudiante}',
+    label: 'Nombre del estudiante',
+    origen: 'estudiantes.nombres + apPaterno + apMaterno',
+    ejemplo: 'María Fernanda Vargas Cruz',
+  },
+  {
+    key: '{nombre_curso}',
+    label: 'Nombre del curso',
+    origen: 'cursos.nombreCurso',
+    ejemplo: 'Álgebra I',
+  },
+  {
+    key: '{grupo}',
+    label: 'Grupo',
+    origen: 'grupos.numGrupo',
+    ejemplo: 'Grupo 3',
+  },
+  {
+    key: '{nota_final}',
+    label: 'Nota final',
+    origen: 'Suma ponderada de la rúbrica del grupo',
+    ejemplo: '87',
+  },
+  {
+    key: '{fecha_emision}',
+    label: 'Fecha de emisión',
+    origen: 'Fecha en que se genera el certificado',
+    ejemplo: '16/10/2026',
+  },
+];
+
+// Contexto con el que se resuelve un certificado concreto. Lo arma el servidor
+// con los datos reales del estudiante y lo usa `resolveCertificateVariables`
+// para generar el PDF.
+export interface CertificateVariableContext {
+  nombreEstudiante: string;
+  nombreCurso: string;
+  grupo: string;
+  notaFinal: number;
+  fechaEmision: string;
+}
+
+// Sustituye cada variable conocida por su valor. Una variable que no existe en
+// el catálogo se deja tal cual en vez de borrarse: así el error se ve impreso
+// en el certificado, y un PDF en blanco no se descubre recién cuando ya se
+// repartieron los diplomas. El mismo helper lo usa el cliente para la
+// previsualización del editor, de modo que lo que se ve al diseñar es
+// exactamente lo que sale impreso.
+export const resolveCertificateVariables = (
+  template: string,
+  context: CertificateVariableContext,
+): string => {
+  const valores: Record<string, string> = {
+    '{nombre_estudiante}': context.nombreEstudiante,
+    '{nombre_curso}': context.nombreCurso,
+    '{grupo}': context.grupo,
+    '{nota_final}': String(context.notaFinal),
+    '{fecha_emision}': context.fechaEmision,
+  };
+
+  return template.replace(/\{[a-z_]+\}/g, (variable) => valores[variable] ?? variable);
+};
+
+// ------------------------------------------------------------------------
+// Firmas
+// ------------------------------------------------------------------------
+
+export interface Firma {
+  id: number;
+  // Etiqueta que ve el docente en la galería, ej. "Firma Rector - Juan Pérez".
+  nombre: string;
+  // Ruta relativa servida como estático. El archivo en disco es WebP aunque se
+  // haya subido PNG o JPG.
+  ruta: string;
+  originalNombre: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// En la galería el cliente necesita saber si una firma está siendo usada antes
+// de ofrecer eliminarla: una firma en uso no se puede borrar sin dejar
+// plantillas sin poder renderizar.
+export interface FirmaListItem extends Firma {
+  enUso: boolean;
+  // Cuántas plantillas la referencian.
+  plantillasQueLaUsan: number;
+  nombresPlantillas: string[];
+}
+
+export type CreateFirma = Pick<Firma, 'nombre'>;
+
+export type UpdateFirma = Pick<Firma, 'nombre'>;
+
+// ------------------------------------------------------------------------
+// Plantillas
+// ------------------------------------------------------------------------
+
+export const CERTIFICATE_ALIGNMENTS = ['izquierda', 'centro', 'derecha'] as const;
+export type CertificateAlignment = (typeof CERTIFICATE_ALIGNMENTS)[number];
+
+export const CERTIFICATE_ELEMENT_TYPES = ['texto', 'firma'] as const;
+export type CertificateElementType = (typeof CERTIFICATE_ELEMENT_TYPES)[number];
+
+export interface PlantillaElemento {
+  id: number;
+  idPlantilla: number;
+  tipo: CertificateElementType;
+  // Contenido con variables sin resolver. Solo en elementos de texto.
+  texto: string | null;
+  // Firma superpuesta. Solo en elementos de tipo firma.
+  idFirma: number | null;
+  xPercent: number;
+  yPercent: number;
+  // Ancho disponible del bloque, para decidir dónde corta la línea el texto.
+  anchoPercent: number;
+  alineacion: CertificateAlignment;
+  fontSize: number;
+  fontFamily: string;
+  color: string;
+  // Orden de dibujo: lo último queda encima.
+  position: number;
+}
+
+// Vista del editor: los elementos de tipo firma llegan con la firma resuelta,
+// para que el lienzo pueda dibujarla sin una segunda petición.
+export interface PlantillaElementoView extends PlantillaElemento {
+  firma: Firma | null;
+}
+
+// La plantilla tal como se guarda. `ancho`/`alto` son las dimensiones reales
+// del fondo: el cliente las usa para mantener la proporción y el servidor
+// decide la escala de la imagen al generar el PDF.
+export interface PlantillaCertificado {
+  id: number;
+  nombre: string;
+  idCurso: number;
+  // null = plantilla general del curso. Con valor = específica del grupo.
+  idGrupo: number | null;
+  rutaFondo: string;
+  ancho: number;
+  alto: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlantillaCertificadoView extends PlantillaCertificado {
+  cursoNombre: string;
+  grupoNumero: number | null;
+  elementos: PlantillaElementoView[];
+}
+
+// Fila del listado de plantillas (HU-01).
+export interface PlantillaListItem {
+  id: number;
+  nombre: string;
+  idCurso: number;
+  cursoNombre: string;
+  idGrupo: number | null;
+  grupoNumero: number | null;
+  // "Grupo 3" o "General del curso".
+  destino: string;
+  cantidadElementos: number;
+  createdAt: string;
+  updatedAt: string;
+  // Solo lo necesita el servidor: quién puede tocarla.
+  instructorId: number | null;
+}
+
+// Lo que viaja del cliente al servidor al guardar. Los ids de los elementos no
+// se envían: el servidor reemplaza el conjunto completo, que es lo que hace
+// simple eliminar un bloque del diagramador sin confirmar nada.
+export interface PlantillaElementoInput {
+  tipo: CertificateElementType;
+  texto: string | null;
+  idFirma: number | null;
+  xPercent: number;
+  yPercent: number;
+  anchoPercent: number;
+  alineacion: CertificateAlignment;
+  fontSize: number;
+  fontFamily: string;
+  color: string;
+  // Orden de dibujado. Opcional: si el cliente no lo manda, el servidor usa el
+  // orden en que llegaron los elementos.
+  position?: number;
+}
+
+export interface CreatePlantilla {
+  nombre: string;
+  idCurso: number;
+  idGrupo: number | null;
+  ancho: number;
+  alto: number;
+  elementos: PlantillaElementoInput[];
+}
+
+// En la edición la plantilla no cambia de curso ni de grupo: corregir la
+// asociación significaría rehacer el diseño sobre otra imagen de fondo.
+export interface UpdatePlantilla {
+  nombre: string;
+  elementos: PlantillaElementoInput[];
+}
+
+export interface DuplicarPlantilla {
+  nombre?: string;
+}
+
+// Resultado de buscar la plantilla que corresponde a un grupo: la específica
+// del grupo si existe, y si no la general del curso. `origen` le dice al
+// cliente cuál de las dos se está usando para que lo muestre en la interfaz.
+export interface ResolvedPlantilla {
+  plantilla: PlantillaCertificado;
+  origen: 'grupo' | 'curso';
+}
+
+// ------------------------------------------------------------------------
+// Generación masiva (HU-04)
+// ------------------------------------------------------------------------
+
+export type CertificateJobState = 'pendiente' | 'procesando' | 'listo' | 'error';
+
+export const CERTIFICATE_JOB_STATE_LABEL: Record<CertificateJobState, string> = {
+  pendiente: 'En cola',
+  procesando: 'Generando',
+  listo: 'Listo para descargar',
+  error: 'Error',
+};
+
+// Vista previa antes de generar: el desglose por condición es lo que evita
+// descubrir recién al final que a medio grupo no le correspondía certificado.
+export interface CertificatePreviewStudent {
+  estudianteId: number;
+  nombre: string;
+  notaFinal: number | null;
+  condicion: CertificateCondition;
+}
+
+export interface CertificateConditionCount {
+  condicion: CertificateCondition;
+  cantidad: number;
+}
+
+export interface CertificatePreview {
+  grupo: {
+    id: number;
+    numero: number;
+    cursoId: number;
+    cursoNombre: string;
+    instructorId: number;
+  };
+  // null cuando el grupo no tiene plantilla propia y tampoco hay general del
+  // curso: la generación no puede empezar sin fondo.
+  plantilla: ResolvedPlantilla | null;
+  totalEstudiantes: number;
+  // Los que sí recibirían certificado.
+  aprobados: number;
+  porCondicion: CertificateConditionCount[];
+  estudiantes: CertificatePreviewStudent[];
+}
+
+export interface CertificateJob {
+  jobId: string;
+  estado: CertificateJobState;
+  total: number;
+  procesados: number;
+  // Los que quedaron fuera y por qué, para poder avisar sin generar.
+  excluidos: number;
+  mensajeError: string | null;
+  // Presente solo cuando `estado` es 'listo'.
+  nombreArchivo: string | null;
+}
+
+export interface StartCertificateJob {
+  grupoId: number;
+}
