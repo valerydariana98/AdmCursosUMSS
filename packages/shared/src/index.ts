@@ -1266,6 +1266,7 @@ export interface PlantillaElemento {
   color: string;
   // Orden de dibujo: lo último queda encima.
   position: number;
+  bloqueado?: boolean;
 }
 
 // Vista del editor: los elementos de tipo firma llegan con la firma resuelta,
@@ -1277,15 +1278,26 @@ export interface PlantillaElementoView extends PlantillaElemento {
 // La plantilla tal como se guarda. `ancho`/`alto` son las dimensiones reales
 // del fondo: el cliente las usa para mantener la proporción y el servidor
 // decide la escala de la imagen al generar el PDF.
+export type PlantillaDestinatario = 'estudiante' | 'instructor';
+
+export interface PlantillaAutoridad {
+  id?: number;
+  titulo: string;
+  nombre: string;
+  orden: number;
+}
+
 export interface PlantillaCertificado {
   id: number;
   nombre: string;
   idCurso: number;
-  // null = plantilla general del curso. Con valor = específica del grupo.
+  // null = plantilla general del curso. Con valor = especA-fica del grupo.
   idGrupo: number | null;
+  destinatarioTipo: PlantillaDestinatario;
   rutaFondo: string;
   ancho: number;
   alto: number;
+  autoridades: PlantillaAutoridad[];
   createdAt: string;
   updatedAt: string;
 }
@@ -1304,6 +1316,7 @@ export interface PlantillaListItem {
   cursoNombre: string;
   idGrupo: number | null;
   grupoNumero: number | null;
+  destinatarioTipo: PlantillaDestinatario;
   // "Grupo 3" o "General del curso".
   destino: string;
   cantidadElementos: number;
@@ -1330,14 +1343,17 @@ export interface PlantillaElementoInput {
   // Orden de dibujado. Opcional: si el cliente no lo manda, el servidor usa el
   // orden en que llegaron los elementos.
   position?: number;
+  bloqueado?: boolean;
 }
 
 export interface CreatePlantilla {
   nombre: string;
   idCurso: number;
   idGrupo: number | null;
+  destinatarioTipo?: PlantillaDestinatario;
   ancho: number;
   alto: number;
+  autoridades?: PlantillaAutoridad[];
   elementos: PlantillaElementoInput[];
 }
 
@@ -1345,6 +1361,8 @@ export interface CreatePlantilla {
 // asociación significaría rehacer el diseño sobre otra imagen de fondo.
 export interface UpdatePlantilla {
   nombre: string;
+  destinatarioTipo?: PlantillaDestinatario;
+  autoridades?: PlantillaAutoridad[];
   elementos: PlantillaElementoInput[];
 }
 
@@ -1419,4 +1437,30 @@ export interface CertificateJob {
 
 export interface StartCertificateJob {
   grupoId: number;
+  formato?: 'zip' | 'pdf';
+  destinatarioTipo?: PlantillaDestinatario;
+}
+
+// Variables disponibles para certificados de instructor (issue #99, #100).
+export const CERTIFICATE_INSTRUCTOR_VARIABLES = [
+  { key: '{nombre_instructor}', label: 'Nombre del instructor', origen: 'instructores', ejemplo: 'Juan Perez' },
+  { key: '{ci_instructor}', label: 'CI del instructor', origen: 'instructores.ci', ejemplo: '1234567' },
+  { key: '{cargo_instructor}', label: 'Cargo del instructor', origen: 'instructores.cargo', ejemplo: 'Docente' },
+  { key: '{nombre_curso}', label: 'Nombre del curso', origen: 'cursos.nombreCurso', ejemplo: 'Algebra I' },
+  { key: '{grupo}', label: 'Grupo', origen: 'grupos.numGrupo', ejemplo: 'Grupo 3' },
+  { key: '{intensidad_horaria}', label: 'Intensidad horaria', origen: 'cursos.duracionHoras', ejemplo: '40' },
+  { key: '{periodo}', label: 'Periodo', origen: 'cursos.periodo', ejemplo: '1-2026' },
+  { key: '{fecha_emision}', label: 'Fecha de emision', origen: 'Fecha de generacion', ejemplo: '16/10/2026' },
+];
+
+// Resultado de la verificacion publica de un certificado (issue #98, #100).
+export interface ResultadoVerificacion {
+  codigo: string;
+  valido: boolean;
+  tipo: string;
+  destinatarioTipo: PlantillaDestinatario;
+  destinatarioId: number;
+  cursoId: number;
+  grupoId: number;
+  fechaEmision: string;
 }
