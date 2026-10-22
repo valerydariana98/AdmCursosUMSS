@@ -112,4 +112,31 @@ export const certificateService = {
       'certificados.zip'
     );
   },
+
+  downloadPdf(jobId: string): Promise<{ blob: Blob; nombre: string }> {
+    return api.download(
+      `/api/certificados/generar/${jobId}/descargar`,
+      'certificados.pdf'
+    );
+  },
+
+  startPdf(grupoId: number): Promise<{ jobId: string; total: number; aprobados: number }> {
+    return api.post<{ jobId: string; total: number; aprobados: number }>('/api/certificados/generar/pdf', {
+      grupoId,
+    });
+  },
+
+  startInstructores(grupoId: number): Promise<{ jobId: string; total: number; aprobados: number }> {
+    return api.post<{ jobId: string; total: number; aprobados: number }>('/api/certificados/generar/instructores', {
+      grupoId,
+    });
+  },
+
+  marcosBase(): Promise<{ id: string; nombre: string; ruta: string; ancho: number; alto: number }[]> {
+    return api.get('/api/certificados/marcos-base');
+  },
+
+  verificar(codigo: string): Promise<any> {
+    return api.get(`/api/certificados/verificar/${codigo}`);
+  },
 };
