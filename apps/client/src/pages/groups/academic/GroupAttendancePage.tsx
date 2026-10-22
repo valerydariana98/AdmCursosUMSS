@@ -1,4 +1,4 @@
-// apps/client/src/pages/groups/GroupAttendancePage.tsx
+// apps/client/src/pages/groups/academic/GroupAttendancePage.tsx
 // Asistencia del grupo en grilla: filas = estudiantes, columnas = fechas de clase.
 // El docente marca presentes (verde ✓); la celda sin marcar es la falta (gris).
 import { useEffect, useMemo, useState } from 'react';
@@ -14,7 +14,7 @@ import {
   fullStudentName,
   shortAttendanceDate,
   todayIsoDate,
-} from '../../types/attendance';
+} from '../../../types/attendance';
 
 const SAVE_ERROR = 'No se pudo guardar la asistencia';
 
