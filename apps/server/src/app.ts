@@ -17,6 +17,7 @@ import attendanceRouter from './routes/attendance.routes.js';
 import reportsRouter from './routes/reports.routes.js';
 import studentTypesRouter from './routes/studentTypes.routes.js';
 import certificatesRouter from './routes/certificates.routes.js';
+import { getVerificacion } from './controllers/certificate.controller.js';
 import { requireAuth } from './middlewares/auth.js';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 import { prepararUploads, toUrlPrefix, uploadsDir } from './services/imagen.service.js';
@@ -61,6 +62,8 @@ app.use('/api/auth', authLimiter, authRouter);
 
 // A partir de aquí todo exige sesión. Se declara después de /health y /auth
 // porque esos dos endpoints son precisamente la puerta de entrada.
+app.get('/api/certificados/verificar/:codigo', getVerificacion);
+
 app.use('/api', requireAuth);
 
 app.use('/api/courses', coursesRouter);

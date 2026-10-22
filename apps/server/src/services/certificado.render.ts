@@ -31,14 +31,18 @@ const FIRMA_ALTO_POR_DEFECTO = 2000;
 const FIRMA_ANCHO_MAXIMO = 4000;
 
 interface RenderOpciones {
-  destino: string;
+  destino?: string;
   fondoRuta: string;
-  // Proporción real del fondo, para decidir si entra estirado o centrado.
+  // ProporciA3n real del fondo, para decidir si entra estirado o centrado.
   fondoAncho: number;
   fondoAlto: number;
   elementos: PlantillaElementoView[];
   contexto: CertificateVariableContext;
+  codigoVerificacion?: string;
+  qrBuffer?: Buffer;
 }
+
+interface RenderPaginaOpciones extends Omit<RenderOpciones, 'destino'> {}
 
 /** Convierte un porcentaje en centésimas a puntos de la página. */
 const aPuntos = (centesimas: number, lado: number): number =>
@@ -157,16 +161,43 @@ const dibujarFirma = (doc: PDFKit.PDFDocument, elemento: PlantillaElementoView) 
  * terminado. El job que llama a esto espera la promesa para poder contar los
  * procesados con seguridad.
  */
+const dibujarPagina = (doc: PDFKit.PDFDocument, opciones: RenderPaginaOpciones) => {
+  dibujarFondo(doc, opciones as RenderOpciones);
+
+  const ordenados = [...opciones.elementos].sort((a, b) => a.position - b.position);
+
+  for (const elemento of ordenados) {
+    if (elemento.tipo === 'texto') {
+      dibujarTexto(doc, elemento, opciones.contexto);
+    } else {
+      dibujarFirma(doc, elemento);
+    }
+  }
+
+  // QR y codigo de verificacion en la parte inferior (issue #98, #100).
+  if (opciones.qrBuffer) {
+    const qrSize = 72;
+    const x = CERTIFICATE_PAGE_WIDTH - qrSize - 24;
+    const y = CERTIFICATE_PAGE_HEIGHT - qrSize - 24;
+    doc.image(opciones.qrBuffer, x, y, { width: qrSize, height: qrSize });
+
+    if (opciones.codigoVerificacion) {
+      doc.fontSize(8).fillColor('#374151').text(opciones.codigoVerificacion, x - 40, y + qrSize + 4, {
+        width: qrSize + 80,
+        align: 'center',
+      });
+    }
+  }
+};
+
 export const renderizarCertificado = async (opciones: RenderOpciones): Promise<void> => {
+  if (!opciones.destino) throw new Error('destino requerido');
+
   const doc = new PDFDocument({
     size: [CERTIFICATE_PAGE_WIDTH, CERTIFICATE_PAGE_HEIGHT],
-    // Sin margen: el fondo se imprime de borde a borde y el texto se posiciona
-    // con coordenadas exactas, no con el padding por defecto de pdfkit.
     margins: { top: 0, right: 0, bottom: 0, left: 0 },
-    // La metadata queda en el PDF aunque no se muestre en pantalla: sirve para
-    // saber cuándo se generó cada documento.
     info: {
-      Title: 'Certificado de participación',
+      Title: 'Certificado de participacion',
       Producer: 'AdmCursosUMSS',
       Creator: 'AdmCursosUMSS',
     },
@@ -180,19 +211,38 @@ export const renderizarCertificado = async (opciones: RenderOpciones): Promise<v
     stream.on('error', reject);
     doc.on('error', reject);
 
-    dibujarFondo(doc, opciones);
+    dibujarPagina(doc, opciones);
 
-    // El orden de dibujo es el `position` que el cliente guardó: lo último queda
-    // encima, igual que en el diagramador.
-    const ordenados = [...opciones.elementos].sort((a, b) => a.position - b.position);
+    doc.end();
+  });
+};
 
-    for (const elemento of ordenados) {
-      if (elemento.tipo === 'texto') {
-        dibujarTexto(doc, elemento, opciones.contexto);
-      } else {
-        dibujarFirma(doc, elemento);
-      }
-    }
+export const renderizarCertificadosEnPdf = async (
+  destino: string,
+  paginas: RenderPaginaOpciones[]
+): Promise<void> => {
+  const doc = new PDFDocument({
+    size: [CERTIFICATE_PAGE_WIDTH, CERTIFICATE_PAGE_HEIGHT],
+    margins: { top: 0, right: 0, bottom: 0, left: 0 },
+    info: {
+      Title: 'Certificados',
+      Producer: 'AdmCursosUMSS',
+      Creator: 'AdmCursosUMSS',
+    },
+  });
+
+  const stream = createWriteStream(destino);
+
+  await new Promise<void>((resolve, reject) => {
+    doc.pipe(stream);
+    stream.on('finish', resolve);
+    stream.on('error', reject);
+    doc.on('error', reject);
+
+    paginas.forEach((pagina, index) => {
+      if (index > 0) doc.addPage();
+      dibujarPagina(doc, pagina);
+    });
 
     doc.end();
   });
