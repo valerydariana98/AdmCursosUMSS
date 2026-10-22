@@ -251,10 +251,21 @@ export const getStudentAttendanceSummary = async (
   if (!context) return null;
 
   const enrolled = await loadEnrolledStudents(db, groupId);
-  const [totalSessions, presentByStudent] = await Promise.all([
+  const [recordedSessions, presentByStudent, marksByDate] = await Promise.all([
     countGroupSessions(db, groupId),
     countPresentSessionsByStudent(db, groupId),
+    loadMarksByDate(db, groupId),
   ]);
+
+  // El total de jornadas debe reflejar el plan de la grilla (fechas previstas),
+  // no solo las sesiones con registros. Así al inicio muestra 0/N y va
+  // actualizándose conforme se registran asistencias/faltas.
+  const sessionDates = [...marksByDate.keys()];
+  const plannedDates =
+    context.attendanceDates && context.attendanceDates.length > 0
+      ? context.attendanceDates
+      : firstBusinessDays(context.fechaIni, DEFAULT_GRID_DAYS);
+  const totalSessions = [...new Set([...plannedDates, ...sessionDates])].length;
 
   return {
     maxAbsences: context.maxAbsences,
