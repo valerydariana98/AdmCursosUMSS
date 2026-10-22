@@ -26,6 +26,7 @@ import {
   cursos,
   firmas,
   grupos,
+  plantillaAutoridades,
   plantillaElementos,
   plantillasCertificado,
 } from '../db/schema.js';
@@ -62,6 +63,7 @@ interface PlantillaRow {
   nombre: string;
   idCurso: number;
   idGrupo: number | null;
+  destinatarioTipo: 'estudiante' | 'instructor';
   rutaFondo: string;
   ancho: number;
   alto: number;
@@ -69,14 +71,16 @@ interface PlantillaRow {
   updatedAt: Date;
 }
 
-const toApi = (row: PlantillaRow) => ({
+const toApi = (row: PlantillaRow, autoridades: { id?: number; titulo: string; nombre: string; orden: number }[] = []) => ({
   id: row.id,
   nombre: row.nombre,
   idCurso: row.idCurso,
   idGrupo: row.idGrupo,
+  destinatarioTipo: row.destinatarioTipo,
   rutaFondo: row.rutaFondo,
   ancho: row.ancho,
   alto: row.alto,
+  autoridades,
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),
 });
@@ -103,13 +107,14 @@ const puedeEditar = (
  * listado: curso, grupo, cantidad de elementos y fecha de creación.
  */
 export const listarPlantillas = async (
-  filtros: { idCurso?: number | null; idGrupo?: number | null },
+  filtros: { idCurso?: number | null; idGrupo?: number | null; destinatarioTipo?: 'estudiante' | 'instructor' },
   actor: PlantillaActor
 ): Promise<PlantillaListItem[]> => {
   const condiciones = [];
 
   if (filtros.idCurso) condiciones.push(eq(plantillasCertificado.idCurso, filtros.idCurso));
   if (filtros.idGrupo) condiciones.push(eq(plantillasCertificado.idGrupo, filtros.idGrupo));
+  if (filtros.destinatarioTipo) condiciones.push(eq(plantillasCertificado.destinatarioTipo, filtros.destinatarioTipo));
 
   const filas = await db
     .select({
@@ -121,8 +126,6 @@ export const listarPlantillas = async (
     })
     .from(plantillasCertificado)
     .innerJoin(cursos, eq(plantillasCertificado.idCurso, cursos.id))
-    // `leftJoin` porque una plantilla general del curso no pertenece a ningún
-    // grupo: si fuera inner, desaparecería justo del listado que la muestra.
     .leftJoin(grupos, eq(plantillasCertificado.idGrupo, grupos.id))
     .leftJoin(plantillaElementos, eq(plantillaElementos.idPlantilla, plantillasCertificado.id))
     .where(condiciones.length > 0 ? and(...condiciones) : undefined)
@@ -146,6 +149,7 @@ export const listarPlantillas = async (
       cursoNombre: fila.cursoNombre,
       idGrupo: fila.plantilla.idGrupo,
       grupoNumero: fila.grupoNumero,
+      destinatarioTipo: fila.plantilla.destinatarioTipo,
       destino: fila.grupoNumero === null ? 'General del curso' : `Grupo ${fila.grupoNumero}`,
       cantidadElementos: fila.cantidadElementos,
       createdAt: fila.plantilla.createdAt.toISOString(),
@@ -177,21 +181,32 @@ export const obtenerPlantilla = async (
     return { ok: false, reason: 'forbidden' };
   }
 
-  const elementos = await db
-    .select({ elemento: plantillaElementos, firma: firmas })
-    .from(plantillaElementos)
-    .leftJoin(firmas, eq(plantillaElementos.idFirma, firmas.id))
-    .where(eq(plantillaElementos.idPlantilla, id))
-    .orderBy(plantillaElementos.position);
+  const [elementos, autoridades] = await Promise.all([
+    db
+      .select({ elemento: plantillaElementos, firma: firmas })
+      .from(plantillaElementos)
+      .leftJoin(firmas, eq(plantillaElementos.idFirma, firmas.id))
+      .where(eq(plantillaElementos.idPlantilla, id))
+      .orderBy(plantillaElementos.position),
+    db
+      .select()
+      .from(plantillaAutoridades)
+      .where(eq(plantillaAutoridades.idPlantilla, id))
+      .orderBy(plantillaAutoridades.orden),
+  ]);
 
   return {
     ok: true,
     value: {
-      ...toApi(fila.plantilla),
+      ...toApi(
+        fila.plantilla,
+        autoridades.map((a) => ({ id: a.id, titulo: a.titulo, nombre: a.nombre, orden: a.orden }))
+      ),
       cursoNombre: fila.cursoNombre,
       grupoNumero: fila.grupoNumero,
       elementos: elementos.map(({ elemento, firma }): PlantillaElementoView => ({
         ...elemento,
+        bloqueado: elemento.bloqueado,
         firma: firma
           ? {
               id: firma.id,
@@ -254,6 +269,7 @@ const prepararElementos = (elementos: PlantillaElementoInput[]) =>
       fontSize: elemento.fontSize,
       fontFamily: elemento.fontFamily,
       color: elemento.color,
+      bloqueado: elemento.bloqueado ?? false,
       position: elemento.position ?? position,
     };
   });
@@ -319,6 +335,7 @@ export const crearPlantilla = async (
           nombre: datos.nombre.trim(),
           idCurso: datos.idCurso,
           idGrupo: datos.idGrupo,
+          destinatarioTipo: datos.destinatarioTipo ?? 'estudiante',
           rutaFondo,
           ancho: datos.ancho,
           alto: datos.alto,
@@ -331,6 +348,17 @@ export const crearPlantilla = async (
           idPlantilla: plantilla.id,
         }))
       );
+
+      if (datos.autoridades && datos.autoridades.length > 0) {
+        await tx.insert(plantillaAutoridades).values(
+          datos.autoridades.map((a, index) => ({
+            idPlantilla: plantilla.id,
+            titulo: a.titulo,
+            nombre: a.nombre,
+            orden: a.orden ?? index,
+          }))
+        );
+      }
 
       return plantilla;
     });
@@ -379,14 +407,30 @@ export const actualizarPlantilla = async (
   await db.transaction(async (tx) => {
     await tx
       .update(plantillasCertificado)
-      .set({ nombre: datos.nombre.trim(), updatedAt: new Date() })
+      .set({
+        nombre: datos.nombre.trim(),
+        destinatarioTipo: datos.destinatarioTipo ?? undefined,
+        updatedAt: new Date(),
+      })
       .where(eq(plantillasCertificado.id, id));
 
     await tx.delete(plantillaElementos).where(eq(plantillaElementos.idPlantilla, id));
+    await tx.delete(plantillaAutoridades).where(eq(plantillaAutoridades.idPlantilla, id));
 
     await tx.insert(plantillaElementos).values(
       prepararElementos(datos.elementos).map((elemento) => ({ ...elemento, idPlantilla: id }))
     );
+
+    if (datos.autoridades && datos.autoridades.length > 0) {
+      await tx.insert(plantillaAutoridades).values(
+        datos.autoridades.map((a, index) => ({
+          idPlantilla: id,
+          titulo: a.titulo,
+          nombre: a.nombre,
+          orden: a.orden ?? index,
+        }))
+      );
+    }
   });
 
   return { ok: true, value: { id } };
@@ -448,11 +492,23 @@ export const duplicarPlantilla = async (
       nombre,
       idCurso: plantilla.idCurso,
       idGrupo: destinoIdGrupo,
+      destinatarioTipo: plantilla.destinatarioTipo,
       rutaFondo: plantilla.rutaFondo,
       ancho: plantilla.ancho,
       alto: plantilla.alto,
     })
     .returning();
+
+  if (plantilla.autoridades && plantilla.autoridades.length > 0) {
+    await db.insert(plantillaAutoridades).values(
+      plantilla.autoridades.map((a, index) => ({
+        idPlantilla: creada.id,
+        titulo: a.titulo,
+        nombre: a.nombre,
+        orden: a.orden ?? index,
+      }))
+    );
+  }
 
   // Los elementos se insertan con los valores crudos de la plantilla original:
   // el mismo conjunto, sin volver a pasar por las validaciones de formato.
@@ -517,7 +573,18 @@ export const resolverPlantillaParaGrupo = async (
     .limit(1);
 
   if (delGrupo) {
-    return { plantilla: toApi(delGrupo.plantilla), origen: 'grupo' };
+    const autoridades = await db
+      .select()
+      .from(plantillaAutoridades)
+      .where(eq(plantillaAutoridades.idPlantilla, delGrupo.plantilla.id))
+      .orderBy(plantillaAutoridades.orden);
+    return {
+      plantilla: toApi(
+        delGrupo.plantilla,
+        autoridades.map((a) => ({ id: a.id, titulo: a.titulo, nombre: a.nombre, orden: a.orden }))
+      ),
+      origen: 'grupo',
+    };
   }
 
   const [delCurso] = await db
@@ -529,7 +596,18 @@ export const resolverPlantillaParaGrupo = async (
     .limit(1);
 
   if (delCurso) {
-    return { plantilla: toApi(delCurso.plantilla), origen: 'curso' };
+    const autoridades = await db
+      .select()
+      .from(plantillaAutoridades)
+      .where(eq(plantillaAutoridades.idPlantilla, delCurso.plantilla.id))
+      .orderBy(plantillaAutoridades.orden);
+    return {
+      plantilla: toApi(
+        delCurso.plantilla,
+        autoridades.map((a) => ({ id: a.id, titulo: a.titulo, nombre: a.nombre, orden: a.orden }))
+      ),
+      origen: 'curso',
+    };
   }
 
   return null;
