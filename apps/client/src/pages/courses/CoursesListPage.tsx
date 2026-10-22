@@ -124,7 +124,7 @@ const CoursesListPage = () => {
         <td className="py-4 px-6">
           <p className="font-bold text-gray-900">{course.nombreCurso}</p>
           <p className="text-xs text-gray-400 mt-0.5">
-            UMSS {course.costoUmss} / Aux {course.costoAux} / Ext {course.costoExterno}
+            Umss {course.costoUmss} / Aux {course.costoAux} / Ext {course.costoExterno}
           </p>
           {course.preinscripcionFinalizada && (
             <div className="mt-1.5">
@@ -180,10 +180,7 @@ const CoursesListPage = () => {
     <div className="p-8 font-sans">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Cursos</h1>
-          <p className="text-sm text-gray-500">
-            Cursos ofertados por el departamento de informática
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Cursos</h1>
         </div>
         <Link to="/cursos/nuevo">
           <Button variant="primary" icon={<PlusIcon />}>

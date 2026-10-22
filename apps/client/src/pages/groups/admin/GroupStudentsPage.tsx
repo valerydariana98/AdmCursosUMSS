@@ -282,18 +282,6 @@ const GroupStudentsPage = () => {
 
   return (
     <div className="p-8 font-sans">
-      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-        <Link to="/cursos" className="hover:text-gray-600">
-          Cursos
-        </Link>
-        <span>/</span>
-        <Link to={`/cursos/${cursoId}/grupos`} className="hover:text-gray-600">
-          Grupos
-        </Link>
-        <span>/</span>
-        <span className="text-gray-600 font-medium">Estudiantes</span>
-      </nav>
-
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">

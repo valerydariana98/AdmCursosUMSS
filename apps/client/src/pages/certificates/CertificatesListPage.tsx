@@ -217,9 +217,6 @@ const CertificatesListPage = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Certificados</h1>
-          <p className="text-sm text-gray-500">
-            Diseña los certificados de cada curso o grupo y genéralos para los aprobados.
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
