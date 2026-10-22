@@ -13,12 +13,16 @@ import {
   getFirmas,
   getJob,
   getJobZip,
+  getMarcosBase,
+  getVerificacion,
   getPlantillaById,
   getPlantillas,
   getPreview,
   postDuplicarPlantilla,
   postFirma,
   postGenerar,
+  postGenerarPdf,
+  postGenerarInstructores,
   postPlantilla,
   putFirma,
   putPlantilla,
@@ -40,6 +44,8 @@ import {
 const router = Router();
 
 // ---- Plantillas ----
+
+router.get('/marcos-base', getMarcosBase);
 
 router.get('/plantillas', validateQuery(listarPlantillasQuerySchema), getPlantillas);
 
@@ -85,6 +91,10 @@ router.delete('/firmas/:id', validateParams(firmaParamsSchema), deleteFirma);
 router.get('/generar/previa', validateQuery(previewQuerySchema), getPreview);
 
 router.post('/generar', validate(generarSchema), postGenerar);
+
+router.post('/generar/pdf', validate(generarSchema), postGenerarPdf);
+
+router.post('/generar/instructores', validate(generarSchema), postGenerarInstructores);
 
 router.get('/generar/:jobId', validateParams(jobParamsSchema), getJob);
 

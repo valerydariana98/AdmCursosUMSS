@@ -22,6 +22,7 @@ import {
   type FirmaFailure,
 } from '../services/firmas.service.js';
 import { leerDimensiones, validarFondo, type ImageValidationFailure } from '../services/imagen.service.js';
+import { listarMarcosBase } from '../services/marcosBase.service.js';
 import {
   crearPlantilla,
   duplicarPlantilla,
@@ -36,7 +37,10 @@ import {
   construirVistaPrevia,
   descargarZip,
   iniciarJob,
+  iniciarJobPdfEstudiantes,
+  iniciarJobPdfInstructores,
   obtenerJob,
+  verificarCertificado,
   type CertificadoFailure,
 } from '../services/certificado.service.js';
 
@@ -495,6 +499,57 @@ export const getJobZip = async (req: Request, res: Response, next: NextFunction)
     const { ruta, nombre } = resultado.value;
 
     res.download(ruta, nombre);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const postGenerarPdf = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const actor = await requireActor(req, res);
+    if (!actor) return;
+    const resultado = await iniciarJobPdfEstudiantes(Number(req.body.grupoId), actor);
+    if (!resultado.ok) {
+      res.status(CERTIFICADO_STATUS[resultado.reason]).json({ message: CERTIFICADO_MESSAGE[resultado.reason] });
+      return;
+    }
+    res.status(202).json(resultado.value);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const postGenerarInstructores = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const actor = await requireActor(req, res);
+    if (!actor) return;
+    const resultado = await iniciarJobPdfInstructores(Number(req.body.grupoId), actor);
+    if (!resultado.ok) {
+      res.status(CERTIFICADO_STATUS[resultado.reason]).json({ message: CERTIFICADO_MESSAGE[resultado.reason] });
+      return;
+    }
+    res.status(202).json(resultado.value);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMarcosBase = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(await listarMarcosBase());
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getVerificacion = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const resultado = await verificarCertificado(String(req.params.codigo));
+    if (!resultado.ok) {
+      res.status(404).json({ message: 'Certificado no encontrado' });
+      return;
+    }
+    res.json(resultado.value);
   } catch (error) {
     next(error);
   }
