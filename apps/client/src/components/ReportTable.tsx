@@ -42,7 +42,6 @@ const ReportTable = ({ view }: ReportTableProps) => {
           <th className={`${th} pl-6`}>Estudiante</th>
           <th className={th}>Asistencias</th>
           <th className={th}>Faltas</th>
-          <th className={th}>Asist. ponderada</th>
           {items.map((item) => (
             <th key={item.id} className={th}>
               {item.name} ({formatNumber(item.percentage)}%)
@@ -68,11 +67,6 @@ const ReportTable = ({ view }: ReportTableProps) => {
               {student.asistencia.presentSessions} / {student.asistencia.totalSessions}
             </td>
             <td className={td}>{student.asistencia.absences}</td>
-            <td className={`${td} font-semibold text-gray-900`}>
-              {student.asistenciaPonderada === null
-                ? '—'
-                : `${formatNumber(student.asistenciaPonderada)} pts`}
-            </td>
             {items.map((item) => (
               <td key={item.id} className={td}>
                 {view.notasDisponibles && student.notas

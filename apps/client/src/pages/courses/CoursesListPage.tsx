@@ -10,12 +10,15 @@ import { useCourses } from '../../hooks/useCourses';
 import { ApiError } from '../../services/api';
 import { courseService, type CourseView } from '../../services/courseService';
 import type { Course } from '../../types/course';
-import { formatDate, formatDateRange } from '../../utils/format';
+import { formatDateRange } from '../../utils/format';
 
 const TAB_LABELS: Record<CourseView, string> = {
   current: 'Periodo Actual',
   archived: 'Archivados',
 };
+
+// Curso | Periodo | Fechas | Duracion | Nota min | Max faltas | Estado | Acciones
+const COLUMN_COUNT = 8;
 
 const PlusIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,6 +36,15 @@ const TrashIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
   </svg>
+);
+
+// La preinscripcion cerrada congela los grupos del curso: no se pueden crear,
+// editar, eliminar ni cambiar de estado. Solo se avisa cuando esta cerrada.
+const PreinscripcionCerradaBadge = () => (
+  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-amber-50 text-amber-800 border-amber-300">
+    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+    Preinscripcion cerrada
+  </span>
 );
 
 const CoursesListPage = () => {
@@ -57,7 +69,6 @@ const CoursesListPage = () => {
   const [deleting, setDeleting] = useState(false);
 
   const isArchived = view === 'archived';
-  const columnCount = isArchived ? 6 : 5;
 
   const closeDeleteModal = () => {
     setCourseToDelete(null);
@@ -91,7 +102,7 @@ const CoursesListPage = () => {
     if (loading) {
       return (
         <tr>
-          <td colSpan={columnCount} className="py-8 text-center text-gray-400">
+          <td colSpan={COLUMN_COUNT} className="py-8 text-center text-gray-400">
             Cargando cursos...
           </td>
         </tr>
@@ -101,7 +112,7 @@ const CoursesListPage = () => {
     if (courses.length === 0) {
       return (
         <tr>
-          <td colSpan={columnCount} className="py-8 text-center text-gray-400">
+          <td colSpan={COLUMN_COUNT} className="py-8 text-center text-gray-400">
             No se encontraron cursos.
           </td>
         </tr>
@@ -113,23 +124,26 @@ const CoursesListPage = () => {
         <td className="py-4 px-6">
           <p className="font-bold text-gray-900">{course.nombreCurso}</p>
           <p className="text-xs text-gray-400 mt-0.5">
-            UMSS Bs. {course.costoUmss} · Aux. Bs. {course.costoAux} · Ext. Bs.{' '}
-            {course.costoExterno}
+            Umss {course.costoUmss} / Aux {course.costoAux} / Ext {course.costoExterno}
           </p>
+          {course.preinscripcionFinalizada && (
+            <div className="mt-1.5">
+              <PreinscripcionCerradaBadge />
+            </div>
+          )}
         </td>
-        <td className="py-4 px-4 text-gray-600">{course.duracionHoras} hrs</td>
-        <td className="py-4 px-4 text-gray-600">
-          {isArchived ? formatDate(course.fechaFin) : formatDateRange(course.fechaIni, course.fechaFin)}
+        <td className="py-4 px-4 text-gray-600 whitespace-nowrap">{course.periodo}</td>
+        <td className="py-4 px-4 text-gray-600 whitespace-nowrap">
+          {formatDateRange(course.fechaIni, course.fechaFin)}
         </td>
-        {isArchived ? (
-          <td className="py-4 px-4 text-gray-600">0</td>
-        ) : null}
+        <td className="py-4 px-4 text-gray-600 whitespace-nowrap">{course.duracionHoras} hrs</td>
+        <td className="py-4 px-4 text-gray-600 text-center">{course.notaMin}</td>
+        <td className="py-4 px-4 text-gray-600 text-center">{course.maxFaltas}</td>
         <td className="py-4 px-4">
           {/* El periodo es lo que define si el curso sigue vigente: `cursos.estado`
               es un booleano que se fija en true al crear y nunca cambia, asi que no
               sirve para decidir la etiqueta. */}
           <Badge status={!isArchived} activeLabel="Activo" inactiveLabel="Finalizado" />
-          <p className="text-xs text-gray-400 mt-1">{course.periodo}</p>
         </td>
         <td className="py-4 px-6 text-right whitespace-nowrap">
           {isArchived ? (
@@ -166,10 +180,7 @@ const CoursesListPage = () => {
     <div className="p-8 font-sans">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Cursos</h1>
-          <p className="text-sm text-gray-500">
-            Cursos ofertados por el departamento de informática
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Cursos</h1>
         </div>
         <Link to="/cursos/nuevo">
           <Button variant="primary" icon={<PlusIcon />}>
@@ -231,11 +242,13 @@ const CoursesListPage = () => {
             <thead>
               <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 <th className="py-3.5 px-6">Curso</th>
-                <th className="py-3.5 px-4">Duración</th>
-                <th className="py-3.5 px-4">{isArchived ? 'Fecha Fin' : 'Fechas'}</th>
-                {isArchived && <th className="py-3.5 px-4">Inscritos</th>}
+                <th className="py-3.5 px-4">Periodo</th>
+                <th className="py-3.5 px-4">Fechas</th>
+                <th className="py-3.5 px-4">Duracion</th>
+                <th className="py-3.5 px-4 text-center">Nota min</th>
+                <th className="py-3.5 px-4 text-center">Max faltas</th>
                 <th className="py-3.5 px-4">Estado</th>
-                <th className="py-3.5 px-6 text-center">{isArchived ? 'Acción' : 'Acciones'}</th>
+                <th className="py-3.5 px-6 text-right">{isArchived ? 'Acción' : 'Acciones'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">{tableBody()}</tbody>

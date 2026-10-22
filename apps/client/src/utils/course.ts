@@ -2,6 +2,14 @@
 import { getCurrentPeriod } from 'shared';
 import type { Course, CourseFormValues, CoursePayload } from '../types/course';
 
+// El periodo no se edita a mano: sale de la fecha de inicio. Semestre 1 para
+// enero-junio y semestre 2 para julio-diciembre, con el anio de esa fecha.
+export const periodFromStartDate = (fechaIni: string): string => {
+  const [year, month] = fechaIni.split('-').map(Number);
+  if (!year || !month) return '';
+  return `${month <= 6 ? 1 : 2}-${year}`;
+};
+
 export const emptyCourseForm: CourseFormValues = {
   nombreCurso: '',
   duracionHoras: '',

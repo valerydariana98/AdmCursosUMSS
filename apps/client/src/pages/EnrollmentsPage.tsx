@@ -361,9 +361,6 @@ const EnrollmentsPage = () => {
     <div className="p-8 font-sans">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Inscripciones</h1>
-        <p className="text-sm text-gray-500">
-          Busca un curso para ver sus grupos e inscritos
-        </p>
       </div>
 
       {errorCursos && (
