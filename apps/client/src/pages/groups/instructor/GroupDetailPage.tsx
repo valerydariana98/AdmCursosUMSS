@@ -279,60 +279,110 @@ export default function GroupDetailPage() {
         <h2 className="text-sm font-bold text-brand-dark uppercase tracking-wide mb-4">
           Gestión académica
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {MODULOS.filter((m) => esDocente || !SOLO_DOCENTE.includes(m.key)).map((m) => {
-            const permitido = m.estados.includes(estado);
-            const destino =
-              m.ruta && permitido
-                ? `/cursos/${grupo.cursoId}/grupos/${grupo.id}${m.ruta}`
-                : null;
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {MODULOS.filter(
+              (m) =>
+                (esDocente || !SOLO_DOCENTE.includes(m.key)) &&
+                (m.key === 'rubrica' || m.key === 'asistencia')
+            ).map((m) => {
+              const permitido = m.estados.includes(estado);
+              const destino =
+                m.ruta && permitido
+                  ? `/cursos/${grupo.cursoId}/grupos/${grupo.id}${m.ruta}`
+                  : null;
 
-            const badge = MODULO_BADGE[badgeDe(m)];
-            // La finalización es la única tarjeta que ejecuta una acción en lugar
-            // de navegar, y solo la ve el docente dueño del grupo.
-            const esCierre = m.key === 'finalizar' && permitido && esDocente;
+              const badge = MODULO_BADGE[badgeDe(m)];
+              const interactiva = Boolean(destino);
+              const clases = `bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col text-left ${
+                interactiva ? 'hover:border-brand-mid/30 hover:shadow transition cursor-pointer' : ''
+              }`;
 
-            const interactiva = Boolean(destino) || esCierre;
-            const clases = `bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col text-left ${
-              interactiva ? 'hover:border-brand-mid/30 hover:shadow transition cursor-pointer' : ''
-            }`;
-
-            const tarjeta = (
-              <>
-                <h3 className="font-semibold text-gray-800 text-sm">{m.label}</h3>
-                <p className="text-xs text-gray-500 mt-1 flex-1">{m.desc}</p>
-                <span
-                  className={`mt-4 inline-flex w-fit text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full ${badge.clases}`}
-                >
-                  {badge.label}
-                </span>
-              </>
-            );
-
-            if (destino) {
-              return (
-                <Link key={m.key} to={destino} className={clases}>
-                  {tarjeta}
-                </Link>
+              const tarjeta = (
+                <>
+                  <h3 className="font-semibold text-gray-800 text-sm">{m.label}</h3>
+                  <p className="text-xs text-gray-500 mt-1 flex-1">{m.desc}</p>
+                  <span
+                    className={`mt-4 inline-flex w-fit text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full ${badge.clases}`}
+                  >
+                    {badge.label}
+                  </span>
+                </>
               );
-            }
 
-            if (esCierre) {
+              if (destino) {
+                return (
+                  <Link key={m.key} to={destino} className={clases}>
+                    {tarjeta}
+                  </Link>
+                );
+              }
+
               return (
-                <button key={m.key} type="button" onClick={abrirConfirmacion} className={clases}>
+                <div key={m.key} className={clases}>
                   {tarjeta}
-                </button>
+                </div>
               );
-            }
+            })}
+          </div>
 
-            return (
-              <div key={m.key} className={clases}>
-                {tarjeta}
-              </div>
-            );
-          })}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {MODULOS.filter(
+              (m) =>
+                (esDocente || !SOLO_DOCENTE.includes(m.key)) &&
+                (m.key === 'notas' || m.key === 'reporte')
+            ).map((m) => {
+              const permitido = m.estados.includes(estado);
+              const destino =
+                m.ruta && permitido
+                  ? `/cursos/${grupo.cursoId}/grupos/${grupo.id}${m.ruta}`
+                  : null;
+
+              const badge = MODULO_BADGE[badgeDe(m)];
+              const interactiva = Boolean(destino);
+              const clases = `bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col text-left ${
+                interactiva ? 'hover:border-brand-mid/30 hover:shadow transition cursor-pointer' : ''
+              }`;
+
+              const tarjeta = (
+                <>
+                  <h3 className="font-semibold text-gray-800 text-sm">{m.label}</h3>
+                  <p className="text-xs text-gray-500 mt-1 flex-1">{m.desc}</p>
+                  <span
+                    className={`mt-4 inline-flex w-fit text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full ${badge.clases}`}
+                  >
+                    {badge.label}
+                  </span>
+                </>
+              );
+
+              if (destino) {
+                return (
+                  <Link key={m.key} to={destino} className={clases}>
+                    {tarjeta}
+                  </Link>
+                );
+              }
+
+              return (
+                <div key={m.key} className={clases}>
+                  {tarjeta}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
+
+      {esDocente && estado === 'habilitado' && (
+        <button
+          type="button"
+          onClick={abrirConfirmacion}
+          className="mt-4 w-full py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+        >
+          Finalizar curso
+        </button>
+      )}
 
       {esDocente && estado !== 'habilitado' && !yaFinalizado && (
         <p className="mt-6 text-xs text-gray-400">
