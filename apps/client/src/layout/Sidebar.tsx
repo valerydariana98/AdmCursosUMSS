@@ -18,7 +18,7 @@ const menuItems: MenuItem[] = [
   { to: '/grupos', label: 'Grupos', icon: 'clipboard', roles: ['ADMIN'] },
   { to: '/estudiantes', label: 'Inscripciones', icon: 'user', roles: ['ADMIN'] },
   { to: '/instructores', label: 'Instructores', icon: 'briefcase', roles: ['ADMIN'] },
-  { to: '/certificados', label: 'Certificados', icon: 'badge', roles: ['ADMIN', 'DOCENTE'] },
+  { to: '/certificados', label: 'Certificados', icon: 'badge', roles: ['ADMIN'] },
 ];
 
 const icons: Record<string, React.ReactNode> = {

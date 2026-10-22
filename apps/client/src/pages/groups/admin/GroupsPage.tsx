@@ -124,11 +124,11 @@ const GroupsPage = () => {
   };
 
   const cursosConGrupos: CursoConGrupos[] = courses
+    .filter((curso) => curso.estado === true)
     .map((curso) => ({
       curso,
       grupos: grupos.filter((grupo) => grupo.idCurso === curso.id),
-    }))
-    .filter((item) => item.grupos.length > 0);
+    }));
 
   const renderTable = (curso: Course, gruposDelCurso: GroupListItem[]) => (
     <div className="overflow-x-auto">
@@ -209,17 +209,8 @@ const GroupsPage = () => {
 
   return (
     <div className="p-8 font-sans">
-      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-        <Link to="/cursos" className="hover:text-gray-600">
-          Cursos
-        </Link>
-        <span>/</span>
-        <span className="text-gray-600 font-medium">Grupos</span>
-      </nav>
-
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Grupos</h1>
-        <p className="text-sm text-gray-500">Todos los grupos ofertados, por curso</p>
       </div>
 
       {cursosError && (
@@ -269,7 +260,13 @@ const GroupsPage = () => {
                 </Button>
               </div>
 
-              {renderTable(curso, gruposDelCurso)}
+              {gruposDelCurso.length > 0 ? (
+                renderTable(curso, gruposDelCurso)
+              ) : (
+                <div className="py-6 text-center text-sm text-gray-400">
+                  No hay grupos asignados aún. Usa "Nuevo Grupo" para crear uno.
+                </div>
+              )}
             </section>
           ))}
         </div>

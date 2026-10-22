@@ -159,7 +159,7 @@ export const deleteCourse = async (
     }
     if (result === 'has_groups') {
       res.status(409).json({
-        message: 'Course cannot be deleted because it has associated groups',
+        message: 'No se puede eliminar el curso porque tiene grupos asociados',
       });
       return;
     }

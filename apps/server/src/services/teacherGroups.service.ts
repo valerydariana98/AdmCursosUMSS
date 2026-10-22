@@ -47,7 +47,9 @@ export const getInstructorIdByUser = async (
 };
 
 /**
- * HU #28: grupos activos del periodo en curso asignados al docente autenticado.
+ * HU #28: grupos del docente autenticado.
+ * Se muestran todos los grupos asignados al docente (activos y finalizados)
+ * para que pueda ver los reportes de cursos finalizados.
  */
 export const listTeacherGroups = async (
   instructorId: number
@@ -57,13 +59,7 @@ export const listTeacherGroups = async (
     .from(grupos)
     .innerJoin(cursos, eq(grupos.idCurso, cursos.id))
     .leftJoin(inscripciones, eq(inscripciones.idGrupo, grupos.id))
-    .where(
-      and(
-        eq(grupos.idInstructor, instructorId),
-        eq(grupos.estado, ACTIVE_GROUP_STATUS),
-        eq(cursos.periodo, getCurrentPeriod())
-      )
-    )
+    .where(eq(grupos.idInstructor, instructorId))
     .groupBy(grupos.id, cursos.id)
     .orderBy(cursos.nombreCurso, grupos.numGrupo);
 };

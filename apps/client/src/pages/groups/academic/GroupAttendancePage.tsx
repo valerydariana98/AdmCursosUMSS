@@ -1,4 +1,4 @@
-// apps/client/src/pages/groups/GroupAttendancePage.tsx
+// apps/client/src/pages/groups/academic/GroupAttendancePage.tsx
 // Asistencia del grupo en grilla: filas = estudiantes, columnas = fechas de clase.
 // El docente marca presentes (verde ✓); la celda sin marcar es la falta (gris).
 import { useEffect, useMemo, useState } from 'react';
@@ -134,17 +134,6 @@ const GroupAttendancePage = () => {
   if (isForbidden) {
     return (
       <div className="p-8 font-sans max-w-2xl space-y-4">
-        <nav className="flex items-center gap-2 text-xs text-gray-400">
-          <Link to="/cursos" className="hover:text-gray-600">
-            Cursos
-          </Link>
-          <span>/</span>
-          <Link to={backPath} className="hover:text-gray-600">
-            Grupo
-          </Link>
-          <span>/</span>
-          <span className="text-gray-600 font-medium">Asistencia</span>
-        </nav>
         <h1 className="text-2xl font-bold text-gray-900">Acceso denegado</h1>
         <AlertInfo
           type="error"
@@ -180,17 +169,6 @@ const GroupAttendancePage = () => {
   return (
     <div className="p-8 font-sans">
       <BackButton />
-      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-4">
-        <Link to="/cursos" className="hover:text-gray-600">
-          Cursos
-        </Link>
-        <span>/</span>
-        <Link to={backPath} className="hover:text-gray-600">
-          Grupo
-        </Link>
-        <span>/</span>
-        <span className="text-gray-600 font-medium">Asistencia</span>
-      </nav>
 
       <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>

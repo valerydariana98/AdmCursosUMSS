@@ -24,10 +24,13 @@ const formatDate = (iso: string) => {
     : d.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
+type Tab = 'activos' | 'finalizados';
+
 export default function MyGroupsPage() {
   const [grupos, setGrupos] = useState<TeacherGroupCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tab, setTab] = useState<Tab>('activos');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +43,10 @@ export default function MyGroupsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const gruposActivos = grupos.filter((g) => g.estado === 'habilitado');
+  const gruposFinalizados = grupos.filter((g) => g.estado === 'finalizado');
+  const gruposMostrar = tab === 'activos' ? gruposActivos : gruposFinalizados;
+
   if (loading) {
     return (
       <div className="p-8 text-sm text-gray-400">Cargando tus grupos...</div>
@@ -48,12 +55,39 @@ export default function MyGroupsPage() {
 
   return (
     <div className="p-8 font-sans">
-      <header className="mb-7">
+      <header className="mb-6">
         <h1 className="text-2xl font-bold text-brand-dark">Mis Grupos</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Grupos activos que tenés asignados en el período académico actual.
+          Grupos asignados al docente.
         </p>
       </header>
+
+      <div className="mb-6">
+        <div className="inline-flex items-center gap-1 rounded-xl bg-gray-100 p-1">
+          <button
+            type="button"
+            onClick={() => setTab('activos')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              tab === 'activos'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Cursos activos
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('finalizados')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              tab === 'finalizados'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Cursos finalizados
+          </button>
+        </div>
+      </div>
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 mb-6">
@@ -61,7 +95,7 @@ export default function MyGroupsPage() {
         </div>
       )}
 
-      {!error && grupos.length === 0 && (
+      {!error && gruposMostrar.length === 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-14 text-center">
           <div className="w-14 h-14 mx-auto rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center">
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,16 +108,18 @@ export default function MyGroupsPage() {
             </svg>
           </div>
           <h2 className="mt-4 text-base font-semibold text-gray-700">
-            No tienes grupos activos asignados actualmente
+            {tab === 'activos' ? 'No tienes grupos activos asignados' : 'No tienes grupos finalizados'}
           </h2>
           <p className="mt-1.5 text-sm text-gray-500">
-            Cuando se te asigne un grupo habilitado en el período en curso, aparecerá aquí.
+            {tab === 'activos'
+              ? 'Cuando se te asigne un grupo habilitado, aparecerá aquí.'
+              : 'Los grupos finalizados aparecerán aquí.'}
           </p>
         </div>
       )}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {grupos.map((grupo) => {
+        {gruposMostrar.map((grupo) => {
           const activo = grupo.estado === 'habilitado';
           return (
             <button
