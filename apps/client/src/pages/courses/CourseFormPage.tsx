@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
-import Badge from '../../components/Badge';
 import Button from '../../components/Button';
 import TextField from '../../components/TextField';
 import { ApiError } from '../../services/api';
@@ -170,9 +169,6 @@ const CourseFormPage: React.FC<CourseFormPageProps> = ({ mode, course, loadingCo
           <h1 className="text-2xl font-bold text-gray-900">
             {isEdit ? 'Editar Curso' : 'Crear Curso'}
           </h1>
-          {isEdit && course && (
-            <Badge status={course.estado} inactiveLabel="Finalizado" />
-          )}
         </div>
       </div>
 
