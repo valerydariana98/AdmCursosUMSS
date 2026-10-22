@@ -41,7 +41,11 @@ const DownloadIcon = () => (
 // Cada cuánto se consulta el avance del proceso.
 const INTERVALO_MS = 1500;
 
-const GenerateCertificatesPage = () => {
+interface GenerateCertificatesPageProps {
+  destinatarioTipo?: 'estudiante' | 'instructor';
+}
+
+const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateCertificatesPageProps) => {
   const navigate = useNavigate();
   const { courses } = useCourses();
 
@@ -55,6 +59,7 @@ const GenerateCertificatesPage = () => {
 
   const [job, setJob] = useState<CertificateJob | null>(null);
   const [descargando, setDescargando] = useState(false);
+  const [esPdf, setEsPdf] = useState(false);
   const timer = useRef<number | null>(null);
 
   const cargarPreview = useCallback(async (grupo: number) => {
@@ -80,6 +85,7 @@ const GenerateCertificatesPage = () => {
       setPreview(null);
       return;
     }
+    setEsPdf(false);
 
     void cargarPreview(grupoId);
   }, [grupoId, cargarPreview]);
@@ -119,6 +125,7 @@ const GenerateCertificatesPage = () => {
 
     setError(null);
     setJob(null);
+    setEsPdf(false);
 
     try {
       const inicio = await certificateService.start(grupoId);
@@ -144,6 +151,40 @@ const GenerateCertificatesPage = () => {
     }
   };
 
+  const handleGenerarPdf = async () => {
+    if (grupoId === null) return;
+
+    setError(null);
+    setJob(null);
+    setEsPdf(true);
+
+    try {
+      const inicio =
+        destinatarioTipo === 'instructor'
+          ? await certificateService.startInstructores(grupoId)
+          : await certificateService.startPdf(grupoId);
+
+      setJob({
+        jobId: inicio.jobId,
+        estado: 'pendiente',
+        total: inicio.total,
+        procesados: 0,
+        excluidos: preview ? preview.totalEstudiantes - inicio.aprobados : 0,
+        mensajeError: null,
+        nombreArchivo: null,
+      });
+
+      detenerPolling();
+      timer.current = window.setInterval(() => {
+        void consultarJob(inicio.jobId);
+      }, INTERVALO_MS);
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError ? caught.message : 'No se pudo iniciar la generacion'
+      );
+    }
+  };
+
   const handleDownload = async () => {
     if (!job) return;
 
@@ -151,7 +192,10 @@ const GenerateCertificatesPage = () => {
     setError(null);
 
     try {
-      const { blob, nombre } = await certificateService.downloadZip(job.jobId);
+      const { blob, nombre } =
+        esPdf || (job.nombreArchivo ?? '').endsWith('.pdf')
+          ? await certificateService.downloadPdf(job.jobId)
+          : await certificateService.downloadZip(job.jobId);
 
       // El ZIP se arma en memoria a partir del blob porque la descarga por enlace
       // no enviaría el token de sesión y el servidor la rechazaría.
@@ -318,7 +362,19 @@ const GenerateCertificatesPage = () => {
                     className="mt-4"
                   >
                     Generar {preview.aprobados}{' '}
-                    {preview.aprobados === 1 ? 'certificado' : 'certificados'}
+                    {preview.aprobados === 1 ? 'certificado' : 'certificados'} (ZIP)
+                  </Button>
+                )}
+
+                {job === null && (
+                  <Button
+                    variant="secondary"
+                    onClick={handleGenerarPdf}
+                    disabled={preview.plantilla === null}
+                    fullWidth
+                    className="mt-2"
+                  >
+                    Descargar PDF consolidado
                   </Button>
                 )}
 
@@ -368,7 +424,11 @@ const GenerateCertificatesPage = () => {
                         fullWidth
                         className="mt-3"
                       >
-                        {descargando ? 'Descargando...' : 'Descargar .zip'}
+                        {descargando
+                          ? 'Descargando...'
+                          : esPdf || (job.nombreArchivo ?? '').endsWith('.pdf')
+                            ? 'Descargar PDF'
+                            : 'Descargar .zip'}
                       </Button>
                     )}
 

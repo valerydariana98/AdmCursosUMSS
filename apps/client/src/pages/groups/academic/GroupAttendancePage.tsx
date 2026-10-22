@@ -14,7 +14,7 @@ import {
   fullStudentName,
   shortAttendanceDate,
   todayIsoDate,
-} from '../../types/attendance';
+} from '../../../types/attendance';
 
 const SAVE_ERROR = 'No se pudo guardar la asistencia';
 

@@ -7,18 +7,21 @@ import CoursesListPage from "./pages/courses/CoursesListPage";
 import CertificateEditorPage from "./pages/certificates/CertificateEditorPage";
 import CertificatesListPage from "./pages/certificates/CertificatesListPage";
 import GenerateCertificatesPage from "./pages/certificates/GenerateCertificatesPage";
+import GenerateInstructorCertificatesPage from "./pages/certificates/GenerateInstructorCertificatesPage";
 import SignaturesPage from "./pages/certificates/SignaturesPage";
-import GroupCreatePage from "./pages/groups/GroupCreatePage";
-import GroupDetailPage from "./pages/groups/GroupDetailPage";
-import GroupEditPage from "./pages/groups/GroupEditPage";
-import GroupAttendancePage from "./pages/groups/GroupAttendancePage";
-import GroupGradesPage from "./pages/groups/GroupGradesPage";
-import GroupRubricPage from "./pages/groups/GroupRubricPage";
-import GroupReportPage from "./pages/groups/GroupReportPage";
-import GroupsPage from "./pages/groups/GroupsPage";
-import GroupsListPage from "./pages/groups/GroupsListPage";
-import GroupStudentsPage from "./pages/groups/GroupStudentsPage";
-import MyGroupsPage from "./pages/groups/MyGroupsPage";
+import VerifyCertificatePage from "./pages/certificates/VerifyCertificatePage";
+import GroupCreatePage from "./pages/groups/admin/GroupCreatePage";
+import GroupCreateGlobalPage from "./pages/groups/admin/GroupCreateGlobalPage";
+import GroupDetailPage from "./pages/groups/instructor/GroupDetailPage";
+import GroupEditPage from "./pages/groups/admin/GroupEditPage";
+import GroupAttendancePage from "./pages/groups/academic/GroupAttendancePage";
+import GroupGradesPage from "./pages/groups/academic/GroupGradesPage";
+import GroupRubricPage from "./pages/groups/academic/GroupRubricPage";
+import GroupReportPage from "./pages/groups/academic/GroupReportPage";
+import GroupsPage from "./pages/groups/admin/GroupsPage";
+import GroupsListPage from "./pages/groups/admin/GroupsListPage";
+import GroupStudentsPage from "./pages/groups/admin/GroupStudentsPage";
+import MyGroupsPage from "./pages/groups/instructor/MyGroupsPage";
 import InstructorsContainer from "./pages/instructors/InstructorsContainer";
 import EditEnrollmentPage from "./pages/EditEnrollmentPage";
 import EnrollmentPage from "./pages/EnrollmentPage";
@@ -55,6 +58,7 @@ export default function App() {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/verificar/:codigo" element={<VerifyCertificatePage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -160,8 +164,16 @@ export default function App() {
             element={autenticado(<GenerateCertificatesPage />)}
           />
           <Route
+            path="/certificados/generar-instructores"
+            element={autenticado(<GenerateInstructorCertificatesPage />)}
+          />
+          <Route
             path="/certificados/:id/editar"
             element={autenticado(<CertificateEditorPage />)}
+          />
+          <Route
+            path="/verificar/:codigo"
+            element={<VerifyCertificatePage />}
           />
 
           {/* Rutas de Estudiantes por Grupo */}
