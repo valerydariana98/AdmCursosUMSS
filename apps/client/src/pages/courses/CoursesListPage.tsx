@@ -140,10 +140,7 @@ const CoursesListPage = () => {
         <td className="py-4 px-4 text-gray-600 text-center">{course.notaMin}</td>
         <td className="py-4 px-4 text-gray-600 text-center">{course.maxFaltas}</td>
         <td className="py-4 px-4">
-          {/* El periodo es lo que define si el curso sigue vigente: `cursos.estado`
-              es un booleano que se fija en true al crear y nunca cambia, asi que no
-              sirve para decidir la etiqueta. */}
-          <Badge status={!isArchived} activeLabel="Activo" inactiveLabel="Finalizado" />
+          <Badge status={course.estado} activeLabel="Activo" inactiveLabel="Finalizado" />
         </td>
         <td className="py-4 px-6 text-right whitespace-nowrap">
           {isArchived ? (
