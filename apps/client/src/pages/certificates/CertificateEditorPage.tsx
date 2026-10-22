@@ -14,9 +14,9 @@ import Select from '../../components/Select';
 import TextField from '../../components/TextField';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../hooks/useCourses';
+import { ApiError } from '../../services/api';
 import { useGroups } from '../../hooks/useGroups';
 import { useSignatures } from '../../hooks/useSignatures';
-import { ApiError } from '../../services/api';
 import { certificateService, urlImagen } from '../../services/certificateService';
 import {
   CERTIFICATE_IMAGE_FORMATS,
@@ -76,12 +76,21 @@ const CertificateEditorPage = () => {
   const [fondo, setFondo] = useState<{ url: string; ancho: number; alto: number } | null>(null);
   const [archivoFondo, setArchivoFondo] = useState<File | null>(null);
   const [elementos, setElementos] = useState<ElementoBorrador[]>([]);
+  const [marcosBase, setMarcosBase] = useState<any[]>([]);
+  const [autoridades, setAutoridades] = useState<{ titulo: string; nombre: string }[]>([]);
   const [seleccionado, setSeleccionado] = useState<number | null>(null);
 
   const [cargando, setCargando] = useState(editando);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorFondo, setErrorFondo] = useState<string | null>(null);
+
+  useEffect(() => {
+    certificateService
+      .marcosBase()
+      .then(setMarcosBase)
+      .catch(() => setMarcosBase([]));
+  }, []);
 
   // ---- Carga de la plantilla en modo edición ----
 
@@ -195,6 +204,20 @@ const CertificateEditorPage = () => {
     };
 
     imagen.src = url;
+  };
+
+  const elegirMarcoBase = async (ruta: string, ancho: number, alto: number) => {
+    const url = urlImagen(ruta);
+    if (!url) return;
+    try {
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      const file = new File([blob], 'marco-base.png', { type: 'image/png' });
+      setFondo({ url, ancho, alto });
+      setArchivoFondo(file);
+    } catch {
+      setErrorFondo('No se pudo cargar el marco base');
+    }
   };
 
   // ---- Manejo de elementos del lienzo ----
@@ -323,6 +346,7 @@ const CertificateEditorPage = () => {
       if (editando) {
         await certificateService.update(Number(id), {
           nombre: nombre.trim(),
+          autoridades: autoridades.map((a, index) => ({ titulo: a.titulo, nombre: a.nombre, orden: index })),
           elementos: aGuardar,
         });
       } else {
@@ -337,6 +361,7 @@ const CertificateEditorPage = () => {
             nombre: nombre.trim(),
             idCurso: cursoId!,
             idGrupo: grupoId,
+            autoridades: autoridades.map((a, index) => ({ titulo: a.titulo, nombre: a.nombre, orden: index })),
             ancho: fondo.ancho,
             alto: fondo.alto,
             elementos: aGuardar,
@@ -428,8 +453,43 @@ const CertificateEditorPage = () => {
                 label="Nombre de la plantilla"
                 value={nombre}
                 onChange={(event) => setNombre(event.target.value)}
-                placeholder="Certificado de participación"
+                placeholder="Certificado de participaci�n"
               />
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-gray-700">Autoridades</label>
+                {autoridades.map((autoridad, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      className="flex-1 border rounded-lg p-2 text-xs"
+                      placeholder="Titulo"
+                      value={autoridad.titulo}
+                      onChange={(e) => {
+                        const copia = [...autoridades];
+                        copia[index] = { ...copia[index], titulo: e.target.value };
+                        setAutoridades(copia);
+                      }}
+                    />
+                    <input
+                      className="flex-1 border rounded-lg p-2 text-xs"
+                      placeholder="Nombre"
+                      value={autoridad.nombre}
+                      onChange={(e) => {
+                        const copia = [...autoridades];
+                        copia[index] = { ...copia[index], nombre: e.target.value };
+                        setAutoridades(copia);
+                      }}
+                    />
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="text-xs text-brand-primary"
+                  onClick={() => setAutoridades([...autoridades, { titulo: '', nombre: '' }])}
+                >
+                  Agregar autoridad
+                </button>
+              </div>
 
               <Select
                 label="Curso"
@@ -477,10 +537,25 @@ const CertificateEditorPage = () => {
               <AlertInfo
                 type="info"
                 title="La imagen base no se puede cambiar al editar"
-                subtitle="Cambiarla dejaría los textos y firmas descolocados. Cree una plantilla nueva si necesita otro fondo."
+                subtitle="Cambiarla dejar�a los textos y firmas descolocados. Cree una plantilla nueva si necesita otro fondo."
               />
             ) : (
               <>
+                <select
+                  className="block w-full text-xs text-gray-600 border rounded-lg p-2 mb-2"
+                  onChange={(e) => {
+                    const marco = marcosBase.find((m) => m.id === e.target.value);
+                    if (marco) void elegirMarcoBase(marco.ruta, marco.ancho, marco.alto);
+                  }}
+                  defaultValue=""
+                >
+                  <option value="">Seleccione un marco base</option>
+                  {marcosBase.map((marco) => (
+                    <option key={marco.id} value={marco.id}>
+                      {marco.nombre}
+                    </option>
+                  ))}
+                </select>
                 <input
                   ref={inputFondo}
                   type="file"
