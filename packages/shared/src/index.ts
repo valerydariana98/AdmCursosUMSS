@@ -1155,8 +1155,11 @@ export interface CertificateVerification {
   destinatarioTipo: 'estudiante' | 'instructor';
   destinatario: string;
   curso: string;
-  grupo: number;
-  fechaEmision: string;
+  // Pueden faltar si el grupo se borró después de emitir (la fila sobrevive).
+  grupo: number | null;
+  fechaEmision: string | null;
+  // Detalle completo en snake_case (ci_estudiante, horas, periodo, fechas...).
+  [detalle: string]: unknown;
 }
 
 /**

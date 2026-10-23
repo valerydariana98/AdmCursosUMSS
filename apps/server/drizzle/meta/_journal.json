@@ -43,6 +43,13 @@
       "when": 1792764696266,
       "tag": "0005_puzzling_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792782995132,
+      "tag": "0006_puzzling_madame_hydra",
+      "breakpoints": true
     }
   ]
 }

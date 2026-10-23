@@ -75,17 +75,16 @@ interface GrupoContexto {
   numero: number;
   cursoId: number;
   cursoNombre: string;
+  cursoHoras: number;
+  cursoFechaIni: string;
+  cursoFechaFin: string;
+  cursoPeriodo: string;
   instructorId: number;
   passingGrade: number;
   maxAbsences: number;
   // `cursos.estado` es true mientras el curso está activo; los certificados
   // solo se emiten para cursos finalizados (issue #97, #99).
   cursoActivo: boolean;
-  // Datos que se imprimen en el certificado.
-  duracionHoras: number;
-  fechaIni: string;
-  fechaFin: string;
-  periodo: string;
 }
 
 const cargarGrupoContexto = async (groupId: number): Promise<GrupoContexto | null> => {
@@ -95,14 +94,14 @@ const cargarGrupoContexto = async (groupId: number): Promise<GrupoContexto | nul
       numero: grupos.numGrupo,
       cursoId: grupos.idCurso,
       cursoNombre: cursos.nombreCurso,
+      cursoHoras: cursos.duracionHoras,
+      cursoFechaIni: cursos.fechaIni,
+      cursoFechaFin: cursos.fechaFin,
+      cursoPeriodo: cursos.periodo,
       instructorId: grupos.idInstructor,
       passingGrade: cursos.notaMin,
       maxAbsences: cursos.maxFaltas,
       cursoActivo: cursos.estado,
-      duracionHoras: cursos.duracionHoras,
-      fechaIni: cursos.fechaIni,
-      fechaFin: cursos.fechaFin,
-      periodo: cursos.periodo,
     })
     .from(grupos)
     .innerJoin(cursos, eq(grupos.idCurso, cursos.id))
@@ -114,6 +113,8 @@ const cargarGrupoContexto = async (groupId: number): Promise<GrupoContexto | nul
 
 interface EstudianteRow {
   id: number;
+  ci: string;
+  codSis: string | null;
   nombres: string;
   apPaterno: string;
   apMaterno: string;
@@ -123,6 +124,8 @@ const cargarEstudiantes = async (groupId: number): Promise<EstudianteRow[]> =>
   db
     .select({
       id: estudiantes.id,
+      ci: estudiantes.ci,
+      codSis: estudiantes.codSis,
       nombres: estudiantes.nombres,
       apPaterno: estudiantes.apPaterno,
       apMaterno: estudiantes.apMaterno,
@@ -222,6 +225,76 @@ const evaluarEstudiantes = async (
 
 const nombreCompleto = (estudiante: EstudianteRow): string =>
   `${estudiante.nombres} ${estudiante.apPaterno} ${estudiante.apMaterno}`.trim();
+
+/**
+ * Copia de los datos que la pagina publica de verificacion muestra. Se guarda
+ * junto al certificado para que el documento siga siendo verificable aunque
+ * despues se edite el curso, se cambie el nombre del estudiante o se elimine la
+ * plantilla/grupo/curso.
+ */
+interface MetadataCertificado {
+  [key: string]: unknown;
+  nombre: string;
+  ci: string | null;
+  codSis: string | null;
+  cargo: string | null;
+  curso: string;
+  horas: number;
+  grupo: number;
+  fechaIni: string;
+  fechaFin: string;
+  periodo: string;
+  tipo: string;
+  notaFinal: number | null;
+  destinatarioTipo: 'estudiante' | 'instructor';
+}
+
+const metadataEstudiante = (
+  evaluado: EstudianteEvaluado,
+  context: GrupoContexto
+): MetadataCertificado => ({
+  nombre: nombreCompleto(evaluado.estudiante),
+  ci: evaluado.estudiante.ci,
+  codSis: evaluado.estudiante.codSis,
+  cargo: null,
+  curso: context.cursoNombre,
+  horas: context.cursoHoras,
+  grupo: context.numero,
+  fechaIni: context.cursoFechaIni,
+  fechaFin: context.cursoFechaFin,
+  periodo: context.cursoPeriodo,
+  tipo: evaluado.condicion,
+  notaFinal: evaluado.notaFinal,
+  destinatarioTipo: 'estudiante',
+});
+
+interface InstructorRow {
+  id: number;
+  ci: string | null;
+  nombres: string;
+  apPaterno: string;
+  apMaterno: string;
+  cargo: string | null;
+}
+
+const metadataInstructor = (
+  instructor: InstructorRow,
+  context: GrupoContexto
+): MetadataCertificado => ({
+  nombre: `${instructor.nombres} ${instructor.apPaterno} ${instructor.apMaterno}`.trim(),
+  ci: instructor.ci,
+  codSis: null,
+  cargo: instructor.cargo,
+  curso: context.cursoNombre,
+  horas: context.cursoHoras,
+  grupo: context.numero,
+  fechaIni: context.cursoFechaIni,
+  fechaFin: context.cursoFechaFin,
+  periodo: context.cursoPeriodo,
+  tipo: 'instructor',
+  notaFinal: null,
+  destinatarioTipo: 'instructor',
+});
 
 // ------------------------------------------------------------------
 // Vista previa
@@ -350,11 +423,11 @@ const datosCertificado = (
   tipo,
   destinatario,
   curso: context.cursoNombre,
-  duracionHoras: context.duracionHoras,
-  fechaIni: context.fechaIni,
-  fechaFin: context.fechaFin,
+  duracionHoras: context.cursoHoras,
+  fechaIni: context.cursoFechaIni,
+  fechaFin: context.cursoFechaFin,
   grupo: context.numero,
-  periodo: context.periodo,
+  periodo: context.cursoPeriodo,
 });
 
 // Reciben certificado los que aprobaron y los que solo cumplieron la asistencia
@@ -379,6 +452,9 @@ interface Emision {
   nombre: string;
   plantillaId: number;
   context: GrupoContexto;
+  // Copia de los datos visibles: la verificación los sigue mostrando aunque se
+  // borre el curso o el grupo.
+  metadata: MetadataCertificado;
 }
 
 /**
@@ -402,7 +478,7 @@ const obtenerCodigo = async (emision: Emision): Promise<string> => {
 
   if (existente && CERTIFICATE_CODE_PATTERN.test(existente.codigo)) return existente.codigo;
 
-  const codigo = generarCodigoVerificacion();
+  const codigo = await generarCodigoUnico();
 
   await db.insert(certificadosEmitidos).values({
     codigo,
@@ -413,7 +489,7 @@ const obtenerCodigo = async (emision: Emision): Promise<string> => {
     grupoId: emision.context.id,
     cursoId: emision.context.cursoId,
     fechaEmision: new Date().toLocaleDateString('es-BO'),
-    metadata: { nombre: emision.nombre },
+    metadata: emision.metadata,
   });
 
   return codigo;
@@ -563,6 +639,7 @@ const ejecutarJob = async (jobId: string, groupId: number, plantillaId: number):
           nombre: nombreCompleto(evaluado.estudiante),
           plantillaId,
           context,
+          metadata: metadataEstudiante(evaluado, context),
         })),
       });
 
@@ -620,6 +697,26 @@ const generarCodigoVerificacion = (): string => {
       () => CERTIFICATE_CODE_ALPHABET[randomInt(CERTIFICATE_CODE_ALPHABET.length)]
     ).join('');
   return `${grupo()}-${grupo()}-${grupo()}`;
+};
+
+/**
+ * El codigo es la llave publica del certificado: no puede repetirse. Se
+ * consulta la tabla antes de emitir y, si por azar coincidiera, se genera otro.
+ */
+const generarCodigoUnico = async (): Promise<string> => {
+  for (let intento = 0; intento < 10; intento += 1) {
+    const codigo = generarCodigoVerificacion();
+    const [existente] = await db
+      .select({ id: certificadosEmitidos.id })
+      .from(certificadosEmitidos)
+      .where(eq(certificadosEmitidos.codigo, codigo))
+      .limit(1);
+
+    if (!existente) return codigo;
+  }
+
+  // El sufijo extra conserva la unicidad aun si el azar falla diez veces.
+  return `${generarCodigoVerificacion()}-${Date.now().toString(36).toUpperCase()}`;
 };
 
 // El QR es el mismo en todos los certificados (lleva a la página donde se
@@ -713,6 +810,7 @@ const ejecutarJobPdfEstudiantes = async (
           nombre: nombreCompleto(evaluado.estudiante),
           plantillaId,
           context,
+          metadata: metadataEstudiante(evaluado, context),
         })),
       });
 
@@ -818,6 +916,7 @@ const ejecutarJobPdfInstructores = async (
           nombre: nombreInstructor,
           plantillaId,
           context,
+          metadata: metadataInstructor(instructor, context),
         })),
       },
     ];
@@ -845,29 +944,103 @@ export const verificarCertificado = async (
   const [fila] = await db
     .select({
       certificado: certificadosEmitidos,
-      curso: cursos.nombreCurso,
-      grupo: grupos.numGrupo,
+      estudiante: estudiantes,
+      instructor: instructores,
+      curso: cursos,
+      grupo: grupos,
     })
     .from(certificadosEmitidos)
-    .innerJoin(cursos, eq(certificadosEmitidos.cursoId, cursos.id))
-    .innerJoin(grupos, eq(certificadosEmitidos.grupoId, grupos.id))
+    .leftJoin(
+      estudiantes,
+      and(eq(certificadosEmitidos.destinatarioTipo, 'estudiante'), eq(certificadosEmitidos.destinatarioId, estudiantes.id))
+    )
+    .leftJoin(
+      instructores,
+      and(eq(certificadosEmitidos.destinatarioTipo, 'instructor'), eq(certificadosEmitidos.destinatarioId, instructores.id))
+    )
+    .leftJoin(cursos, eq(certificadosEmitidos.cursoId, cursos.id))
+    .leftJoin(grupos, eq(certificadosEmitidos.grupoId, grupos.id))
     .where(eq(certificadosEmitidos.codigo, codigo))
     .limit(1);
 
-  if (!fila) return { ok: false, reason: 'not_found' };
+  if (!fila || !fila.certificado) return { ok: false, reason: 'not_found' };
 
-  const { certificado } = fila;
+  const c = fila.certificado;
+  const meta = (c.metadata as Record<string, unknown>) || {};
+
+  const nombreEstudiante =
+    (meta.nombre as string) ||
+    (fila.estudiante
+      ? `${fila.estudiante.nombres} ${fila.estudiante.apPaterno} ${fila.estudiante.apMaterno}`.trim()
+      : fila.instructor
+        ? `${fila.instructor.nombres} ${fila.instructor.apPaterno} ${fila.instructor.apMaterno}`.trim()
+        : '');
+
+  const ci = (meta.ci as string) || fila.estudiante?.ci || fila.instructor?.ci || null;
+  const codSis = (meta.codSis as string) || fila.estudiante?.codSis || null;
+  const cargo = (meta.cargo as string) || fila.instructor?.cargo || null;
+
+  const nombreCurso = (meta.curso as string) || fila.curso?.nombreCurso || '';
+  const horas =
+    typeof meta.horas === 'number'
+      ? meta.horas
+      : fila.curso?.duracionHoras ?? null;
+  const grupoNum =
+    typeof meta.grupo === 'number' ? meta.grupo : fila.grupo?.numGrupo ?? null;
+  const periodo = (meta.periodo as string) || fila.curso?.periodo || null;
+  const fechaIni = (meta.fechaIni as string) || fila.curso?.fechaIni || null;
+  const fechaFin = (meta.fechaFin as string) || fila.curso?.fechaFin || null;
+
+  const tipo = (meta.tipo as string) || c.tipo || '';
+  const tipoLower = tipo.toLowerCase();
+  const tipoCertificado =
+    tipoLower === 'aprobacion'
+      ? 'Aprobación'
+      : tipoLower === 'asistencia'
+        ? 'Asistencia'
+        : tipoLower === 'instructor'
+          ? 'Instructor'
+          : tipo || '';
+
+  const fechaEmision = c.fechaEmision
+    ? c.fechaEmision.includes('-')
+      ? c.fechaEmision
+      : (() => {
+          const p = c.fechaEmision.split('/');
+          if (p.length === 3) return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+          return c.fechaEmision;
+        })()
+    : null;
 
   return {
     ok: true,
     value: {
-      codigo: certificado.codigo,
-      tipo: certificado.tipo,
-      destinatarioTipo: certificado.destinatarioTipo,
-      destinatario: String(certificado.metadata?.nombre ?? ''),
-      curso: fila.curso,
-      grupo: fila.grupo,
-      fechaEmision: certificado.fechaEmision,
+      // Campos en inglés/camel que usa la página de verificación del cliente.
+      codigo: c.codigo,
+      tipo: c.tipo,
+      destinatarioTipo: c.destinatarioTipo,
+      destinatario: nombreEstudiante,
+      curso: nombreCurso,
+      grupo: grupoNum,
+      fechaEmision,
+      // Detalle completo del certificado (copiado en `metadata` al emitir).
+      codigo_qr: c.codigo,
+      valido: true,
+      tipo_codigo: tipoLower,
+      tipo_certificado: tipoCertificado,
+      destinatarioId: c.destinatarioId,
+      cursoId: c.cursoId,
+      grupoId: c.grupoId,
+      fecha_emision: fechaEmision,
+      nombre_estudiante: nombreEstudiante,
+      ci_estudiante: ci,
+      cod_sis: codSis,
+      cargo,
+      nombre_curso: nombreCurso,
+      horas,
+      periodo,
+      fecha_inicio: fechaIni,
+      fecha_fin: fechaFin,
     },
   };
 };

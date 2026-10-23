@@ -102,7 +102,8 @@ const VerifyCertificatePage = () => {
               <dd className="text-gray-900">{resultado.destinatario}</dd>
               <dt className="text-gray-500">Curso</dt>
               <dd className="text-gray-900">
-                {resultado.curso} (grupo {resultado.grupo})
+                {resultado.curso}
+                {resultado.grupo !== null && ` (grupo ${resultado.grupo})`}
               </dd>
               <dt className="text-gray-500">Tipo</dt>
               <dd className="text-gray-900">{tipo}</dd>
