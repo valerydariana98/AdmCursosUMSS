@@ -41,7 +41,6 @@ import {
   grupos,
   inscripciones,
   certificadosEmitidos,
-  firmas,
   instructores,
   plantillaElementos,
   plantillasCertificado,
@@ -333,24 +332,13 @@ const nombreArchivoCertificado = (estudiante: EstudianteRow, cursoNombre: string
 
 const cargarElementos = async (plantillaId: number): Promise<PlantillaElementoView[]> => {
   const filas = await db
-    .select({ elemento: plantillaElementos, firma: firmas })
+    .select({ elemento: plantillaElementos })
     .from(plantillaElementos)
-    .leftJoin(firmas, eq(plantillaElementos.idFirma, firmas.id))
     .where(eq(plantillaElementos.idPlantilla, plantillaId))
     .orderBy(plantillaElementos.position);
 
-  return filas.map(({ elemento, firma }) => ({
+  return filas.map(({ elemento }) => ({
     ...elemento,
-    firma: firma
-      ? {
-          id: firma.id,
-          nombre: firma.nombre,
-          ruta: firma.ruta,
-          originalNombre: firma.originalNombre,
-          createdAt: firma.createdAt.toISOString(),
-          updatedAt: firma.updatedAt.toISOString(),
-        }
-      : null,
   }));
 };
 

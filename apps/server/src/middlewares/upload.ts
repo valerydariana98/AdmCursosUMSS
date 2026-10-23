@@ -12,7 +12,6 @@ import type { Request } from 'express';
 import {
   CERTIFICATE_IMAGE_FORMATS,
   CERTIFICATE_MAX_UPLOAD_BYTES,
-  CERTIFICATE_SIGNATURE_MAX_UPLOAD_BYTES,
 } from 'shared';
 
 const storage = multer.memoryStorage();
@@ -38,10 +37,3 @@ export const subirFondo = multer({
   fileFilter: filtroImagen,
 }).single('fondo');
 
-// Firma: es una imagen mucho más chica. El límite menor evita que alguien suba el
-// fondo de un certificado como si fuera una firma.
-export const subirFirma = multer({
-  storage,
-  limits: { fileSize: CERTIFICATE_SIGNATURE_MAX_UPLOAD_BYTES },
-  fileFilter: filtroImagen,
-}).single('firma');

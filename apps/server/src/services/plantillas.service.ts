@@ -24,7 +24,6 @@ import {
 import { db } from '../db/index.js';
 import {
   cursos,
-  firmas,
   grupos,
   plantillaAutoridades,
   plantillaElementos,
@@ -46,7 +45,6 @@ export type PlantillaFailure =
   | 'grupo_no_pertenece_curso'
   | 'grupo_ya_tiene_plantilla'
   | 'fondo_obligatorio'
-  | 'firma_inexistente'
   | 'sin_elementos';
 
 export type PlantillaResult<T> = { ok: true; value: T } | { ok: false; reason: PlantillaFailure };
@@ -158,7 +156,7 @@ export const listarPlantillas = async (
     }));
 };
 
-/** Trae la plantilla con sus elementos y las firmas ya resueltas. */
+/** Trae la plantilla con sus elementos. */
 export const obtenerPlantilla = async (
   id: number,
   actor: PlantillaActor
@@ -183,9 +181,8 @@ export const obtenerPlantilla = async (
 
   const [elementos, autoridades] = await Promise.all([
     db
-      .select({ elemento: plantillaElementos, firma: firmas })
+      .select({ elemento: plantillaElementos })
       .from(plantillaElementos)
-      .leftJoin(firmas, eq(plantillaElementos.idFirma, firmas.id))
       .where(eq(plantillaElementos.idPlantilla, id))
       .orderBy(plantillaElementos.position),
     db
@@ -204,19 +201,9 @@ export const obtenerPlantilla = async (
       ),
       cursoNombre: fila.cursoNombre,
       grupoNumero: fila.grupoNumero,
-      elementos: elementos.map(({ elemento, firma }): PlantillaElementoView => ({
+      elementos: elementos.map(({ elemento }): PlantillaElementoView => ({
         ...elemento,
         bloqueado: elemento.bloqueado,
-        firma: firma
-          ? {
-              id: firma.id,
-              nombre: firma.nombre,
-              ruta: firma.ruta,
-              originalNombre: firma.originalNombre,
-              createdAt: firma.createdAt.toISOString(),
-              updatedAt: firma.updatedAt.toISOString(),
-            }
-          : null,
       })),
     },
   };
@@ -231,20 +218,6 @@ const validarElementos = async (
   elementos: PlantillaElementoInput[]
 ): Promise<PlantillaResult<true>> => {
   if (elementos.length === 0) return { ok: false, reason: 'sin_elementos' };
-
-  const idsFirma = elementos
-    .filter((elemento) => elemento.tipo === 'firma')
-    .map((elemento) => elemento.idFirma)
-    .filter((id): id is number => typeof id === 'number');
-
-  if (idsFirma.length > 0) {
-    const existentes = await db.select({ id: firmas.id }).from(firmas);
-    const validas = new Set(existentes.map((fila) => fila.id));
-
-    if (idsFirma.some((id) => !validas.has(id))) {
-      return { ok: false, reason: 'firma_inexistente' };
-    }
-  }
 
   return { ok: true, value: true };
 };
@@ -261,7 +234,6 @@ const prepararElementos = (elementos: PlantillaElementoInput[]) =>
     return {
       tipo: elemento.tipo,
       texto: elemento.tipo === 'texto' ? elemento.texto : null,
-      idFirma: elemento.tipo === 'firma' ? elemento.idFirma : null,
       xPercent: acotar(elemento.xPercent, 0),
       yPercent: acotar(elemento.yPercent, 0),
       anchoPercent: acotar(elemento.anchoPercent, CERTIFICATE_PERCENT_SCALE),
@@ -516,7 +488,6 @@ export const duplicarPlantilla = async (
     idPlantilla: creada.id,
     tipo: elemento.tipo,
     texto: elemento.texto,
-    idFirma: elemento.idFirma,
     xPercent: elemento.xPercent,
     yPercent: elemento.yPercent,
     anchoPercent: elemento.anchoPercent,

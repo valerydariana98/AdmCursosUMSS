@@ -6,8 +6,7 @@
 // dejar márgenes.
 //
 // El texto se dibuja como texto de pdfkit, no como imagen: al imprimir sale
-// nítido a cualquier escala y el archivo pesa poco. Solo el fondo y las firmas
-// son imágenes.
+// nítido a cualquier escala y el archivo pesa poco. Solo el fondo es imagen.
 
 import { createWriteStream } from 'node:fs';
 import { readFile } from 'node:fs/promises';
@@ -23,15 +22,6 @@ import {
   type PlantillaElementoView,
 } from 'shared';
 import { resolveUploadPath } from './imagen.service.js';
-
-// Alto por defecto de una firma, en centésimas de porcentaje. Las firmas se
-// digitalizan como franjas horizontales bajas (firma y rúbrica), así que un 20%
-// de la altura de la página las contiene sin deformarse.
-const FIRMA_ALTO_POR_DEFECTO = 2000;
-
-// Alto de la firma cuando el ancho pedido es mayor que el que la propia firma
-// permite mantener sin estirarla.
-const FIRMA_ANCHO_MAXIMO = 4000;
 
 interface RenderOpciones {
   destino?: string;
@@ -157,39 +147,6 @@ const dibujarTexto = (
   });
 };
 
-const dibujarFirma = async (doc: PDFKit.PDFDocument, elemento: PlantillaElementoView) => {
-  if (!elemento.firma) return;
-
-  const x = aPuntos(elemento.xPercent, CERTIFICATE_PAGE_WIDTH);
-  const y = aPuntos(elemento.yPercent, CERTIFICATE_PAGE_HEIGHT);
-
-  const anchoPedido = aPuntos(elemento.anchoPercent, CERTIFICATE_PAGE_WIDTH);
-  const altoPedido = aPuntos(FIRMA_ALTO_POR_DEFECTO, CERTIFICATE_PAGE_HEIGHT);
-
-  // El ancho se limita porque `fit` de pdfkit sí deforma si se le da una caja
-  // que no acompaña la proporción de la firma; una firma panorámica no puede
-  // estirarse hasta el ancho de la página.
-  const ancho = Math.min(anchoPedido, aPuntos(FIRMA_ANCHO_MAXIMO, CERTIFICATE_PAGE_WIDTH));
-
-  try {
-    // `align` decide hacia dónde crece la firma dentro de su caja y `valign:
-    // 'top'` la pega al borde superior, que es la `y` que el usuario eligió.
-    const opciones = {
-      fit: [ancho, altoPedido] as [number, number],
-      align: aAlignPdfkit(elemento.alineacion),
-      valign: 'top',
-    } as unknown as OpcionesImagen;
-
-    const imagen = await cargarImagenPdf(resolveUploadPath(elemento.firma.ruta));
-    doc.image(imagen, x, y, opciones);
-  } catch {
-    // Si el archivo de la firma ya no está en disco, el certificado se emite sin
-    // ella en lugar de abortar todo el lote. La plantilla ya no puede usar una
-    // firma borrada (el servicio lo impide), así que esto solo cubre el caso de
-    // un archivo perdido manualmente.
-  }
-};
-
 /**
  * Escribe un certificado completo en el disco y resuelve cuando el PDF está
  * terminado. El job que llama a esto espera la promesa para poder contar los
@@ -201,11 +158,7 @@ const dibujarPagina = async (doc: PDFKit.PDFDocument, opciones: RenderPaginaOpci
   const ordenados = [...opciones.elementos].sort((a, b) => a.position - b.position);
 
   for (const elemento of ordenados) {
-    if (elemento.tipo === 'texto') {
-      dibujarTexto(doc, elemento, opciones.contexto);
-    } else {
-      await dibujarFirma(doc, elemento);
-    }
+    dibujarTexto(doc, elemento, opciones.contexto);
   }
 
   // QR y codigo de verificacion en la parte inferior (issue #98, #100).
