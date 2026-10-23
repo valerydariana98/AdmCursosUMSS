@@ -1406,6 +1406,12 @@ export const CERTIFICATE_SAMPLE_DATA: CertificateData = {
 // Plantillas
 // ------------------------------------------------------------------------
 
+// Hay una plantilla por curso, así que se nombra con el curso. Las pantallas lo
+// arman al mostrarla para que las plantillas viejas, con otro nombre, también se
+// vean así.
+export const nombrePlantillaCertificado = (cursoNombre: string): string =>
+  `Plantilla ${cursoNombre}`;
+
 export const CERTIFICATE_ALIGNMENTS = ['izquierda', 'centro', 'derecha'] as const;
 export type CertificateAlignment = (typeof CERTIFICATE_ALIGNMENTS)[number];
 

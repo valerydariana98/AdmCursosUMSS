@@ -10,7 +10,7 @@
 // usándose mientras se arman los PDF.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
 import Button from '../../components/Button';
 import Select from '../../components/Select';
@@ -21,6 +21,7 @@ import { certificateService } from '../../services/certificateService';
 import {
   CERTIFICATE_CONDITION_LABEL,
   CERTIFICATE_JOB_STATE_LABEL,
+  nombrePlantillaCertificado,
   type CertificateJob,
   type CertificatePreview,
   type CertificateCondition,
@@ -49,7 +50,13 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
   const navigate = useNavigate();
   const { courses } = useCourses();
 
-  const [cursoId, setCursoId] = useState<number | null>(null);
+  // Desde el listado de plantillas se llega con `?curso=<id>`: el curso ya viene
+  // elegido y solo falta el grupo.
+  const [searchParams] = useSearchParams();
+  const [cursoId, setCursoId] = useState<number | null>(() => {
+    const desdeUrl = Number(searchParams.get('curso'));
+    return Number.isInteger(desdeUrl) && desdeUrl > 0 ? desdeUrl : null;
+  });
   const [grupoId, setGrupoId] = useState<number | null>(null);
   const { grupos } = useGroups(cursoId ?? 0);
 
@@ -332,12 +339,7 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
             <div className="mb-6">
               <AlertInfo
                 type="info"
-                title={`Se usará la plantilla «${preview.plantilla.plantilla.nombre}»`}
-                subtitle={
-                  preview.plantilla.origen === 'grupo'
-                    ? 'Es la plantilla específica del grupo.'
-                    : 'El grupo no tiene plantilla propia, así que se usa la general del curso.'
-                }
+                title={`Se usará la plantilla «${nombrePlantillaCertificado(preview.grupo.cursoNombre)}»`}
               />
             </div>
           )}
