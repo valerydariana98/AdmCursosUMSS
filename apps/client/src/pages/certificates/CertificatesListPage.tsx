@@ -213,6 +213,13 @@ const CertificatesListPage = () => {
           <h1 className="text-2xl font-bold text-gray-900">Certificados</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+             <Button
+              variant="primary"
+            icon={<PlusIcon />}
+            onClick={() => navigate('/certificados/nuevo')}
+          >
+            Crear Nuevo Certificado
+          </Button>
           <Button
             variant="secondary"
             icon={<GenerateIcon />}
@@ -220,13 +227,7 @@ const CertificatesListPage = () => {
           >
             Generar
           </Button>
-            <Button
-              variant="primary"
-            icon={<PlusIcon />}
-            onClick={() => navigate('/certificados/nuevo')}
-          >
-            Crear Nuevo Certificado
-          </Button>
+         
         </div>
       </div>
 

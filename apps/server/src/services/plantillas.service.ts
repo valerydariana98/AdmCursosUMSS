@@ -27,11 +27,8 @@ import {
   plantillaElementos,
   plantillasCertificado,
 } from '../db/schema.js';
-import {
-  SUBFOLDER_FONDO,
-  eliminarArchivo,
-  guardarComoWebp,
-} from './imagen.service.js';
+import { eliminarArchivo } from './imagen.service.js';
+import { eliminarFondoSiHuerfano, guardarFondo } from './fondos.service.js';
 import { resolveGroupOwnershipFailure } from './groupOwnership.js';
 import type { GroupOwnershipFailure } from './groupOwnership.js';
 
@@ -253,10 +250,14 @@ export const crearPlantilla = async (
     return { ok: false, reason: 'forbidden' };
   }
 
-  const rutaFondo = await guardarComoWebp(datos.fondoBuffer, SUBFOLDER_FONDO);
+  // La ruta se guarda fuera de la transacción para poder borrar la copia en
+  // disco si algo falla: la fila del fondo ya se deshace con el rollback.
+  let rutaFondo: string | null = null;
 
   try {
     const resultado = await db.transaction(async (tx) => {
+      rutaFondo = await guardarFondo(tx, datos.fondoBuffer);
+
       const [plantilla] = await tx
         .insert(plantillasCertificado)
         .values({
@@ -371,9 +372,10 @@ export const eliminarPlantilla = async (
     return { ok: false, reason: 'forbidden' };
   }
 
-  // Los elementos se van por cascade.
+  // Los elementos se van por cascade. El fondo solo se borra si ninguna otra
+  // plantilla (por ejemplo, una duplicada) lo sigue usando.
   await db.delete(plantillasCertificado).where(eq(plantillasCertificado.id, id));
-  await eliminarArchivo(fila.rutaFondo);
+  await eliminarFondoSiHuerfano(fila.rutaFondo);
 
   return { ok: true, value: null };
 };

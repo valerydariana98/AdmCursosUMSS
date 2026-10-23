@@ -54,7 +54,8 @@ import {
 import { getStudentAttendanceSummary } from './attendance.service.js';
 import { cellKey, loadGradeMap } from './grades.service.js';
 import { renderizarCertificado, renderizarCertificadosEnPdf } from './certificado.render.js';
-import { SUBFOLDER_GENERADOS, uploadsDir } from './imagen.service.js';
+import { ASSETS_CERTIFICADOS, SUBFOLDER_GENERADOS, uploadsDir } from './imagen.service.js';
+import { asegurarFondo } from './fondos.service.js';
 import { resolverPlantillaParaGrupo } from './plantillas.service.js';
 import { resolveGroupOwnershipFailure } from './groupOwnership.js';
 import type { GroupOwnershipFailure } from './groupOwnership.js';
@@ -610,6 +611,8 @@ const ejecutarJob = async (jobId: string, groupId: number, plantillaId: number):
     )[0];
 
     if (!plantilla) throw new Error('La plantilla ya no existe');
+    // La copia en disco del fondo puede faltar si el servidor reinició.
+    await asegurarFondo(plantilla.rutaFondo);
 
     const [autoridades, evaluados] = await Promise.all([
       cargarAutoridades(plantillaId),
@@ -721,7 +724,7 @@ const generarCodigoUnico = async (): Promise<string> => {
 
 // El QR es el mismo en todos los certificados (lleva a la página donde se
 // escribe el código), así que se lee del disco una sola vez.
-const QR_VERIFICACION = path.resolve(process.cwd(), 'assets', 'certificados', 'qr-verificacion.png');
+const QR_VERIFICACION = path.join(ASSETS_CERTIFICADOS, 'qr-verificacion.png');
 let qrVerificacion: Promise<Buffer> | null = null;
 
 const cargarQrVerificacion = (): Promise<Buffer> => {
@@ -787,6 +790,8 @@ const ejecutarJobPdfEstudiantes = async (
       .where(eq(plantillasCertificado.id, plantillaId))
       .limit(1);
     if (!plantilla) throw new Error('La plantilla ya no existe');
+    // La copia en disco del fondo puede faltar si el servidor reinició.
+    await asegurarFondo(plantilla.rutaFondo);
 
     const autoridades = await cargarAutoridades(plantillaId);
     const evaluados = await evaluarEstudiantes(groupId, context);
@@ -882,6 +887,8 @@ const ejecutarJobPdfInstructores = async (
       .where(eq(plantillasCertificado.id, plantillaId))
       .limit(1);
     if (!plantilla) throw new Error('La plantilla ya no existe');
+    // La copia en disco del fondo puede faltar si el servidor reinició.
+    await asegurarFondo(plantilla.rutaFondo);
 
     const autoridades = await cargarAutoridades(plantillaId);
 
