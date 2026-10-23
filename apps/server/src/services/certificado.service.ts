@@ -71,6 +71,10 @@ interface GrupoContexto {
   numero: number;
   cursoId: number;
   cursoNombre: string;
+  cursoHoras: number;
+  cursoFechaIni: string;
+  cursoFechaFin: string;
+  cursoPeriodo: string;
   instructorId: number;
   passingGrade: number;
   maxAbsences: number;
@@ -83,6 +87,10 @@ const cargarGrupoContexto = async (groupId: number): Promise<GrupoContexto | nul
       numero: grupos.numGrupo,
       cursoId: grupos.idCurso,
       cursoNombre: cursos.nombreCurso,
+      cursoHoras: cursos.duracionHoras,
+      cursoFechaIni: cursos.fechaIni,
+      cursoFechaFin: cursos.fechaFin,
+      cursoPeriodo: cursos.periodo,
       instructorId: grupos.idInstructor,
       passingGrade: cursos.notaMin,
       maxAbsences: cursos.maxFaltas,
@@ -97,6 +105,8 @@ const cargarGrupoContexto = async (groupId: number): Promise<GrupoContexto | nul
 
 interface EstudianteRow {
   id: number;
+  ci: string;
+  codSis: string | null;
   nombres: string;
   apPaterno: string;
   apMaterno: string;
@@ -106,6 +116,8 @@ const cargarEstudiantes = async (groupId: number): Promise<EstudianteRow[]> =>
   db
     .select({
       id: estudiantes.id,
+      ci: estudiantes.ci,
+      codSis: estudiantes.codSis,
       nombres: estudiantes.nombres,
       apPaterno: estudiantes.apPaterno,
       apMaterno: estudiantes.apMaterno,
@@ -205,6 +217,76 @@ const evaluarEstudiantes = async (
 
 const nombreCompleto = (estudiante: EstudianteRow): string =>
   `${estudiante.nombres} ${estudiante.apPaterno} ${estudiante.apMaterno}`.trim();
+
+/**
+ * Copia de los datos que la pagina publica de verificacion muestra. Se guarda
+ * junto al certificado para que el documento siga siendo verificable aunque
+ * despues se edite el curso, se cambie el nombre del estudiante o se elimine la
+ * plantilla/grupo/curso.
+ */
+interface MetadataCertificado {
+  [key: string]: unknown;
+  nombre: string;
+  ci: string | null;
+  codSis: string | null;
+  cargo: string | null;
+  curso: string;
+  horas: number;
+  grupo: number;
+  fechaIni: string;
+  fechaFin: string;
+  periodo: string;
+  tipo: string;
+  notaFinal: number | null;
+  destinatarioTipo: 'estudiante' | 'instructor';
+}
+
+const metadataEstudiante = (
+  evaluado: EstudianteEvaluado,
+  context: GrupoContexto
+): MetadataCertificado => ({
+  nombre: nombreCompleto(evaluado.estudiante),
+  ci: evaluado.estudiante.ci,
+  codSis: evaluado.estudiante.codSis,
+  cargo: null,
+  curso: context.cursoNombre,
+  horas: context.cursoHoras,
+  grupo: context.numero,
+  fechaIni: context.cursoFechaIni,
+  fechaFin: context.cursoFechaFin,
+  periodo: context.cursoPeriodo,
+  tipo: evaluado.condicion,
+  notaFinal: evaluado.notaFinal,
+  destinatarioTipo: 'estudiante',
+});
+
+interface InstructorRow {
+  id: number;
+  ci: string | null;
+  nombres: string;
+  apPaterno: string;
+  apMaterno: string;
+  cargo: string | null;
+}
+
+const metadataInstructor = (
+  instructor: InstructorRow,
+  context: GrupoContexto
+): MetadataCertificado => ({
+  nombre: `${instructor.nombres} ${instructor.apPaterno} ${instructor.apMaterno}`.trim(),
+  ci: instructor.ci,
+  codSis: null,
+  cargo: instructor.cargo,
+  curso: context.cursoNombre,
+  horas: context.cursoHoras,
+  grupo: context.numero,
+  fechaIni: context.cursoFechaIni,
+  fechaFin: context.cursoFechaFin,
+  periodo: context.cursoPeriodo,
+  tipo: 'instructor',
+  notaFinal: null,
+  destinatarioTipo: 'instructor',
+});
 
 // ------------------------------------------------------------------
 // Vista previa
@@ -522,6 +604,26 @@ export const descargarZip = (
 const generarCodigoVerificacion = (): string =>
   `CERT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
+/**
+ * El codigo es la llave publica del certificado: no puede repetirse. Se
+ * consulta la tabla antes de emitir y, si por azar coincidiera, se genera otro.
+ */
+const generarCodigoUnico = async (): Promise<string> => {
+  for (let intento = 0; intento < 10; intento += 1) {
+    const codigo = generarCodigoVerificacion();
+    const [existente] = await db
+      .select({ id: certificadosEmitidos.id })
+      .from(certificadosEmitidos)
+      .where(eq(certificadosEmitidos.codigo, codigo))
+      .limit(1);
+
+    if (!existente) return codigo;
+  }
+
+  // El sufijo extra conserva la unicidad aun si el azar falla diez veces.
+  return `${generarCodigoVerificacion()}-${Date.now().toString(36).toUpperCase()}`;
+};
+
 const generarQrBuffer = async (codigo: string): Promise<Buffer> => {
   const base = process.env.PUBLIC_VERIFICATION_URL ?? 'http://localhost:5173/verificar';
   const url = `${base}/${codigo}`;
@@ -601,7 +703,7 @@ const ejecutarJobPdfEstudiantes = async (
     const paginas: any[] = [];
 
     for (const [indice, evaluado] of elegibles.entries()) {
-      const codigo = generarCodigoVerificacion();
+      const codigo = await generarCodigoUnico();
       const qrBuffer = await generarQrBuffer(codigo);
 
       const contexto: CertificateVariableContext = {
@@ -631,7 +733,7 @@ const ejecutarJobPdfEstudiantes = async (
         grupoId: groupId,
         cursoId: context.cursoId,
         fechaEmision,
-        metadata: { nombre: nombreCompleto(evaluado.estudiante) },
+        metadata: metadataEstudiante(evaluado, context),
       });
 
       job.procesados = indice + 1;
@@ -714,7 +816,7 @@ const ejecutarJobPdfInstructores = async (
     await mkdir(carpeta, { recursive: true });
 
     const fechaEmision = new Date().toLocaleDateString('es-BO');
-    const codigo = generarCodigoVerificacion();
+    const codigo = await generarCodigoUnico();
     const qrBuffer = await generarQrBuffer(codigo);
 
     const contexto: CertificateVariableContext = {
@@ -749,7 +851,7 @@ const ejecutarJobPdfInstructores = async (
       grupoId: groupId,
       cursoId: context.cursoId,
       fechaEmision,
-      metadata: { nombre: `${instructor.nombres} ${instructor.apPaterno}`.trim() },
+      metadata: metadataInstructor(instructor, context),
     });
 
     job.zipRutaInterna = pdfRuta;

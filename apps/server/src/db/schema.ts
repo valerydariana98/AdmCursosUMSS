@@ -374,11 +374,15 @@ export const certificadosEmitidos = pgTable(
     tipo: varchar('tipo', { length: 32 }).notNull(),
     destinatarioTipo: plantillaDestinatarioEnum('destinatario_tipo').notNull().default('estudiante'),
     destinatarioId: integer('destinatario_id').notNull(),
-    plantillaId: integer('plantilla_id')
-      .notNull()
-      .references(() => plantillasCertificado.id, { onDelete: 'cascade' }),
-    grupoId: integer('id_grupo').notNull().references(() => grupos.id, { onDelete: 'cascade' }),
-    cursoId: integer('id_curso').notNull().references(() => cursos.id, { onDelete: 'cascade' }),
+    // Un certificado emitido es un documento historico: si se elimina la
+    // plantilla, el grupo o el curso, la fila debe sobrevivir para que el
+    // codigo siga siendo verificable. Los datos visibles se copian en
+    // `metadata` al momento de emitir.
+    plantillaId: integer('plantilla_id').references(() => plantillasCertificado.id, {
+      onDelete: 'set null',
+    }),
+    grupoId: integer('id_grupo').references(() => grupos.id, { onDelete: 'set null' }),
+    cursoId: integer('id_curso').references(() => cursos.id, { onDelete: 'set null' }),
     fechaEmision: varchar('fecha_emision', { length: 32 }).notNull(),
     metadata: jsonb('metadata').$type<Record<string, unknown>>().default({}),
     createdAt: timestamp('created_at').notNull().defaultNow(),
