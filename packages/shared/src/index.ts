@@ -1099,11 +1099,54 @@ export const CERTIFICATE_PAGE_WIDTH = 792;
 export const CERTIFICATE_PAGE_HEIGHT = 612;
 
 // Límites de la imagen base. Por debajo el certificado se ve pixelado al
-// imprimir; por encima no gana nitidez y encarece el almacenamiento.
+// imprimir; por encima no gana nitidez y encarece el almacenamiento. El alto
+// máximo es el de una Carta al ancho máximo: 2500 / (279.4/215.9) ≈ 1932.
 export const CERTIFICATE_IMAGE_MIN_WIDTH = 1200;
 export const CERTIFICATE_IMAGE_MIN_HEIGHT = 800;
 export const CERTIFICATE_IMAGE_MAX_WIDTH = 2500;
-export const CERTIFICATE_IMAGE_MAX_HEIGHT = 1750;
+export const CERTIFICATE_IMAGE_MAX_HEIGHT = 1932;
+
+// Papel horizontal aceptado para la imagen base. La página del PDF es carta
+// horizontal, así que un fondo con otra proporción no coincide con lo que se
+// imprime: el marco quedaría recortado o con márgenes. Se mide en mm para que
+// el número sea reconocible y no haya que adivinar pixeles.
+export const CERTIFICATE_PAPER_SIZES = [
+  { key: 'a4', label: 'A4', anchoMm: 297, altoMm: 210 },
+  { key: 'carta', label: 'Carta', anchoMm: 279.4, altoMm: 215.9 },
+  { key: 'oficio', label: 'Oficio', anchoMm: 355.6, altoMm: 215.9 },
+] as const;
+
+export type CertificatePaperKey = (typeof CERTIFICATE_PAPER_SIZES)[number]['key'];
+
+// Margen admitido al comparar proporciones: una imagen reescalada o redondeada
+// se desvía unos pixeles y no debe rechazarse por eso.
+export const CERTIFICATE_RATIO_TOLERANCE = 0.02;
+
+export const CERTIFICATE_PAPER_LABELS = CERTIFICATE_PAPER_SIZES.map((p) => p.label).join(', ');
+
+/**
+ * Devuelve el papel cuya proporción coincide con la imagen, o `null` si no se
+ * parece a ninguno. Vive en shared porque el servidor la valida al subir y el
+ * cliente la valida antes de enviar: si difirieran, el usuario vería un error
+ * que el backend habría aceptado.
+ */
+export const resolverProporcionPapel = (
+  width: number,
+  height: number
+): { key: CertificatePaperKey; label: string } | null => {
+  if (!width || !height) return null;
+
+  const proporcion = width / height;
+
+  for (const papel of CERTIFICATE_PAPER_SIZES) {
+    const ratio = papel.anchoMm / papel.altoMm;
+    if (Math.abs(proporcion - ratio) / ratio <= CERTIFICATE_RATIO_TOLERANCE) {
+      return { key: papel.key, label: papel.label };
+    }
+  }
+
+  return null;
+};
 
 // La imagen base se diseña en Canva y se exporta como PNG o JPG. La firma
 // además suele venir con fondo transparente, que el WebP conserva.

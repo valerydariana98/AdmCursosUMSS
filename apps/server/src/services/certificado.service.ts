@@ -32,6 +32,7 @@ import {
   type CertificateJobState,
   type CertificatePreview,
   type CertificateVariableContext,
+  type PlantillaAutoridad,
   type PlantillaElementoView,
 } from 'shared';
 import { db } from '../db/index.js';
@@ -43,6 +44,7 @@ import {
   certificadosEmitidos,
   firmas,
   instructores,
+  plantillaAutoridades,
   plantillaElementos,
   plantillasCertificado,
   rubricItems,
@@ -354,6 +356,23 @@ const cargarElementos = async (plantillaId: number): Promise<PlantillaElementoVi
   }));
 };
 
+// Las autoridades van en una posición fija por diseño (issue #97, #99): la
+// tabla no guarda coordenadas, solo título, nombre y el orden de la fila.
+const cargarAutoridades = async (plantillaId: number): Promise<PlantillaAutoridad[]> => {
+  const filas = await db
+    .select()
+    .from(plantillaAutoridades)
+    .where(eq(plantillaAutoridades.idPlantilla, plantillaId))
+    .orderBy(plantillaAutoridades.orden);
+
+  return filas.map((fila) => ({
+    id: fila.id,
+    titulo: fila.titulo,
+    nombre: fila.nombre,
+    orden: fila.orden,
+  }));
+};
+
 // archiver 8 expone clases en lugar de la factoría `archiver('zip')` de las
 // versiones previas: se instancia `ZipArchive` directamente. Comprime a máxima
 // compresión porque los PDF ya vienen comprimidos y el margen extra no aporta.
@@ -438,8 +457,9 @@ const ejecutarJob = async (jobId: string, groupId: number, plantillaId: number):
 
     if (!plantilla) throw new Error('La plantilla ya no existe');
 
-    const [elementos, evaluados] = await Promise.all([
+    const [elementos, autoridades, evaluados] = await Promise.all([
       cargarElementos(plantillaId),
+      cargarAutoridades(plantillaId),
       evaluarEstudiantes(groupId, context),
     ]);
 
@@ -471,6 +491,7 @@ const ejecutarJob = async (jobId: string, groupId: number, plantillaId: number):
         fondoAncho: plantilla.ancho,
         fondoAlto: plantilla.alto,
         elementos,
+        autoridades,
         contexto,
       });
 
@@ -589,6 +610,7 @@ const ejecutarJobPdfEstudiantes = async (
     if (!plantilla) throw new Error('La plantilla ya no existe');
 
     const elementos = await cargarElementos(plantillaId);
+    const autoridades = await cargarAutoridades(plantillaId);
     const evaluados = await evaluarEstudiantes(groupId, context);
     const elegibles = evaluados.filter(
       (e) => e.condicion === 'aprobacion' || e.condicion === 'asistencia'
@@ -617,6 +639,7 @@ const ejecutarJobPdfEstudiantes = async (
         fondoAncho: plantilla.ancho,
         fondoAlto: plantilla.alto,
         elementos,
+        autoridades,
         contexto,
         codigoVerificacion: codigo,
         qrBuffer,
@@ -702,6 +725,7 @@ const ejecutarJobPdfInstructores = async (
     if (!plantilla) throw new Error('La plantilla ya no existe');
 
     const elementos = await cargarElementos(plantillaId);
+    const autoridades = await cargarAutoridades(plantillaId);
 
     const [instructor] = await db
       .select()
@@ -731,6 +755,7 @@ const ejecutarJobPdfInstructores = async (
         fondoAncho: plantilla.ancho,
         fondoAlto: plantilla.alto,
         elementos,
+        autoridades,
         contexto,
         codigoVerificacion: codigo,
         qrBuffer,

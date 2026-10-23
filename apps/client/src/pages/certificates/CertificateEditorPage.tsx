@@ -24,8 +24,10 @@ import {
   CERTIFICATE_IMAGE_MAX_WIDTH,
   CERTIFICATE_IMAGE_MIN_HEIGHT,
   CERTIFICATE_IMAGE_MIN_WIDTH,
+  CERTIFICATE_PAPER_LABELS,
   CERTIFICATE_PERCENT_SCALE,
   resolveCertificateVariables,
+  resolverProporcionPapel,
   type PlantillaElementoInput,
 } from 'shared';
 import CertificateCanvas, {
@@ -75,6 +77,8 @@ const CertificateEditorPage = () => {
 
   const [fondo, setFondo] = useState<{ url: string; ancho: number; alto: number } | null>(null);
   const [archivoFondo, setArchivoFondo] = useState<File | null>(null);
+  // Papel cuya proporción coincide con el fondo subido (A4, Carta u Oficio).
+  const [papelFondo, setPapelFondo] = useState<string | null>(null);
   const [elementos, setElementos] = useState<ElementoBorrador[]>([]);
   const [marcosBase, setMarcosBase] = useState<any[]>([]);
   const [autoridades, setAutoridades] = useState<{ titulo: string; nombre: string }[]>([]);
@@ -91,6 +95,17 @@ const CertificateEditorPage = () => {
       .then(setMarcosBase)
       .catch(() => setMarcosBase([]));
   }, []);
+
+  // El primer marco base se elige solo: así el editor nunca arranca con el lienzo
+  // vacío y el usuario ve de inmediato el certificado en su hoja. La guarda
+  // `fondo !== null` evita repetirlo; `fondo` no va en las dependencias porque
+  // re-ejecutar el efecto en cada cambio de fondo sería un bucle.
+  useEffect(() => {
+    if (editando || fondo !== null || marcosBase.length === 0) return;
+    const primero = marcosBase[0];
+    void elegirMarcoBase(primero.ruta, primero.ancho, primero.alto);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marcosBase, editando]);
 
   // ---- Carga de la plantilla en modo edición ----
 
@@ -184,6 +199,20 @@ const CertificateEditorPage = () => {
         return;
       }
 
+      // Misma regla y mismo orden que el servidor: la proporción va antes que el
+      // máximo, porque una hoja en vertical es el error más frecuente y el
+      // mensaje de "demasiado grande" solo lo confundiría.
+      const papel = resolverProporcionPapel(width, height);
+
+      if (!papel) {
+        setErrorFondo(
+          `La imagen (${width}x${height} px) no tiene proporción de ${CERTIFICATE_PAPER_LABELS}. Exporte el diseño en horizontal a uno de esos tamaños.`
+        );
+        URL.revokeObjectURL(url);
+        if (inputFondo.current) inputFondo.current.value = '';
+        return;
+      }
+
       if (width > CERTIFICATE_IMAGE_MAX_WIDTH || height > CERTIFICATE_IMAGE_MAX_HEIGHT) {
         setErrorFondo(
           `La imagen es demasiado grande (${width}x${height} px). El máximo es ${CERTIFICATE_IMAGE_MAX_WIDTH}x${CERTIFICATE_IMAGE_MAX_HEIGHT} px`
@@ -193,6 +222,7 @@ const CertificateEditorPage = () => {
         return;
       }
 
+      setPapelFondo(papel.label);
       setFondo({ url, ancho: width, alto: height });
       setArchivoFondo(archivo);
     };
@@ -213,6 +243,7 @@ const CertificateEditorPage = () => {
       const resp = await fetch(url);
       const blob = await resp.blob();
       const file = new File([blob], 'marco-base.png', { type: 'image/png' });
+      setPapelFondo(resolverProporcionPapel(ancho, alto)?.label ?? null);
       setFondo({ url, ancho, alto });
       setArchivoFondo(file);
     } catch {
@@ -388,10 +419,16 @@ const CertificateEditorPage = () => {
     label: `${curso.nombreCurso} (${curso.periodo})`,
   }));
 
-  const groupOptions = grupos.map((grupo) => ({
-    value: grupo.id,
-    label: `Grupo ${grupo.numGrupo}`,
-  }));
+  // La opción vacía va explícita en la lista: el `placeholder` del Select se
+  // deshabilita apenas se elige un grupo, y sin esta opción no habría forma de
+  // volver a dejar el curso sin grupo.
+  const groupOptions = [
+    { value: '', label: 'General del curso (sin grupo)' },
+    ...grupos.map((grupo) => ({
+      value: grupo.id,
+      label: `Grupo ${grupo.numGrupo}`,
+    })),
+  ];
 
   const soloAdmin = user?.rol === 'ADMIN';
 
@@ -457,36 +494,73 @@ const CertificateEditorPage = () => {
               />
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-gray-700">Autoridades</label>
+                <div className="flex items-baseline justify-between">
+                  <label className="text-xs font-semibold text-gray-700">Autoridades firmantes</label>
+                  <span className="text-[11px] text-gray-400">{autoridades.length}</span>
+                </div>
+                <p className="text-[11px] text-gray-500 -mt-1">
+                  Se imprimen en la banda inferior, en el orden agregado.
+                </p>
+
                 {autoridades.map((autoridad, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      className="flex-1 border rounded-lg p-2 text-xs"
-                      placeholder="Titulo"
-                      value={autoridad.titulo}
-                      onChange={(e) => {
-                        const copia = [...autoridades];
-                        copia[index] = { ...copia[index], titulo: e.target.value };
-                        setAutoridades(copia);
-                      }}
-                    />
-                    <input
-                      className="flex-1 border rounded-lg p-2 text-xs"
-                      placeholder="Nombre"
-                      value={autoridad.nombre}
-                      onChange={(e) => {
-                        const copia = [...autoridades];
-                        copia[index] = { ...copia[index], nombre: e.target.value };
-                        setAutoridades(copia);
-                      }}
-                    />
+                  <div
+                    key={index}
+                    className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50/70 p-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-gray-500">
+                        Autoridad {index + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setAutoridades(autoridades.filter((_, i) => i !== index))}
+                        className="flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-600 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Quitar
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-medium text-gray-500">Cargo o título</label>
+                      <input
+                        className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/15"
+                        placeholder="Director Académico"
+                        value={autoridad.titulo}
+                        onChange={(e) => {
+                          const copia = [...autoridades];
+                          copia[index] = { ...copia[index], titulo: e.target.value };
+                          setAutoridades(copia);
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-medium text-gray-500">Nombre completo</label>
+                      <input
+                        className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/15"
+                        placeholder="Dr. Juan Pérez Rojas"
+                        value={autoridad.nombre}
+                        onChange={(e) => {
+                          const copia = [...autoridades];
+                          copia[index] = { ...copia[index], nombre: e.target.value };
+                          setAutoridades(copia);
+                        }}
+                      />
+                    </div>
                   </div>
                 ))}
+
                 <button
                   type="button"
-                  className="text-xs text-brand-primary"
+                  className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-gray-300 px-3 py-2.5 text-xs font-semibold text-gray-500 transition-colors hover:border-brand-primary hover:bg-brand-primary/5 hover:text-brand-primary"
                   onClick={() => setAutoridades([...autoridades, { titulo: '', nombre: '' }])}
                 >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
                   Agregar autoridad
                 </button>
               </div>
@@ -511,7 +585,6 @@ const CertificateEditorPage = () => {
                     setGrupoId(event.target.value === '' ? null : Number(event.target.value))
                   }
                   options={groupOptions}
-                  placeholder="General del curso"
                   disabled={editando || cursoId === null}
                 />
               )}
@@ -528,9 +601,9 @@ const CertificateEditorPage = () => {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5">
             <h2 className="text-sm font-bold text-gray-900 mb-1">Imagen base</h2>
             <p className="text-xs text-gray-500 mb-3">
-              PNG o JPG, entre {CERTIFICATE_IMAGE_MIN_WIDTH}x{CERTIFICATE_IMAGE_MIN_HEIGHT} y{' '}
-              {CERTIFICATE_IMAGE_MAX_WIDTH}x{CERTIFICATE_IMAGE_MAX_HEIGHT} px. Para imprimir sin
-              pérdida use 1920x1080 o 2000x1414.
+              PNG o JPG en horizontal, con proporción de <strong>{CERTIFICATE_PAPER_LABELS}</strong>.
+              Ancho mínimo {CERTIFICATE_IMAGE_MIN_WIDTH} px (máximo{' '}
+              {CERTIFICATE_IMAGE_MAX_WIDTH} px).
             </p>
 
             {editando ? (
@@ -567,6 +640,7 @@ const CertificateEditorPage = () => {
                 {fondo && (
                   <p className="text-[11px] text-gray-500 mt-2">
                     {fondo.ancho}x{fondo.alto} px
+                    {papelFondo ? ` · proporción ${papelFondo}` : ''}
                   </p>
                 )}
               </>

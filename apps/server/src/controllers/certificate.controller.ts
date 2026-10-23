@@ -13,6 +13,7 @@ import {
   CERTIFICATE_IMAGE_MAX_WIDTH,
   CERTIFICATE_IMAGE_MIN_HEIGHT,
   CERTIFICATE_IMAGE_MIN_WIDTH,
+  CERTIFICATE_PAPER_LABELS,
 } from 'shared';
 import {
   crearFirma,
@@ -139,6 +140,7 @@ const CERTIFICADO_MESSAGE: Record<CertificadoFailure, string> = {
 
 const IMAGEN_STATUS: Record<ImageValidationFailure, number> = {
   formato_no_soportado: 400,
+  proporcion_invalida: 400,
   resolucion_insuficiente: 400,
   resolucion_excesiva: 400,
   imagen_invalida: 400,
@@ -159,6 +161,10 @@ const imagenMessage = (
 
   if (reason === 'resolucion_insuficiente') {
     return `La imagen es demasiado pequeña${actual}. El mínimo es ${CERTIFICATE_IMAGE_MIN_WIDTH}x${CERTIFICATE_IMAGE_MIN_HEIGHT} px`;
+  }
+
+  if (reason === 'proporcion_invalida') {
+    return `La imagen${actual} no tiene proporción de papel horizontal (${CERTIFICATE_PAPER_LABELS}). Exporte el diseño a tamaño real de esos papeles.`;
   }
 
   return `La imagen es demasiado grande${actual}. El máximo es ${CERTIFICATE_IMAGE_MAX_WIDTH}x${CERTIFICATE_IMAGE_MAX_HEIGHT} px`;
@@ -244,6 +250,10 @@ export const postPlantilla = async (req: Request, res: Response, next: NextFunct
         ancho: validacion.width,
         alto: validacion.height,
         elementos: JSON.parse(String(req.body.elementos ?? '[]')),
+        // Las autoridades viajan igual que los elementos: como string JSON en
+        // el multipart. Sin parsearlas aquí se perdían al crear la plantilla y
+        // solo se guardaban al reabrir y volver a guardar.
+        autoridades: JSON.parse(String(req.body.autoridades ?? '[]')),
         fondoBuffer: archivo.buffer,
       },
       actor

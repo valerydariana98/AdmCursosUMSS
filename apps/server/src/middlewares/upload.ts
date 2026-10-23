@@ -30,7 +30,7 @@ const filtroImagen = (_req: Request, file: Express.Multer.File, cb: multer.FileF
   cb(null, true);
 };
 
-// Fondo del certificado: es una imagen grande (hasta 2500x1750), así que admite
+// Fondo del certificado: es una imagen grande (hasta 2500x1932), así que admite
 // más peso que una firma.
 export const subirFondo = multer({
   storage,

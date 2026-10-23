@@ -20,6 +20,7 @@ import {
   CERTIFICATE_PERCENT_SCALE,
   resolveCertificateVariables,
   type CertificateVariableContext,
+  type PlantillaAutoridad,
   type PlantillaElementoView,
 } from 'shared';
 import { resolveUploadPath } from './imagen.service.js';
@@ -33,6 +34,16 @@ const FIRMA_ALTO_POR_DEFECTO = 2000;
 // permite mantener sin estirarla.
 const FIRMA_ANCHO_MAXIMO = 4000;
 
+// Banda inferior reservada a las autoridades (issue #97, #99, #102). Se dibujan
+// en una fila repartida sobre el ancho útil, sin invadir la esquina inferior
+// derecha, que es donde va el QR (ver `dibujarPagina`).
+const AUTORIDADES_BANDA_Y = 470;
+const AUTORIDADES_MARGEN_X = 60;
+// El QR ocupa ~72pt a 24pt del borde derecho; la fila de autoridades se corta
+// antes para no solaparse con él.
+const AUTORIDADES_LIMITE_DERECHO = 640;
+const AUTORIDADES_SEPARACION_Y = 18;
+
 interface RenderOpciones {
   destino?: string;
   fondoRuta: string;
@@ -41,6 +52,10 @@ interface RenderOpciones {
   fondoAlto: number;
   elementos: PlantillaElementoView[];
   contexto: CertificateVariableContext;
+  // Autoridades firmantes de la plantilla (título + nombre). Se guardan en
+  // `plantilla_autoridades` sin coordenadas porque su posición es fija por
+  // diseño: la estructura del certificado no la mueve el usuario.
+  autoridades?: PlantillaAutoridad[];
   codigoVerificacion?: string;
   qrBuffer?: Buffer;
 }
@@ -191,6 +206,41 @@ const dibujarFirma = async (doc: PDFKit.PDFDocument, elemento: PlantillaElemento
 };
 
 /**
+ * Dibuja las autoridades firmantes en la banda inferior: una fila repartida con
+ * el nombre en negrita y, debajo, el cargo o título. Van en una posición fija
+ * porque la tabla `plantilla_autoridades` no guarda coordenadas (issue #97,
+ * #99, #102): la estructura de firmas es parte del diseño, no algo que el
+ * usuario reubica en el lienzo.
+ */
+const dibujarAutoridades = (doc: PDFKit.PDFDocument, autoridades: PlantillaAutoridad[]) => {
+  const firmantes = autoridades.filter((a) => a.nombre.trim() !== '');
+  if (firmantes.length === 0) return;
+
+  const anchoTotal = AUTORIDADES_LIMITE_DERECHO - AUTORIDADES_MARGEN_X;
+  const anchoBloque = anchoTotal / firmantes.length;
+
+  firmantes.forEach((autoridad, indice) => {
+    const x = AUTORIDADES_MARGEN_X + anchoBloque * indice;
+
+    doc.font('Helvetica-Bold').fontSize(13).fillColor('#111827');
+    doc.text(autoridad.nombre, x, AUTORIDADES_BANDA_Y, {
+      width: anchoBloque,
+      align: 'center',
+      lineBreak: false,
+      baseline: 'top',
+    });
+
+    doc.font('Helvetica').fontSize(9).fillColor('#4B5563');
+    doc.text(autoridad.titulo, x, AUTORIDADES_BANDA_Y + AUTORIDADES_SEPARACION_Y, {
+      width: anchoBloque,
+      align: 'center',
+      lineBreak: false,
+      baseline: 'top',
+    });
+  });
+};
+
+/**
  * Escribe un certificado completo en el disco y resuelve cuando el PDF está
  * terminado. El job que llama a esto espera la promesa para poder contar los
  * procesados con seguridad.
@@ -206,6 +256,10 @@ const dibujarPagina = async (doc: PDFKit.PDFDocument, opciones: RenderPaginaOpci
     } else {
       await dibujarFirma(doc, elemento);
     }
+  }
+
+  if (opciones.autoridades?.length) {
+    dibujarAutoridades(doc, opciones.autoridades);
   }
 
   // QR y codigo de verificacion en la parte inferior (issue #98, #100).
