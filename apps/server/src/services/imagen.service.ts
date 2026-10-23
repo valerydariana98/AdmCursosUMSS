@@ -9,6 +9,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import {
   CERTIFICATE_IMAGE_FORMATS,
@@ -39,7 +40,17 @@ export type ImageValidationResult =
 // de imports se evalúa, así que leerlas en el tope del archivo las encontraría
 // vacías. Además permite que una prueba apunte la carpeta a un directorio
 // temporal.
-export const uploadsDir = (): string => process.env.UPLOADS_DIR ?? './uploads';
+//
+// Las rutas relativas se resuelven contra `apps/server` y no contra el directorio
+// de trabajo: en Render el proceso puede arrancar desde la raíz del monorepo, y
+// entonces `./uploads` y `./assets` apuntarían a otra carpeta.
+export const SERVER_ROOT = fileURLToPath(new URL('../../', import.meta.url));
+
+export const uploadsDir = (): string =>
+  path.resolve(SERVER_ROOT, process.env.UPLOADS_DIR ?? 'uploads');
+
+/** Recursos del repo para certificados: marcos base y QR de verificación. */
+export const ASSETS_CERTIFICADOS = path.join(SERVER_ROOT, 'assets', 'certificados');
 
 export const SUBFOLDER_FONDO = 'fondos';
 export const SUBFOLDER_GENERADOS = 'generados';

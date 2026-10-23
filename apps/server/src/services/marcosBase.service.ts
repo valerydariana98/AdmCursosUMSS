@@ -1,9 +1,9 @@
 import { copyFile, mkdir, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
-import { SUBFOLDER_FONDO, uploadsDir } from './imagen.service.js';
+import { ASSETS_CERTIFICADOS, SUBFOLDER_FONDO, uploadsDir } from './imagen.service.js';
 
-const ASSETS_DIR = path.resolve(process.cwd(), 'assets', 'certificados', 'base');
+const ASSETS_DIR = path.join(ASSETS_CERTIFICADOS, 'base');
 
 export interface MarcoBase {
   id: string;

@@ -12,6 +12,7 @@ import {
   jsonb,
   index,
   uniqueIndex,
+  customType,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -290,6 +291,22 @@ export const plantillasCertificado = pgTable(
     index('plantillas_certificado_curso_idx').on(table.idCurso),
   ]
 );
+
+// 14b. Imagen de fondo de las plantillas
+// El disco del servidor no es confiable (en Render se borra en cada deploy y al
+// dormirse la instancia), así que la imagen se guarda aquí y el archivo de
+// `uploads/` es solo una copia de trabajo que se reconstruye al arrancar. Va en
+// una tabla aparte para que los `select()` de plantillas no traigan los bytes.
+// La clave es la ruta porque una plantilla duplicada comparte el fondo.
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => 'bytea',
+});
+
+export const fondosCertificado = pgTable('fondos_certificado', {
+  ruta: varchar('ruta', { length: 500 }).primaryKey(),
+  imagen: bytea('imagen').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
 
 // 15. Elementos de una plantilla (HU-02)
 // Un elemento es un bloque de texto con variables. Las
