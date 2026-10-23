@@ -12,10 +12,8 @@
 
 import { and, count, eq, isNotNull, isNull } from 'drizzle-orm';
 import {
-  CERTIFICATE_PERCENT_SCALE,
   type CreatePlantilla,
   type PlantillaCertificadoView,
-  type PlantillaElementoInput,
   type PlantillaElementoView,
   type PlantillaListItem,
   type ResolvedPlantilla,
@@ -44,8 +42,7 @@ export type PlantillaFailure =
   | 'grupo_not_found'
   | 'grupo_no_pertenece_curso'
   | 'grupo_ya_tiene_plantilla'
-  | 'fondo_obligatorio'
-  | 'sin_elementos';
+  | 'fondo_obligatorio';
 
 export type PlantillaResult<T> = { ok: true; value: T } | { ok: false; reason: PlantillaFailure };
 
@@ -209,43 +206,6 @@ export const obtenerPlantilla = async (
   };
 };
 
-/**
- * Valida que los elementos del formulario sean coherentes antes de guardarlos.
- * Se separa de `crearPlantilla` para poder reutilizarla en crear, actualizar y
- * duplicar sin repetir las reglas tres veces.
- */
-const validarElementos = async (
-  elementos: PlantillaElementoInput[]
-): Promise<PlantillaResult<true>> => {
-  if (elementos.length === 0) return { ok: false, reason: 'sin_elementos' };
-
-  return { ok: true, value: true };
-};
-
-// Los elementos llegan con `position` ya calculado por el cliente (es el orden
-// de dibujado, y el cliente es quien conoce ese orden). Aquí solo se acotan los
-// porcentajes a la ventana válida: un valor fuera de rango pondría texto fuera
-// de la página sin avisar.
-const prepararElementos = (elementos: PlantillaElementoInput[]) =>
-  elementos.map((elemento, position) => {
-    const acotar = (valor: number, porDefecto: number) =>
-      Math.min(CERTIFICATE_PERCENT_SCALE, Math.max(0, valor));
-
-    return {
-      tipo: elemento.tipo,
-      texto: elemento.tipo === 'texto' ? elemento.texto : null,
-      xPercent: acotar(elemento.xPercent, 0),
-      yPercent: acotar(elemento.yPercent, 0),
-      anchoPercent: acotar(elemento.anchoPercent, CERTIFICATE_PERCENT_SCALE),
-      alineacion: elemento.alineacion,
-      fontSize: elemento.fontSize,
-      fontFamily: elemento.fontFamily,
-      color: elemento.color,
-      bloqueado: elemento.bloqueado ?? false,
-      position: elemento.position ?? position,
-    };
-  });
-
 export const crearPlantilla = async (
   datos: CreatePlantilla & { fondoBuffer: Buffer },
   actor: PlantillaActor
@@ -293,10 +253,6 @@ export const crearPlantilla = async (
     return { ok: false, reason: 'forbidden' };
   }
 
-  const validados = await validarElementos(datos.elementos);
-
-  if (!validados.ok) return validados;
-
   const rutaFondo = await guardarComoWebp(datos.fondoBuffer, SUBFOLDER_FONDO);
 
   try {
@@ -313,13 +269,6 @@ export const crearPlantilla = async (
           alto: datos.alto,
         })
         .returning();
-
-      await tx.insert(plantillaElementos).values(
-        prepararElementos(datos.elementos).map((elemento) => ({
-          ...elemento,
-          idPlantilla: plantilla.id,
-        }))
-      );
 
       if (datos.autoridades && datos.autoridades.length > 0) {
         await tx.insert(plantillaAutoridades).values(
@@ -369,10 +318,6 @@ export const actualizarPlantilla = async (
     return { ok: false, reason: 'forbidden' };
   }
 
-  const validados = await validarElementos(datos.elementos);
-
-  if (!validados.ok) return validados;
-
   // La imagen de fondo no se reemplaza al editar: cambiar el fondo invalidaría
   // todas las posiciones ya ajustadas, así que el editor obliga a crear una
   // plantilla nueva en vez de dejar un diseño descolocado.
@@ -386,12 +331,10 @@ export const actualizarPlantilla = async (
       })
       .where(eq(plantillasCertificado.id, id));
 
+    // El contenido del certificado es fijo (`buildCertificateBlocks`): ya no se
+    // guardan elementos, y se borran los que quedaran de plantillas anteriores.
     await tx.delete(plantillaElementos).where(eq(plantillaElementos.idPlantilla, id));
     await tx.delete(plantillaAutoridades).where(eq(plantillaAutoridades.idPlantilla, id));
-
-    await tx.insert(plantillaElementos).values(
-      prepararElementos(datos.elementos).map((elemento) => ({ ...elemento, idPlantilla: id }))
-    );
 
     if (datos.autoridades && datos.autoridades.length > 0) {
       await tx.insert(plantillaAutoridades).values(

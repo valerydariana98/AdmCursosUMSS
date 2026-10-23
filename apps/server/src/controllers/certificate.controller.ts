@@ -80,7 +80,6 @@ const PLANTAILLA_STATUS: Record<PlantillaFailure, number> = {
   grupo_no_pertenece_curso: 400,
   grupo_ya_tiene_plantilla: 409,
   fondo_obligatorio: 400,
-  sin_elementos: 400,
 };
 
 const PLANTAILLA_MESSAGE: Record<PlantillaFailure, string> = {
@@ -93,7 +92,6 @@ const PLANTAILLA_MESSAGE: Record<PlantillaFailure, string> = {
   grupo_ya_tiene_plantilla:
     'El grupo ya tiene una plantilla propia. Edite la existente o elimínela antes de crear otra',
   fondo_obligatorio: 'Debe subir una imagen de fondo',
-  sin_elementos: 'La plantilla debe tener al menos un elemento',
 };
 
 const CERTIFICADO_STATUS: Record<CertificadoFailure, number> = {
@@ -103,6 +101,7 @@ const CERTIFICADO_STATUS: Record<CertificadoFailure, number> = {
   no_enrolled_students: 400,
   sin_plantilla: 409,
   sin_aprobados: 400,
+  curso_no_finalizado: 409,
   job_not_found: 404,
 };
 
@@ -113,7 +112,8 @@ const CERTIFICADO_MESSAGE: Record<CertificadoFailure, string> = {
   no_enrolled_students: 'El grupo no tiene estudiantes inscritos',
   sin_plantilla:
     'El grupo no tiene plantilla de certificado, ni propia ni general del curso',
-  sin_aprobados: 'Ningún estudiante del grupo cumple la condición de aprobación',
+  sin_aprobados: 'Ningún estudiante del grupo tiene derecho a certificado (aprobación o asistencia)',
+  curso_no_finalizado: 'Los certificados solo se emiten para cursos finalizados',
   job_not_found: 'La generación no existe o todavía no terminó',
 };
 

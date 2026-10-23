@@ -14,25 +14,20 @@ import path from 'node:path';
 import PDFDocument from 'pdfkit';
 import sharp from 'sharp';
 import {
+  CERTIFICATE_AUTORIDADES_LAYOUT,
+  CERTIFICATE_CONTENT_WIDTH,
+  CERTIFICATE_CONTENT_X,
   CERTIFICATE_PAGE_HEIGHT,
   CERTIFICATE_PAGE_WIDTH,
-  CERTIFICATE_PERCENT_SCALE,
-  resolveCertificateVariables,
-  type CertificateVariableContext,
+  CERTIFICATE_QR_LAYOUT,
+  buildCertificateBlocks,
+  fitCertificateFontSize,
+  type CertificateData,
   type PlantillaAutoridad,
-  type PlantillaElementoView,
 } from 'shared';
 import { resolveUploadPath } from './imagen.service.js';
 
-// Banda inferior reservada a las autoridades (issue #97, #99, #102). Se dibujan
-// en una fila repartida sobre el ancho útil, sin invadir la esquina inferior
-// derecha, que es donde va el QR (ver `dibujarPagina`).
-const AUTORIDADES_BANDA_Y = 470;
-const AUTORIDADES_MARGEN_X = 60;
-// El QR ocupa ~72pt a 24pt del borde derecho; la fila de autoridades se corta
-// antes para no solaparse con él.
-const AUTORIDADES_LIMITE_DERECHO = 640;
-const AUTORIDADES_SEPARACION_Y = 18;
+const AUTORIDADES = CERTIFICATE_AUTORIDADES_LAYOUT;
 
 interface RenderOpciones {
   destino?: string;
@@ -40,8 +35,9 @@ interface RenderOpciones {
   // Proporción real del fondo, para decidir si entra estirado o centrado.
   fondoAncho: number;
   fondoAlto: number;
-  elementos: PlantillaElementoView[];
-  contexto: CertificateVariableContext;
+  // Datos del destinatario y del curso. El texto y su posición son fijos
+  // (`buildCertificateBlocks`): la plantilla solo aporta fondo y autoridades.
+  datos: CertificateData;
   // Autoridades firmantes de la plantilla (título + nombre). Se guardan en
   // `plantilla_autoridades` sin coordenadas porque su posición es fija por
   // diseño: la estructura del certificado no la mueve el usuario.
@@ -51,10 +47,6 @@ interface RenderOpciones {
 }
 
 interface RenderPaginaOpciones extends Omit<RenderOpciones, 'destino'> {}
-
-/** Convierte un porcentaje en centésimas a puntos de la página. */
-const aPuntos = (centesimas: number, lado: number): number =>
-  (centesimas / CERTIFICATE_PERCENT_SCALE) * lado;
 
 // PDFKit solo entiende PNG y JPEG al insertar una imagen, pero `imagen.service`
 // guarda los fondos convertidos a WebP para que el navegador los pese menos. Sin
@@ -83,13 +75,6 @@ const cargarImagenPdf = (rutaAbsoluta: string): Promise<Buffer> => {
 
   imagenesPdfCache.set(rutaAbsoluta, promesa);
   return promesa;
-};
-
-/** Traduce la alineación del dominio a la de pdfkit. */
-const aAlignPdfkit = (alineacion: PlantillaElementoView['alineacion']) => {
-  if (alineacion === 'izquierda') return 'left';
-  if (alineacion === 'derecha') return 'right';
-  return 'center';
 };
 
 /**
@@ -121,36 +106,23 @@ const dibujarFondo = async (doc: PDFKit.PDFDocument, opciones: RenderOpciones) =
 };
 
 /**
- * Dibuja un bloque de texto. La alineación decide hacia dónde crece el bloque:
- * centrado crece hacia ambos lados desde la x del elemento, que es el mismo
- * comportamiento que el diagrador del navegador. Si el cliente y el servidor
- * alinearan distinto, el diseño se vería bien en pantalla y saldría corrido en el
- * papel.
+ * Dibuja el contenido fijo del certificado. Cada bloque va centrado en la
+ * columna de contenido; el editor del cliente dibuja los mismos bloques con las
+ * mismas medidas, así que lo que se ve allí es lo que sale impreso.
  */
-const dibujarTexto = (
-  doc: PDFKit.PDFDocument,
-  elemento: PlantillaElementoView,
-  contexto: CertificateVariableContext
-) => {
-  const contenido = resolveCertificateVariables(elemento.texto ?? '', contexto);
+const dibujarContenido = (doc: PDFKit.PDFDocument, datos: CertificateData) => {
+  for (const bloque of buildCertificateBlocks(datos)) {
+    doc.font(bloque.font).fontSize(bloque.fontSize).fillColor(bloque.color);
 
-  doc.font(elemento.fontFamily);
-  doc.fontSize(elemento.fontSize);
-  doc.fillColor(elemento.color);
-
-  const x = aPuntos(elemento.xPercent, CERTIFICATE_PAGE_WIDTH);
-  const y = aPuntos(elemento.yPercent, CERTIFICATE_PAGE_HEIGHT);
-  const ancho = aPuntos(elemento.anchoPercent, CERTIFICATE_PAGE_WIDTH);
-
-  // `baseline: 'top'` hace que `y` sea el borde superior de la primera línea, que
-  // es como el lienzo del editor lo posiciona; sin eso el texto quedaría medio
-  // renglón más abajo de donde el usuario lo puso.
-  doc.text(contenido, x, y, {
-    width: ancho,
-    align: aAlignPdfkit(elemento.alineacion),
-    lineBreak: true,
-    baseline: 'top',
-  });
+    // `baseline: 'top'` hace que `y` sea el borde superior de la primera línea,
+    // que es como el editor posiciona el mismo bloque.
+    doc.text(bloque.texto, CERTIFICATE_CONTENT_X, bloque.y, {
+      width: CERTIFICATE_CONTENT_WIDTH,
+      align: 'center',
+      lineBreak: true,
+      baseline: 'top',
+    });
+  }
 };
 
 /**
@@ -164,27 +136,48 @@ const dibujarAutoridades = (doc: PDFKit.PDFDocument, autoridades: PlantillaAutor
   const firmantes = autoridades.filter((a) => a.nombre.trim() !== '');
   if (firmantes.length === 0) return;
 
-  const anchoTotal = AUTORIDADES_LIMITE_DERECHO - AUTORIDADES_MARGEN_X;
+  const anchoTotal = AUTORIDADES.limiteDerecho - AUTORIDADES.margenX;
   const anchoBloque = anchoTotal / firmantes.length;
+  const anchoTexto = anchoBloque - AUTORIDADES.padding * 2;
+
+  // Escribe una línea sin dejar que salte: si no entra, achica la letra.
+  const escribir = (texto: string, fuente: string, tamanoBase: number, x: number, y: number) => {
+    doc.font(fuente);
+    const tamano = fitCertificateFontSize(texto, anchoTexto, tamanoBase, (t, size) =>
+      doc.fontSize(size).widthOfString(t)
+    );
+    doc.fontSize(tamano).text(texto, x + AUTORIDADES.padding, y, {
+      width: anchoTexto,
+      align: 'center',
+      lineBreak: false,
+      baseline: 'top',
+    });
+  };
 
   firmantes.forEach((autoridad, indice) => {
-    const x = AUTORIDADES_MARGEN_X + anchoBloque * indice;
+    const x = AUTORIDADES.margenX + anchoBloque * indice;
 
-    doc.font('Helvetica-Bold').fontSize(13).fillColor('#111827');
-    doc.text(autoridad.nombre, x, AUTORIDADES_BANDA_Y, {
-      width: anchoBloque,
-      align: 'center',
-      lineBreak: false,
-      baseline: 'top',
-    });
+    const anchoLinea = anchoBloque * AUTORIDADES.lineaAncho;
+    const inicioLinea = x + (anchoBloque - anchoLinea) / 2;
+    const yLinea = AUTORIDADES.bandaY - AUTORIDADES.lineaY;
+    doc
+      .moveTo(inicioLinea, yLinea)
+      .lineTo(inicioLinea + anchoLinea, yLinea)
+      .lineWidth(0.75)
+      .strokeColor('#374151')
+      .stroke();
 
-    doc.font('Helvetica').fontSize(9).fillColor('#4B5563');
-    doc.text(autoridad.titulo, x, AUTORIDADES_BANDA_Y + AUTORIDADES_SEPARACION_Y, {
-      width: anchoBloque,
-      align: 'center',
-      lineBreak: false,
-      baseline: 'top',
-    });
+    doc.fillColor('#111827');
+    escribir(autoridad.nombre, 'Helvetica-Bold', AUTORIDADES.nombreFontSize, x, AUTORIDADES.bandaY);
+
+    doc.fillColor('#4B5563');
+    escribir(
+      autoridad.titulo,
+      'Helvetica',
+      AUTORIDADES.tituloFontSize,
+      x,
+      AUTORIDADES.bandaY + AUTORIDADES.separacionY
+    );
   });
 };
 
@@ -196,11 +189,7 @@ const dibujarAutoridades = (doc: PDFKit.PDFDocument, autoridades: PlantillaAutor
 const dibujarPagina = async (doc: PDFKit.PDFDocument, opciones: RenderPaginaOpciones) => {
   await dibujarFondo(doc, opciones as RenderOpciones);
 
-  const ordenados = [...opciones.elementos].sort((a, b) => a.position - b.position);
-
-  for (const elemento of ordenados) {
-    dibujarTexto(doc, elemento, opciones.contexto);
-  }
+  dibujarContenido(doc, opciones.datos);
 
   if (opciones.autoridades?.length) {
     dibujarAutoridades(doc, opciones.autoridades);
@@ -208,16 +197,24 @@ const dibujarPagina = async (doc: PDFKit.PDFDocument, opciones: RenderPaginaOpci
 
   // QR y codigo de verificacion en la parte inferior (issue #98, #100).
   if (opciones.qrBuffer) {
-    const qrSize = 72;
-    const x = CERTIFICATE_PAGE_WIDTH - qrSize - 24;
-    const y = CERTIFICATE_PAGE_HEIGHT - qrSize - 24;
+    const qrSize = CERTIFICATE_QR_LAYOUT.size;
+    const x = CERTIFICATE_PAGE_WIDTH - qrSize - CERTIFICATE_QR_LAYOUT.margen;
+    const y = CERTIFICATE_PAGE_HEIGHT - qrSize - CERTIFICATE_QR_LAYOUT.margen;
     doc.image(opciones.qrBuffer, x, y, { width: qrSize, height: qrSize });
 
+    // El código va centrado bajo el QR. Es lo que se escribe en la página de
+    // verificación, así que va en negrita para leerlo sin confundir caracteres.
     if (opciones.codigoVerificacion) {
-      doc.fontSize(8).fillColor('#374151').text(opciones.codigoVerificacion, x - 40, y + qrSize + 4, {
-        width: qrSize + 80,
-        align: 'center',
-      });
+      const margenCodigo = 20;
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(CERTIFICATE_QR_LAYOUT.codigoFontSize)
+        .fillColor('#111827')
+        .text(opciones.codigoVerificacion, x - margenCodigo, y + qrSize + 3, {
+          width: qrSize + margenCodigo * 2,
+          align: 'center',
+          lineBreak: false,
+        });
     }
   }
 };

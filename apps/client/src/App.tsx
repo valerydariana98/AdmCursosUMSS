@@ -57,6 +57,7 @@ export default function App() {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/verificar" element={<VerifyCertificatePage />} />
         <Route path="/verificar/:codigo" element={<VerifyCertificatePage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
@@ -166,6 +167,7 @@ export default function App() {
             path="/certificados/:id/editar"
             element={autenticado(<CertificateEditorPage />)}
           />
+          <Route path="/verificar" element={<VerifyCertificatePage />} />
           <Route
             path="/verificar/:codigo"
             element={<VerifyCertificatePage />}

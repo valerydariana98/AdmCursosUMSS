@@ -46,6 +46,10 @@ export const listarMarcosBase = async (): Promise<MarcoBase[]> => {
     return [];
   }
 
+  // `readdir` no garantiza orden y el editor preselecciona el primer marco: se
+  // ordena por nombre para que el marco por defecto sea siempre el mismo.
+  archivos.sort();
+
   const resultado: MarcoBase[] = [];
   for (const archivo of archivos) {
     if (!archivo.toLowerCase().endsWith('.png')) continue;

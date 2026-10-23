@@ -217,7 +217,20 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
     }
   };
 
-  const courseOptions = courses.map((curso) => ({
+  // Solo los cursos finalizados emiten certificados (issue #97, #99);
+  // `estado` es true mientras el curso sigue activo.
+  // El PDF se descarga solo al terminar (issue #101, #102); el botón queda
+  // para volver a bajarlo.
+  const descargaAutomatica = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!job || job.estado !== 'listo' || descargaAutomatica.current === job.jobId) return;
+    descargaAutomatica.current = job.jobId;
+    void handleDownload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job]);
+
+  const courseOptions = courses.filter((curso) => !curso.estado).map((curso) => ({
     value: curso.id,
     label: `${curso.nombreCurso} (${curso.periodo})`,
   }));
@@ -226,6 +239,16 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
     value: grupo.id,
     label: `Grupo ${grupo.numGrupo}`,
   }));
+
+  const esInstructor = destinatarioTipo === 'instructor';
+
+  // Tienen derecho a certificado los aprobados y los que cumplieron asistencia
+  // (issue #101): el servidor emite los dos, cada uno con su título.
+  const elegibles =
+    preview?.estudiantes.filter(
+      (e) => e.condicion === 'aprobacion' || e.condicion === 'asistencia'
+    ).length ?? 0;
+  const sinElegibles = !esInstructor && elegibles === 0;
 
   const generando = job !== null && (job.estado === 'pendiente' || job.estado === 'procesando');
   const listo = job?.estado === 'listo';
@@ -243,9 +266,13 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
       </button>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Generar certificados</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {esInstructor ? 'Certificados de instructores' : 'Generar certificados'}
+        </h1>
         <p className="text-sm text-gray-500">
-          Elija el grupo y descargue un .zip con un PDF por cada estudiante aprobado.
+          {esInstructor
+            ? 'Elija un curso finalizado y su grupo para descargar el certificado del instructor.'
+            : 'Elija un curso finalizado y su grupo. Reciben certificado los estudiantes con aprobación o asistencia.'}
         </p>
       </div>
 
@@ -267,7 +294,9 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
               setJob(null);
             }}
             options={courseOptions}
-            placeholder="Seleccione un curso"
+            placeholder={
+              courseOptions.length === 0 ? 'No hay cursos finalizados' : 'Seleccione un curso'
+            }
           />
           <Select
             label="Grupo"
@@ -343,12 +372,12 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
                   </div>
                 </div>
 
-                {preview.aprobados === 0 && (
+                {sinElegibles && (
                   <div className="mt-4">
                     <AlertInfo
                       type="warning"
-                      title="Ningún estudiante cumple la condición"
-                      subtitle="Se necesitan notas cargadas, asistencia registrada y nota mínima alcanzada."
+                      title="Ningún estudiante tiene derecho a certificado"
+                      subtitle="Se emite certificado de aprobación a quien alcanzó la nota mínima, y de asistencia a quien cumplió la asistencia."
                     />
                   </div>
                 )}
@@ -356,25 +385,27 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
                 {job === null && (
                   <Button
                     variant="primary"
-                    onClick={handleGenerar}
-                    disabled={preview.aprobados === 0 || preview.plantilla === null}
+                    icon={<DownloadIcon />}
+                    onClick={handleGenerarPdf}
+                    disabled={sinElegibles || preview.plantilla === null}
                     fullWidth
                     className="mt-4"
                   >
-                    Generar {preview.aprobados}{' '}
-                    {preview.aprobados === 1 ? 'certificado' : 'certificados'} (ZIP)
+                    {esInstructor
+                      ? 'Descargar certificado del instructor (PDF)'
+                      : `Descargar todos los certificados (PDF, ${elegibles})`}
                   </Button>
                 )}
 
-                {job === null && (
+                {job === null && !esInstructor && (
                   <Button
                     variant="secondary"
-                    onClick={handleGenerarPdf}
-                    disabled={preview.plantilla === null}
+                    onClick={handleGenerar}
+                    disabled={sinElegibles || preview.plantilla === null}
                     fullWidth
                     className="mt-2"
                   >
-                    Descargar PDF consolidado
+                    Un PDF por estudiante (ZIP)
                   </Button>
                 )}
 
@@ -400,8 +431,8 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
                     {job.excluidos > 0 && job.estado !== 'error' && (
                       <p className="text-[11px] text-gray-500 mt-2">
                         {job.excluidos}{' '}
-                        {job.excluidos === 1 ? 'estudiante quedó' : 'estudiantes quedaron'} fuera
-                        por no cumplir la condición.
+                        {job.excluidos === 1 ? 'estudiante quedó' : 'estudiantes quedaron'} sin
+                        certificado.
                       </p>
                     )}
 

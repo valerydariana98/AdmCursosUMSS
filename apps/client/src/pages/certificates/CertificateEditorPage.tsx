@@ -1,10 +1,10 @@
 ﻿// apps/client/src/pages/certificates/CertificateEditorPage.tsx
-// Diagramador de plantillas (HU-02).
+// Configuración de plantillas de certificado (issue #97, #99).
 //
-// La misma vista sirve para crear y para editar: la diferencia es que al editar
-// la plantilla llega del servidor con fondo y elementos ya cargados. El fondo no
-// se puede cambiar al editar a propósito: cambiarlo dejaría todas las posiciones
-// ya ajustadas en un sitio equivocado, así que hay que crear una plantilla nueva.
+// El usuario no diseña el certificado: elige el curso (o grupo), el fondo y las
+// autoridades firmantes. El texto y su disposición son fijos y los datos salen
+// del sistema al generar, así que la vista previa es de solo lectura. El fondo no
+// se puede cambiar al editar; para otro fondo se crea una plantilla nueva.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -23,18 +23,14 @@ import {
   CERTIFICATE_IMAGE_MAX_WIDTH,
   CERTIFICATE_IMAGE_MIN_HEIGHT,
   CERTIFICATE_IMAGE_MIN_WIDTH,
+  CERTIFICATE_KIND_LABEL,
   CERTIFICATE_PAPER_LABELS,
-  CERTIFICATE_PERCENT_SCALE,
-  resolveCertificateVariables,
+  CERTIFICATE_SAMPLE_DATA,
   resolverProporcionPapel,
-  type PlantillaElementoInput,
+  type CertificateData,
+  type CertificateKind,
 } from 'shared';
-import CertificateCanvas, {
-  acotarPercent,
-  nuevoIdTemporal,
-  type ElementoBorrador,
-} from './components/CertificateCanvas';
-import ElementPropsPanel from './components/ElementPropsPanel';
+import CertificatePreview from './components/CertificatePreview';
 
 const ArrowLeftIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,14 +44,15 @@ const SaveIcon = () => (
   </svg>
 );
 
-/** Datos de ejemplo con los que se resuelve la vista previa de las variables. */
-const CONTEXTO_EJEMPLO = {
-  nombreEstudiante: 'María Fernanda Vargas Cruz',
-  nombreCurso: 'Álgebra I',
-  grupo: 'Grupo 3',
-  notaFinal: 87,
-  fechaEmision: '16/10/2026',
+// Nombres de muestra para la vista previa: el destinatario real recién se conoce
+// al generar.
+const DESTINATARIO_EJEMPLO: Record<CertificateKind, string> = {
+  aprobacion: CERTIFICATE_SAMPLE_DATA.destinatario,
+  asistencia: CERTIFICATE_SAMPLE_DATA.destinatario,
+  instructor: 'Juan Carlos Rojas Pérez',
 };
+
+const TIPOS_VISTA_PREVIA = Object.keys(CERTIFICATE_KIND_LABEL) as CertificateKind[];
 
 const NOMBRE_EJEMPLO = 'Certificado de participación';
 
@@ -77,10 +74,11 @@ const CertificateEditorPage = () => {
   const [archivoFondo, setArchivoFondo] = useState<File | null>(null);
   // Papel cuya proporción coincide con el fondo subido (A4, Carta u Oficio).
   const [papelFondo, setPapelFondo] = useState<string | null>(null);
-  const [elementos, setElementos] = useState<ElementoBorrador[]>([]);
   const [marcosBase, setMarcosBase] = useState<any[]>([]);
+  // Marco base elegido; vacío cuando el fondo es un archivo subido.
+  const [marcoId, setMarcoId] = useState('');
   const [autoridades, setAutoridades] = useState<{ titulo: string; nombre: string }[]>([]);
-  const [seleccionado, setSeleccionado] = useState<number | null>(null);
+  const [tipoVistaPrevia, setTipoVistaPrevia] = useState<CertificateKind>('aprobacion');
   const [datosAbierto, setDatosAbierto] = useState(true);
   const [imagenAbierta, setImagenAbierta] = useState(true);
 
@@ -103,6 +101,7 @@ const CertificateEditorPage = () => {
   useEffect(() => {
     if (editando || fondo !== null || marcosBase.length === 0) return;
     const primero = marcosBase[0];
+    setMarcoId(primero.id);
     void elegirMarcoBase(primero.ruta, primero.ancho, primero.alto);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marcosBase, editando]);
@@ -131,19 +130,10 @@ const CertificateEditorPage = () => {
           ancho: plantilla.ancho,
           alto: plantilla.alto,
         });
-        setElementos(
-          plantilla.elementos.map((elemento) => ({
-            id: elemento.id,
-            tipo: 'texto',
-            texto: elemento.texto ?? '',
-            xPercent: elemento.xPercent,
-            yPercent: elemento.yPercent,
-            anchoPercent: elemento.anchoPercent,
-            alineacion: elemento.alineacion,
-            fontSize: elemento.fontSize,
-            fontFamily: elemento.fontFamily,
-            color: elemento.color,
-            position: elemento.position,
+        setAutoridades(
+          (plantilla.autoridades ?? []).map((autoridad) => ({
+            titulo: autoridad.titulo,
+            nombre: autoridad.nombre,
           }))
         );
       } catch (caught) {
@@ -223,6 +213,7 @@ const CertificateEditorPage = () => {
       setPapelFondo(papel.label);
       setFondo({ url, ancho: width, alto: height });
       setArchivoFondo(archivo);
+      setMarcoId('');
     };
 
     imagen.onerror = () => {
@@ -249,64 +240,33 @@ const CertificateEditorPage = () => {
     }
   };
 
-  // ---- Manejo de elementos del lienzo ----
+  // ---- Vista previa ----
 
-  const agregarTexto = (xPercent: number, yPercent: number) => {
-    const nuevo: ElementoBorrador = {
-      id: nuevoIdTemporal(),
-      tipo: 'texto',
-      texto: '{nombre_estudiante}',
-      xPercent,
-      yPercent,
-      // Un bloque ocupa la mitad del ancho para que un nombre largo tenga de dónde
-      // crecer hacia los dos lados sin salirse del certificado.
-      anchoPercent: CERTIFICATE_PERCENT_SCALE / 2,
-      alineacion: 'centro',
-      fontSize: 20,
-      fontFamily: 'Helvetica',
-      color: '#1f2937',
-      position: elementos.length,
+  // Con un curso elegido, la vista previa usa sus datos reales (nombre, fechas,
+  // horas); sin curso, datos de muestra. Solo el destinatario es de ejemplo.
+  const datosVistaPrevia = useMemo((): CertificateData => {
+    const curso = courses.find((item) => item.id === cursoId);
+    const grupo = grupos.find((item) => item.id === grupoId);
+
+    return {
+      ...CERTIFICATE_SAMPLE_DATA,
+      ...(curso && {
+        curso: curso.nombreCurso,
+        duracionHoras: curso.duracionHoras,
+        fechaIni: curso.fechaIni,
+        fechaFin: curso.fechaFin,
+        periodo: curso.periodo,
+      }),
+      grupo: grupo?.numGrupo ?? null,
+      tipo: tipoVistaPrevia,
+      destinatario: DESTINATARIO_EJEMPLO[tipoVistaPrevia],
     };
-
-    setElementos((anteriores) => [...anteriores, nuevo]);
-    setSeleccionado(nuevo.id);
-  };
-
-  const mover = (idElemento: number, xPercent: number, yPercent: number) => {
-    setElementos((anteriores) =>
-      anteriores.map((elemento) =>
-        elemento.id === idElemento ? { ...elemento, xPercent, yPercent } : elemento
-      )
-    );
-  };
-
-  const cambiar = (idElemento: number, cambios: Partial<ElementoBorrador>) => {
-    setElementos((anteriores) =>
-      anteriores.map((elemento) =>
-        elemento.id === idElemento ? { ...elemento, ...cambios } : elemento
-      )
-    );
-  };
-
-  const eliminar = (idElemento: number) => {
-    setElementos((anteriores) => anteriores.filter((elemento) => elemento.id !== idElemento));
-    setSeleccionado(null);
-  };
-
-  const elementoSeleccionado = useMemo(
-    () => elementos.find((elemento) => elemento.id === seleccionado) ?? null,
-    [elementos, seleccionado]
-  );
+  }, [courses, cursoId, grupos, grupoId, tipoVistaPrevia]);
 
   // ---- Guardado ----
 
-  const puedeGuardar =
-    !guardando &&
-    fondo !== null &&
-    nombre.trim() !== '' &&
-    elementos.length > 0 &&
-    (editando || (cursoId !== null && (!user || user.rol === 'ADMIN' || grupoId !== null)));
-
+  // El botón solo se bloquea mientras guarda: si se deshabilitara por datos
+  // incompletos, el usuario no sabría qué le falta. `handleSave` valida y lo dice.
   const handleSave = async () => {
     setError(null);
 
@@ -320,11 +280,6 @@ const CertificateEditorPage = () => {
       return;
     }
 
-    if (elementos.length === 0) {
-      setError('Añada al menos un elemento al certificado');
-      return;
-    }
-
     if (!editando && cursoId === null) {
       setError('Seleccione el curso al que pertenece la plantilla');
       return;
@@ -332,27 +287,12 @@ const CertificateEditorPage = () => {
 
     setGuardando(true);
 
-    // El `position` se renumera al guardar: es el orden de dibujado y depende del
-    // orden en que quedaron los elementos, no del id que tengan.
-    const aGuardar: PlantillaElementoInput[] = elementos.map((elemento, indice) => ({
-      tipo: elemento.tipo,
-      texto: elemento.tipo === 'texto' ? elemento.texto : null,
-      xPercent: acotarPercent(elemento.xPercent),
-      yPercent: acotarPercent(elemento.yPercent),
-      anchoPercent: acotarPercent(elemento.anchoPercent),
-      alineacion: elemento.alineacion,
-      fontSize: elemento.fontSize,
-      fontFamily: elemento.fontFamily,
-      color: elemento.color,
-      position: indice,
-    }));
-
     try {
       if (editando) {
         await certificateService.update(Number(id), {
           nombre: nombre.trim(),
           autoridades: autoridades.map((a, index) => ({ titulo: a.titulo, nombre: a.nombre, orden: index })),
-          elementos: aGuardar,
+          elementos: [],
         });
       } else {
         if (!archivoFondo) {
@@ -369,7 +309,7 @@ const CertificateEditorPage = () => {
             autoridades: autoridades.map((a, index) => ({ titulo: a.titulo, nombre: a.nombre, orden: index })),
             ancho: fondo.ancho,
             alto: fondo.alto,
-            elementos: aGuardar,
+            elementos: [],
           },
           archivoFondo
         );
@@ -429,14 +369,15 @@ const CertificateEditorPage = () => {
             {editando ? 'Editar plantilla' : 'Nueva plantilla de certificado'}
           </h1>
           <p className="text-sm text-gray-500">
-            Suba la imagen base, coloque los textos, y guarde.
+            Elija el curso, el fondo y las autoridades. El resto del certificado se completa
+            con los datos del sistema.
           </p>
         </div>
         <Button
           variant="primary"
           icon={<SaveIcon />}
           onClick={handleSave}
-          disabled={!puedeGuardar}
+          disabled={guardando}
         >
           {guardando ? 'Guardando...' : 'Guardar Plantilla'}
         </Button>
@@ -471,43 +412,80 @@ const CertificateEditorPage = () => {
                   label="Nombre de la plantilla"
                   value={nombre}
                   onChange={(event) => setNombre(event.target.value)}
-                  placeholder="Certificado de participaci�n"
+                  placeholder="Certificado de participación"
                 />
 
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-gray-700">Autoridades</label>
-                {autoridades.map((autoridad, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      className="flex-1 border rounded-lg p-2 text-xs"
-                      placeholder="Titulo"
-                      value={autoridad.titulo}
-                      onChange={(e) => {
-                        const copia = [...autoridades];
-                        copia[index] = { ...copia[index], titulo: e.target.value };
-                        setAutoridades(copia);
-                      }}
-                    />
-                    <input
-                      className="flex-1 border rounded-lg p-2 text-xs"
-                      placeholder="Nombre"
-                      value={autoridad.nombre}
-                      onChange={(e) => {
-                        const copia = [...autoridades];
-                        copia[index] = { ...copia[index], nombre: e.target.value };
-                        setAutoridades(copia);
-                      }}
-                    />
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-baseline justify-between">
+                    <label className="text-xs font-semibold text-gray-700">Autoridades firmantes</label>
+                    <span className="text-[11px] text-gray-400">{autoridades.length}</span>
                   </div>
-                ))}
-                <button
-                  type="button"
-                  className="text-xs text-brand-primary"
-                  onClick={() => setAutoridades([...autoridades, { titulo: '', nombre: '' }])}
-                >
-                  Agregar autoridad
-                </button>
-              </div>
+                  <p className="text-[11px] text-gray-500 -mt-1">
+                    Se imprimen en la banda inferior, en el orden agregado.
+                  </p>
+
+                  {autoridades.map((autoridad, index) => (
+                    <div
+                      key={index}
+                      className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50/70 p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-gray-500">
+                          Autoridad {index + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setAutoridades(autoridades.filter((_, i) => i !== index))}
+                          className="flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Quitar
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-medium text-gray-500">Cargo o título</label>
+                        <input
+                          className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/15"
+                          placeholder="Director Académico"
+                          value={autoridad.titulo}
+                          onChange={(e) => {
+                            const copia = [...autoridades];
+                            copia[index] = { ...copia[index], titulo: e.target.value };
+                            setAutoridades(copia);
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-medium text-gray-500">Nombre completo</label>
+                        <input
+                          className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/15"
+                          placeholder="Dr. Juan Pérez Rojas"
+                          value={autoridad.nombre}
+                          onChange={(e) => {
+                            const copia = [...autoridades];
+                            copia[index] = { ...copia[index], nombre: e.target.value };
+                            setAutoridades(copia);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-gray-300 px-3 py-2.5 text-xs font-semibold text-gray-500 transition-colors hover:border-brand-primary hover:bg-brand-primary/5 hover:text-brand-primary"
+                    onClick={() => setAutoridades([...autoridades, { titulo: '', nombre: '' }])}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Agregar autoridad
+                  </button>
+                </div>
 
                 <Select
                   label="Curso"
@@ -521,18 +499,18 @@ const CertificateEditorPage = () => {
                   disabled={editando}
                 />
 
-              {soloAdmin && (
-                <Select
-                  label="Grupo (opcional)"
-                  value={grupoId ?? ''}
-                  onChange={(event) =>
-                    setGrupoId(event.target.value === '' ? null : Number(event.target.value))
-                  }
-                  options={groupOptions}
-                  placeholder="General del curso"
-                  disabled={editando || cursoId === null}
-                />
-              )}
+                {soloAdmin && (
+                  <Select
+                    label="Grupo (opcional)"
+                    value={grupoId ?? ''}
+                    onChange={(event) =>
+                      setGrupoId(event.target.value === '' ? null : Number(event.target.value))
+                    }
+                    options={groupOptions}
+                    placeholder="General del curso"
+                    disabled={editando || cursoId === null}
+                  />
+                )}
 
                 {soloAdmin && !editando && grupoId === null && (
                   <p className="text-[11px] text-gray-500 -mt-2">
@@ -544,19 +522,28 @@ const CertificateEditorPage = () => {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5">
-            <h2 className="text-sm font-bold text-gray-900 mb-1">Imagen base</h2>
-            <p className="text-xs text-gray-500 mb-3">
-              PNG o JPG, entre {CERTIFICATE_IMAGE_MIN_WIDTH}x{CERTIFICATE_IMAGE_MIN_HEIGHT} y{' '}
-              {CERTIFICATE_IMAGE_MAX_WIDTH}x{CERTIFICATE_IMAGE_MAX_HEIGHT} px. Para imprimir sin
-              pérdida use 1920x1080 o 2000x1414.
-            </p>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs">
+            <button
+              type="button"
+              onClick={() => setImagenAbierta((value) => !value)}
+              className="w-full flex items-center justify-between p-5 text-left"
+            >
+              <h2 className="text-sm font-bold text-gray-900">Imagen base</h2>
+              <span className="text-gray-400">{imagenAbierta ? '▲' : '▼'}</span>
+            </button>
+            {imagenAbierta && (
+              <div className="px-5 pb-5">
+                <p className="text-xs text-gray-500 mb-3">
+                  PNG o JPG en horizontal, con proporción de{' '}
+                  <strong>{CERTIFICATE_PAPER_LABELS}</strong>. Ancho mínimo{' '}
+                  {CERTIFICATE_IMAGE_MIN_WIDTH} px (máximo {CERTIFICATE_IMAGE_MAX_WIDTH} px).
+                </p>
 
                 {editando ? (
                   <AlertInfo
                     type="info"
                     title="La imagen base no se puede cambiar al editar"
-                    subtitle="Cambiarla dejaría los textos descolocados. Cree una plantilla nueva si necesita otro fondo."
+                    subtitle="Cree una plantilla nueva si necesita otro fondo."
                   />
                 ) : (
                   <>
@@ -564,9 +551,12 @@ const CertificateEditorPage = () => {
                       className="block w-full text-xs text-gray-600 border rounded-lg p-2 mb-2"
                       onChange={(e) => {
                         const marco = marcosBase.find((m) => m.id === e.target.value);
-                        if (marco) void elegirMarcoBase(marco.ruta, marco.ancho, marco.alto);
+                        if (!marco) return;
+                        setMarcoId(marco.id);
+                        if (inputFondo.current) inputFondo.current.value = '';
+                        void elegirMarcoBase(marco.ruta, marco.ancho, marco.alto);
                       }}
-                      defaultValue=""
+                      value={marcoId}
                     >
                       <option value="">Seleccione un marco base</option>
                       {marcosBase.map((marco) => (
@@ -583,48 +573,47 @@ const CertificateEditorPage = () => {
                       className="block w-full text-xs text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-primary/10 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-brand-primary hover:file:bg-brand-primary/20 cursor-pointer"
                     />
 
-                {fondo && (
-                  <p className="text-[11px] text-gray-500 mt-2">
-                    {fondo.ancho}x{fondo.alto} px
-                  </p>
+                    {fondo && (
+                      <p className="text-[11px] text-gray-500 mt-2">
+                        {fondo.ancho}x{fondo.alto} px
+                        {papelFondo ? ` · proporción ${papelFondo}` : ''}
+                      </p>
+                    )}
+                  </>
                 )}
-              </>
+              </div>
             )}
           </div>
 
-          {elementos.length === 0 && fondo && (
-            <AlertInfo
-              type="info"
-              title="Haga clic en la imagen para empezar"
-              subtitle="Cada clic añade un bloque de texto centrado que luego puede mover."
-            />
-          )}
-
-          <ElementPropsPanel
-            elemento={elementoSeleccionado}
-            onCambiar={(cambios) =>
-              elementoSeleccionado &&
-              cambiar(elementoSeleccionado.id, cambios)
-            }
-            onResolverEjemplo={(texto) =>
-              resolveCertificateVariables(texto, CONTEXTO_EJEMPLO)
-            }
-          />
         </div>
 
         <div className="xl:col-span-2 order-1 xl:order-2">
           {fondo ? (
-            <div className="flex flex-col gap-4">
-               <CertificateCanvas
-                 fondoUrl={fondo.url}
-                 elementos={elementos}
-                 seleccionado={seleccionado}
-                 onSeleccionar={setSeleccionado}
-                 onAgregarTexto={agregarTexto}
-                 onMover={mover}
-                 onEliminar={eliminar}
-               />
-             </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-gray-500">Ver como:</span>
+                {TIPOS_VISTA_PREVIA.map((tipo) => (
+                  <button
+                    key={tipo}
+                    type="button"
+                    onClick={() => setTipoVistaPrevia(tipo)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      tipoVistaPrevia === tipo
+                        ? 'bg-brand-primary text-white'
+                        : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-primary'
+                    }`}
+                  >
+                    {CERTIFICATE_KIND_LABEL[tipo]}
+                  </button>
+                ))}
+              </div>
+
+              <CertificatePreview
+                fondoUrl={fondo.url}
+                datos={datosVistaPrevia}
+                autoridades={autoridades}
+              />
+            </div>
           ) : (
             <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-10 text-center">
               <p className="text-sm font-semibold text-gray-900">
@@ -633,7 +622,7 @@ const CertificateEditorPage = () => {
               <p className="text-xs text-gray-500 mt-1">
                 {editando
                   ? 'La plantilla no tiene un fondo válido guardado.'
-                  : 'Suba el diseño del certificado en PNG o JPG para empezar a colocar textos.'}
+                  : 'Elija un marco base o suba el fondo del certificado en PNG o JPG.'}
               </p>
             </div>
           )}

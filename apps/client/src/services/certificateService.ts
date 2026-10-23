@@ -5,6 +5,7 @@
 // proyecto.
 
 import type {
+  CertificateVerification,
   CertificateJob,
   CertificatePreview,
   CreatePlantilla,
@@ -64,6 +65,8 @@ export const certificateService = {
     formData.append('ancho', String(datos.ancho));
     formData.append('alto', String(datos.alto));
     formData.append('elementos', JSON.stringify(datos.elementos));
+    // Viaja como JSON igual que los elementos: el multipart solo lleva texto.
+    formData.append('autoridades', JSON.stringify(datos.autoridades ?? []));
     formData.append('fondo', fondo);
 
     return api.postForm<{ id: number }>('/api/certificados/plantillas', formData);
@@ -138,7 +141,7 @@ export const certificateService = {
     return api.get('/api/certificados/marcos-base');
   },
 
-  verificar(codigo: string): Promise<any> {
-    return api.get(`/api/certificados/verificar/${codigo}`);
+  verificar(codigo: string): Promise<CertificateVerification> {
+    return api.get(`/api/certificados/verificar/${encodeURIComponent(codigo)}`);
   },
 };

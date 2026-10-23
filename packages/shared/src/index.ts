@@ -1098,6 +1098,78 @@ export const calcularMonto = (
 export const CERTIFICATE_PAGE_WIDTH = 792;
 export const CERTIFICATE_PAGE_HEIGHT = 612;
 
+// Banda inferior reservada a las autoridades (issue #97, #99, #102), en puntos
+// de la página. Se dibujan en una fila repartida sobre la misma columna que el
+// resto del texto; el QR va más abajo (desde y=516), así que no se cruzan. Cada
+// firmante lleva encima una línea para la firma manuscrita. El editor la dibuja
+// con estas mismas medidas para que la vista previa coincida con el PDF.
+export const CERTIFICATE_AUTORIDADES_LAYOUT = {
+  bandaY: 470,
+  margenX: 96,
+  limiteDerecho: 696,
+  separacionY: 16,
+  nombreFontSize: 11,
+  tituloFontSize: 9,
+  // Línea de firma: cuánto por encima del nombre y qué parte del ancho ocupa.
+  lineaY: 8,
+  lineaAncho: 0.8,
+  // Aire a cada lado entre firmantes vecinos.
+  padding: 6,
+} as const;
+
+/**
+ * Reduce el cuerpo de letra hasta que el texto entre en `anchoMaximo`. Un nombre
+ * largo de autoridad no puede saltar de línea porque quedaría encima de su cargo.
+ * La medición la pone quien llama (pdfkit en el servidor, canvas en el navegador)
+ * para que cada lado mida con su propia fuente.
+ */
+export const fitCertificateFontSize = (
+  texto: string,
+  anchoMaximo: number,
+  tamanoBase: number,
+  medir: (texto: string, tamano: number) => number,
+  tamanoMinimo = 6
+): number => {
+  let tamano = tamanoBase;
+  while (tamano > tamanoMinimo && medir(texto, tamano) > anchoMaximo) tamano -= 0.5;
+  return tamano;
+};
+
+// QR de verificación en la esquina inferior derecha (issue #98, #100). Es el
+// mismo QR en todos los certificados: lleva a la página pública donde se escribe
+// el código, que va impreso debajo y es lo que identifica a cada certificado.
+export const CERTIFICATE_QR_LAYOUT = { size: 64, margen: 24, codigoFontSize: 7 } as const;
+
+// Código de verificación: tres grupos de cinco letras o dígitos, ej.
+// "9QJ73-FLIA6-BG4BH". Son 36^15 combinaciones, así que adivinar uno válido no
+// es práctico, y se puede dictar o tipear sin confundirse con los guiones.
+export const CERTIFICATE_CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+export const CERTIFICATE_CODE_PATTERN = /^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/;
+export const CERTIFICATE_SAMPLE_CODE = '9QJ73-FLIA6-BG4BH';
+
+// Respuesta pública de la verificación: lo justo para cotejar con el papel.
+export interface CertificateVerification {
+  codigo: string;
+  // 'aprobacion' | 'asistencia' | 'instructor'
+  tipo: string;
+  destinatarioTipo: 'estudiante' | 'instructor';
+  destinatario: string;
+  curso: string;
+  grupo: number;
+  fechaEmision: string;
+}
+
+/**
+ * Lleva lo que escribe una persona al formato del código: mayúsculas, sin
+ * espacios y con los guiones en su lugar aunque los haya omitido. Devuelve null
+ * si no puede ser un código válido.
+ */
+export const normalizeCertificateCode = (entrada: string): string | null => {
+  const limpio = entrada.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (limpio.length !== 15) return null;
+  return `${limpio.slice(0, 5)}-${limpio.slice(5, 10)}-${limpio.slice(10)}`;
+};
+
 // Límites de la imagen base. Por debajo el certificado se ve pixelado al
 // imprimir; por encima no gana nitidez y encarece el almacenamiento. El alto
 // máximo es el de una Carta al ancho máximo: 2500 / (279.4/215.9) ≈ 1932.
@@ -1170,83 +1242,161 @@ export const fromPercentHundredths = (hundredths: number): number =>
   hundredths / CERTIFICATE_PERCENT_SCALE;
 
 // ------------------------------------------------------------------------
-// Variables dinámicas
+// Contenido fijo del certificado
 // ------------------------------------------------------------------------
 
-// Los valores que se sustituyen en cada variable. El nombre de la clave es el
-// texto exacto que el usuario escribe entre llaves en el diagramador.
-export interface CertificateVariable {
-  key: string;
-  label: string;
-  // Dato del sistema que rellena la variable. Se documenta para que el editor
-  // pueda mostrar un ejemplo de cómo se verá en el certificado.
-  origen: string;
-  ejemplo: string;
+// El certificado no se diseña a mano: el texto, su posición y su tipografía son
+// siempre los mismos, y los datos salen del sistema (estudiante o instructor,
+// curso, fechas, horas). El usuario solo elige el fondo y las autoridades. Así
+// cualquier marco produce el mismo documento y nadie puede dejar un dato mal
+// escrito. El editor y el render del PDF dibujan los mismos bloques que arma
+// `buildCertificateBlocks`.
+
+export type CertificateKind = 'aprobacion' | 'asistencia' | 'instructor';
+
+export const CERTIFICATE_KIND_LABEL: Record<CertificateKind, string> = {
+  aprobacion: 'Aprobación',
+  asistencia: 'Asistencia',
+  instructor: 'Instructor',
+};
+
+// Datos de un certificado concreto. Las fechas vienen como `YYYY-MM-DD`, igual
+// que las columnas `date` de `cursos`.
+export interface CertificateData {
+  tipo: CertificateKind;
+  destinatario: string;
+  curso: string;
+  duracionHoras: number;
+  fechaIni: string;
+  fechaFin: string;
+  // Solo el certificado de instructor los imprime.
+  grupo?: number | null;
+  periodo?: string | null;
 }
 
-export const CERTIFICATE_VARIABLES: CertificateVariable[] = [
-  {
-    key: '{nombre_estudiante}',
-    label: 'Nombre del estudiante',
-    origen: 'estudiantes.nombres + apPaterno + apMaterno',
-    ejemplo: 'María Fernanda Vargas Cruz',
-  },
-  {
-    key: '{nombre_curso}',
-    label: 'Nombre del curso',
-    origen: 'cursos.nombreCurso',
-    ejemplo: 'Álgebra I',
-  },
-  {
-    key: '{grupo}',
-    label: 'Grupo',
-    origen: 'grupos.numGrupo',
-    ejemplo: 'Grupo 3',
-  },
-  {
-    key: '{nota_final}',
-    label: 'Nota final',
-    origen: 'Suma ponderada de la rúbrica del grupo',
-    ejemplo: '87',
-  },
-  {
-    key: '{fecha_emision}',
-    label: 'Fecha de emisión',
-    origen: 'Fecha en que se genera el certificado',
-    ejemplo: '16/10/2026',
-  },
+// Fuentes estándar de PDF: pdfkit las trae incorporadas y cubren los acentos y
+// la ñ. El cliente usa la equivalente de `CERTIFICATE_FONT_CSS`.
+export type CertificateFont = 'Helvetica' | 'Helvetica-Bold' | 'Times-Bold';
+
+export const CERTIFICATE_FONT_CSS: Record<CertificateFont, { family: string; weight: number }> = {
+  Helvetica: { family: 'Helvetica, Arial, sans-serif', weight: 400 },
+  'Helvetica-Bold': { family: 'Helvetica, Arial, sans-serif', weight: 700 },
+  'Times-Bold': { family: '"Times New Roman", Times, serif', weight: 700 },
+};
+
+// Columna central donde va todo el texto, en puntos de la página. Deja libres
+// los laterales, que es donde los marcos ponen sus adornos.
+export const CERTIFICATE_CONTENT_X = 96;
+export const CERTIFICATE_CONTENT_WIDTH = CERTIFICATE_PAGE_WIDTH - CERTIFICATE_CONTENT_X * 2;
+
+// Un bloque de texto centrado en la columna. `y` es el borde superior de la
+// primera línea; si el texto no entra en el ancho, sigue en la línea de abajo.
+export interface CertificateBlock {
+  texto: string;
+  y: number;
+  fontSize: number;
+  font: CertificateFont;
+  color: string;
+}
+
+const MESES = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
 ];
 
-// Contexto con el que se resuelve un certificado concreto. Lo arma el servidor
-// con los datos reales del estudiante y lo usa `resolveCertificateVariables`
-// para generar el PDF.
-export interface CertificateVariableContext {
-  nombreEstudiante: string;
-  nombreCurso: string;
-  grupo: string;
-  notaFinal: number;
-  fechaEmision: string;
-}
+// Se parte el texto en vez de usar `new Date()`: una fecha sin hora se
+// interpreta en UTC y en Bolivia (UTC-4) caería en el día anterior.
+const partesFecha = (fecha: string) => {
+  const [anio, mes, dia] = fecha.slice(0, 10).split('-').map(Number);
+  return { anio, mes: MESES[(mes ?? 1) - 1] ?? '', dia };
+};
 
-// Sustituye cada variable conocida por su valor. Una variable que no existe en
-// el catálogo se deja tal cual en vez de borrarse: así el error se ve impreso
-// en el certificado, y un PDF en blanco no se descubre recién cuando ya se
-// repartieron los diplomas. El mismo helper lo usa el cliente para la
-// previsualización del editor, de modo que lo que se ve al diseñar es
-// exactamente lo que sale impreso.
-export const resolveCertificateVariables = (
-  template: string,
-  context: CertificateVariableContext,
-): string => {
-  const valores: Record<string, string> = {
-    '{nombre_estudiante}': context.nombreEstudiante,
-    '{nombre_curso}': context.nombreCurso,
-    '{grupo}': context.grupo,
-    '{nota_final}': String(context.notaFinal),
-    '{fecha_emision}': context.fechaEmision,
-  };
+/** "2026-07-23" → "23 de julio de 2026". */
+export const formatCertificateDate = (fecha: string): string => {
+  const { anio, mes, dia } = partesFecha(fecha);
+  return `${dia} de ${mes} de ${anio}`;
+};
 
-  return template.replace(/\{[a-z_]+\}/g, (variable) => valores[variable] ?? variable);
+/** "2026-08-05" → "agosto de 2026". */
+export const formatCertificateMonth = (fecha: string): string => {
+  const { anio, mes } = partesFecha(fecha);
+  return `${mes} de ${anio}`;
+};
+
+export const CERTIFICATE_CITY = 'Cochabamba';
+
+const SUBTITULO: Record<CertificateKind, string> = {
+  aprobacion: 'DE APROBACIÓN',
+  asistencia: 'DE ASISTENCIA',
+  instructor: 'DE RECONOCIMIENTO',
+};
+
+const MOTIVO: Record<CertificateKind, string> = {
+  aprobacion: 'Por haber completado satisfactoriamente el curso de:',
+  asistencia: 'Por haber asistido al curso de:',
+  instructor: 'Por haber impartido el curso de:',
+};
+
+const COLOR_TEXTO = '#111827';
+const COLOR_SECUNDARIO = '#374151';
+const COLOR_ACENTO = '#1E3A8A';
+
+export const buildCertificateBlocks = (datos: CertificateData): CertificateBlock[] => {
+  const periodo =
+    datos.tipo === 'instructor' && (datos.grupo || datos.periodo)
+      ? `, ${[datos.grupo ? `grupo ${datos.grupo}` : null, datos.periodo ? `gestión ${datos.periodo}` : null]
+          .filter(Boolean)
+          .join(', ')}`
+      : '';
+
+  const descripcion =
+    `Realizado del ${formatCertificateDate(datos.fechaIni)} al ` +
+    `${formatCertificateDate(datos.fechaFin)}${periodo}, con una duración de ` +
+    `${datos.duracionHoras} horas académicas.`;
+
+  return [
+    { texto: 'CERTIFICADO', y: 96, fontSize: 44, font: 'Times-Bold', color: COLOR_TEXTO },
+    { texto: SUBTITULO[datos.tipo], y: 148, fontSize: 13, font: 'Helvetica-Bold', color: COLOR_ACENTO },
+    { texto: 'OTORGADO A:', y: 190, fontSize: 11, font: 'Helvetica', color: COLOR_SECUNDARIO },
+    {
+      texto: datos.destinatario.toUpperCase(),
+      y: 210,
+      fontSize: 24,
+      font: 'Helvetica-Bold',
+      color: COLOR_TEXTO,
+    },
+    { texto: MOTIVO[datos.tipo], y: 258, fontSize: 12, font: 'Helvetica', color: COLOR_SECUNDARIO },
+    { texto: datos.curso, y: 280, fontSize: 24, font: 'Helvetica-Bold', color: COLOR_ACENTO },
+    { texto: descripcion, y: 340, fontSize: 12, font: 'Helvetica', color: COLOR_SECUNDARIO },
+    {
+      texto: `${CERTIFICATE_CITY}, ${formatCertificateMonth(datos.fechaFin)}`,
+      y: 400,
+      fontSize: 12,
+      font: 'Helvetica',
+      color: COLOR_SECUNDARIO,
+    },
+  ];
+};
+
+// Datos de muestra para la vista previa del editor cuando todavía no se eligió
+// un curso.
+export const CERTIFICATE_SAMPLE_DATA: CertificateData = {
+  tipo: 'aprobacion',
+  destinatario: 'María Fernanda Vargas Cruz',
+  curso: 'Mantenimiento de Computadoras',
+  duracionHoras: 30,
+  fechaIni: '2026-07-23',
+  fechaFin: '2026-08-05',
 };
 
 // ------------------------------------------------------------------------
