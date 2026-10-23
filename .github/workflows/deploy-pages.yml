@@ -41,10 +41,12 @@ jobs:
           # URL del backend de Render: el cliente la usa en runtime para llamar a la API.
           VITE_API_URL: https://admcursosumss.onrender.com
 
+      # Pages tiene que estar activado a mano en Settings → Pages → Source:
+      # "GitHub Actions". `enablement: true` intentaría crearlo con el
+      # GITHUB_TOKEN, que no tiene permiso para eso ("Resource not accessible by
+      # integration").
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Subir artefacto
         uses: actions/upload-pages-artifact@v3

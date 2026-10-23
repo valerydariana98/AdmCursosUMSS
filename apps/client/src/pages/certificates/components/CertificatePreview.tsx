@@ -151,7 +151,7 @@ const CertificatePreview = ({ fondoUrl, datos, autoridades }: CertificatePreview
 
         {/* Mismo QR fijo que imprime el PDF; el código es de ejemplo. */}
         <img
-          src="/qr-verificacion.png"
+          src={`${import.meta.env.BASE_URL}qr-verificacion.png`}
           alt="QR de verificación"
           className="absolute pointer-events-none"
           draggable={false}
