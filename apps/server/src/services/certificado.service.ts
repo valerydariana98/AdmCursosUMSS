@@ -20,7 +20,7 @@ import { createWriteStream } from 'node:fs';
 import { mkdir, readdir, stat, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { ZipArchive } from 'archiver';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, and } from 'drizzle-orm';
 import QRCode from 'qrcode';
 import {
   CERTIFICATE_CONDITION_LABEL,
@@ -868,24 +868,101 @@ export const verificarCertificado = async (
   codigo: string
 ): Promise<{ ok: true; value: any } | { ok: false; reason: 'not_found' }> => {
   const [fila] = await db
-    .select()
+    .select({
+      certificado: certificadosEmitidos,
+      estudiante: estudiantes,
+      instructor: instructores,
+      curso: cursos,
+      grupo: grupos,
+    })
     .from(certificadosEmitidos)
+    .leftJoin(
+      estudiantes,
+      and(eq(certificadosEmitidos.destinatarioTipo, 'estudiante'), eq(certificadosEmitidos.destinatarioId, estudiantes.id))
+    )
+    .leftJoin(
+      instructores,
+      and(eq(certificadosEmitidos.destinatarioTipo, 'instructor'), eq(certificadosEmitidos.destinatarioId, instructores.id))
+    )
+    .leftJoin(cursos, eq(certificadosEmitidos.cursoId, cursos.id))
+    .leftJoin(grupos, eq(certificadosEmitidos.grupoId, grupos.id))
     .where(eq(certificadosEmitidos.codigo, codigo))
     .limit(1);
 
-  if (!fila) return { ok: false, reason: 'not_found' };
+  if (!fila || !fila.certificado) return { ok: false, reason: 'not_found' };
+
+  const c = fila.certificado;
+  const meta = (c.metadata as Record<string, unknown>) || {};
+
+  const nombreEstudiante =
+    (meta.nombre as string) ||
+    (fila.estudiante
+      ? `${fila.estudiante.nombres} ${fila.estudiante.apPaterno} ${fila.estudiante.apMaterno}`.trim()
+      : fila.instructor
+        ? `${fila.instructor.nombres} ${fila.instructor.apPaterno} ${fila.instructor.apMaterno}`.trim()
+        : '');
+
+  const ci = (meta.ci as string) || fila.estudiante?.ci || fila.instructor?.ci || null;
+  const codSis = (meta.codSis as string) || fila.estudiante?.codSis || null;
+  const cargo = (meta.cargo as string) || fila.instructor?.cargo || null;
+
+  const nombreCurso = (meta.curso as string) || fila.curso?.nombreCurso || '';
+  const horas =
+    typeof meta.horas === 'number'
+      ? meta.horas
+      : fila.curso?.duracionHoras ?? null;
+  const grupoNum =
+    typeof meta.grupo === 'number' ? meta.grupo : fila.grupo?.numGrupo ?? null;
+  const periodo = (meta.periodo as string) || fila.curso?.periodo || null;
+  const fechaIni = (meta.fechaIni as string) || fila.curso?.fechaIni || null;
+  const fechaFin = (meta.fechaFin as string) || fila.curso?.fechaFin || null;
+
+  const tipo = (meta.tipo as string) || c.tipo || '';
+  const tipoLower = tipo.toLowerCase();
+  const tipoCertificado =
+    tipoLower === 'aprobacion'
+      ? 'Aprobación'
+      : tipoLower === 'asistencia'
+        ? 'Asistencia'
+        : tipoLower === 'instructor'
+          ? 'Instructor'
+          : tipo || '';
+
+  const fechaEmision = c.fechaEmision
+    ? c.fechaEmision.includes('-')
+      ? c.fechaEmision
+      : (() => {
+          const p = c.fechaEmision.split('/');
+          if (p.length === 3) return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+          return c.fechaEmision;
+        })()
+    : null;
 
   return {
     ok: true,
     value: {
-      codigo: fila.codigo,
+      codigo: c.codigo,
+      codigo_qr: c.codigo,
       valido: true,
-      tipo: fila.tipo,
-      destinatarioTipo: fila.destinatarioTipo,
-      destinatarioId: fila.destinatarioId,
-      cursoId: fila.cursoId,
-      grupoId: fila.grupoId,
-      fechaEmision: fila.fechaEmision,
+      tipo: c.tipo,
+      tipo_codigo: tipoLower,
+      tipo_certificado: tipoCertificado,
+      destinatarioTipo: c.destinatarioTipo,
+      destinatarioId: c.destinatarioId,
+      cursoId: c.cursoId,
+      grupoId: c.grupoId,
+      fechaEmision,
+      fecha_emision: fechaEmision,
+      nombre_estudiante: nombreEstudiante,
+      ci_estudiante: ci,
+      cod_sis: codSis,
+      cargo,
+      nombre_curso: nombreCurso,
+      horas,
+      grupo: grupoNum,
+      periodo,
+      fecha_inicio: fechaIni,
+      fecha_fin: fechaFin,
     },
   };
 };
