@@ -139,6 +139,8 @@ const cargarEstudiantes = async (groupId: number): Promise<EstudianteRow[]> =>
 interface RubricaItem {
   id: number;
   porcentaje: number;
+  // Los ítems de asistencia no tienen nota cargada: valen el % de asistencia.
+  esAsistencia: boolean;
 }
 
 // Los porcentajes se guardan en centésimas (mismo criterio que la rúbrica), y
@@ -153,13 +155,18 @@ const cargarRubrica = async (groupId: number): Promise<RubricaItem[] | null> => 
   if (!rubrica) return null;
 
   const items = await db
-    .select({ id: rubricItems.id, porcentajeHundredths: rubricItems.percentageHundredths })
+    .select({
+      id: rubricItems.id,
+      porcentajeHundredths: rubricItems.percentageHundredths,
+      categoria: rubricItems.category,
+    })
     .from(rubricItems)
     .where(eq(rubricItems.rubricId, rubrica.id));
 
   return items.map((item) => ({
     id: item.id,
     porcentaje: item.porcentajeHundredths / 100,
+    esAsistencia: item.categoria === 'attendance',
   }));
 };
 
@@ -206,7 +213,11 @@ const evaluarEstudiantes = async (
     const notaFinal = notasDisponibles
       ? computeFinalGrade(
           rubrica!.map((item) => ({
-            nota: gradeMap.get(cellKey(estudiante.id, item.id)) ?? null,
+            // Igual que la vista de notas y el reporte: si el certificado usara
+            // otra nota, emitiría una condición que el docente no ve.
+            nota: item.esAsistencia
+              ? (resumen?.percentage ?? null)
+              : (gradeMap.get(cellKey(estudiante.id, item.id)) ?? null),
             percentageHundredths: toPercentageHundredths(item.porcentaje),
           }))
         )

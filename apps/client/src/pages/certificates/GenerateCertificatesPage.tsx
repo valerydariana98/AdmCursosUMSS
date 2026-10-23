@@ -50,15 +50,24 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
   const navigate = useNavigate();
   const { courses } = useCourses();
 
-  // Desde el listado de plantillas se llega con `?curso=<id>`: el curso ya viene
-  // elegido y solo falta el grupo.
+  // Se llega desde el botón "Generar" de la plantilla del curso, con
+  // `?curso=<id>`: el curso queda fijo y solo se elige el grupo.
   const [searchParams] = useSearchParams();
-  const [cursoId, setCursoId] = useState<number | null>(() => {
-    const desdeUrl = Number(searchParams.get('curso'));
-    return Number.isInteger(desdeUrl) && desdeUrl > 0 ? desdeUrl : null;
-  });
+  const parametroCurso = Number(searchParams.get('curso'));
+  const cursoId = Number.isInteger(parametroCurso) && parametroCurso > 0 ? parametroCurso : null;
+  const curso = courses.find((item) => item.id === cursoId) ?? null;
   const [grupoId, setGrupoId] = useState<number | null>(null);
   const { grupos } = useGroups(cursoId ?? 0);
+
+  // Sin curso no hay nada que generar: se vuelve al listado de plantillas.
+  useEffect(() => {
+    if (cursoId === null) navigate('/certificados', { replace: true });
+  }, [cursoId, navigate]);
+
+  // Con un único grupo no hay nada que elegir.
+  useEffect(() => {
+    if (grupos.length === 1) setGrupoId(grupos[0].id);
+  }, [grupos]);
 
   const [preview, setPreview] = useState<CertificatePreview | null>(null);
   const [cargandoPreview, setCargandoPreview] = useState(false);
@@ -224,24 +233,6 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
     }
   };
 
-  // Solo los cursos finalizados emiten certificados (issue #97, #99);
-  // `estado` es true mientras el curso sigue activo.
-  // El PDF se descarga solo al terminar (issue #101, #102); el botón queda
-  // para volver a bajarlo.
-  const descargaAutomatica = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!job || job.estado !== 'listo' || descargaAutomatica.current === job.jobId) return;
-    descargaAutomatica.current = job.jobId;
-    void handleDownload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job]);
-
-  const courseOptions = courses.filter((curso) => !curso.estado).map((curso) => ({
-    value: curso.id,
-    label: `${curso.nombreCurso} (${curso.periodo})`,
-  }));
-
   const groupOptions = grupos.map((grupo) => ({
     value: grupo.id,
     label: `Grupo ${grupo.numGrupo}`,
@@ -256,6 +247,9 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
       (e) => e.condicion === 'aprobacion' || e.condicion === 'asistencia'
     ).length ?? 0;
   const sinElegibles = !esInstructor && elegibles === 0;
+  // Solo los cursos finalizados emiten certificados (issue #97, #99); `estado`
+  // es true mientras el curso sigue activo. El servidor también lo rechaza.
+  const cursoActivo = curso?.estado === true;
 
   const generando = job !== null && (job.estado === 'pendiente' || job.estado === 'procesando');
   const listo = job?.estado === 'listo';
@@ -275,11 +269,12 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
           {esInstructor ? 'Certificados de instructores' : 'Generar certificados'}
+          {curso && <span className="text-gray-500 font-semibold"> · {curso.nombreCurso}</span>}
         </h1>
         <p className="text-sm text-gray-500">
           {esInstructor
-            ? 'Elija un curso finalizado y su grupo para descargar el certificado del instructor.'
-            : 'Elija un curso finalizado y su grupo. Reciben certificado los estudiantes con aprobación o asistencia.'}
+            ? 'Elija el grupo para descargar el certificado del instructor.'
+            : 'Elija el grupo. Reciben certificado los estudiantes con aprobación o asistencia.'}
         </p>
       </div>
 
@@ -289,22 +284,18 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Select
-            label="Curso"
-            value={cursoId ?? ''}
-            onChange={(event) => {
-              setCursoId(event.target.value === '' ? null : Number(event.target.value));
-              setGrupoId(null);
-              setPreview(null);
-              setJob(null);
-            }}
-            options={courseOptions}
-            placeholder={
-              courseOptions.length === 0 ? 'No hay cursos finalizados' : 'Seleccione un curso'
-            }
+      {cursoActivo && (
+        <div className="mb-4">
+          <AlertInfo
+            type="warning"
+            title="Este curso todavía está activo"
+            subtitle="Los certificados se emiten cuando el curso está finalizado."
           />
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 mb-6">
+        <div className="sm:w-72">
           <Select
             label="Grupo"
             value={grupoId ?? ''}
@@ -313,8 +304,8 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
               setJob(null);
             }}
             options={groupOptions}
-            placeholder={cursoId === null ? 'Elija un curso primero' : 'Seleccione un grupo'}
-            disabled={cursoId === null || grupos.length === 0}
+            placeholder={grupos.length === 0 ? 'El curso no tiene grupos' : 'Seleccione un grupo'}
+            disabled={grupos.length === 0}
           />
         </div>
       </div>
@@ -389,7 +380,7 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
                     variant="primary"
                     icon={<DownloadIcon />}
                     onClick={handleGenerarPdf}
-                    disabled={sinElegibles || preview.plantilla === null}
+                    disabled={sinElegibles || cursoActivo || preview.plantilla === null}
                     fullWidth
                     className="mt-4"
                   >
@@ -403,7 +394,7 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
                   <Button
                     variant="secondary"
                     onClick={handleGenerar}
-                    disabled={sinElegibles || preview.plantilla === null}
+                    disabled={sinElegibles || cursoActivo || preview.plantilla === null}
                     fullWidth
                     className="mt-2"
                   >
@@ -526,7 +517,7 @@ const GenerateCertificatesPage = ({ destinatarioTipo = 'estudiante' }: GenerateC
       {!cargandoPreview && !preview && !error && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-10 text-center">
           <p className="text-sm font-semibold text-gray-900">
-            Seleccione un curso y un grupo
+            Seleccione un grupo
           </p>
           <p className="text-xs text-gray-500 mt-1">
             Verá cuántos estudiantes recibirían certificado antes de generar nada.
