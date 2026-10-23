@@ -127,6 +127,15 @@ const CertificatesListPage = () => {
             </button>
             <button
               type="button"
+              onClick={() => navigate(`/certificados/generar-instructores?curso=${plantilla.idCurso}`)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-brand-primary hover:text-brand-primary transition-all duration-150 cursor-pointer"
+              title="Generar el certificado del instructor de este curso"
+            >
+              <GenerateIcon />
+              Instructor
+            </button>
+            <button
+              type="button"
               onClick={() => navigate(`/certificados/${plantilla.id}/editar`)}
               className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-xl transition-all duration-150 cursor-pointer inline-flex items-center justify-center"
               title="Editar plantilla"
