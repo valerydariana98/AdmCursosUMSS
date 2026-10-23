@@ -16,9 +16,11 @@ import type {
 } from 'shared';
 import { api } from './api';
 
-/** URL absoluta de una imagen guardada en el servidor (fondo o firma en WebP). */
+/** URL absoluta de una imagen guardada en el servidor (fondo en WebP). */
+const UPLOADS_PREFIX = import.meta.env.VITE_UPLOADS_URL_PREFIX ?? '/uploads';
+
 export const urlImagen = (ruta: string | null | undefined): string | null =>
-  ruta ? `${api.baseURL}${ruta}` : null;
+  ruta ? `${api.baseURL}${UPLOADS_PREFIX}/${ruta.replace(/^\/+/, '')}` : null;
 
 export interface FiltrosPlantillas {
   cursoId?: number | null;

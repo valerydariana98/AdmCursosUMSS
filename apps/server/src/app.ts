@@ -61,7 +61,7 @@ app.use('/api/instructores', instructorsRouter);
 // que viven en su propio prefijo.
 app.use('/api/certificados', certificatesRouter);
 
-// Las imágenes de los certificados (fondos y firmas en WebP) se sirven como
+// Las imágenes de los certificados (fondos en WebP) se sirven como
 // estáticos. Los ZIP generados NO se sirven por acá: se descargan por un endpoint
 // que valida la sesión, porque un certificado es un documento oficial y no puede
 // quedar accesible solo por conocer la URL.

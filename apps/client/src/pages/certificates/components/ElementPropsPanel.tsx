@@ -21,16 +21,12 @@ const ALINEACIONES: { value: ElementoBorrador['alineacion']; label: string }[] =
 
 interface ElementPropsPanelProps {
   elemento: ElementoBorrador | null;
-  firmas: { id: number; nombre: string; ruta: string }[];
-  onAgregarFirma: (idFirma: number, ruta: string) => void;
   onCambiar: (cambios: Partial<ElementoBorrador>) => void;
   onResolverEjemplo: (texto: string) => string;
 }
 
 const ElementPropsPanel = ({
   elemento,
-  firmas,
-  onAgregarFirma,
   onCambiar,
   onResolverEjemplo,
 }: ElementPropsPanelProps) => {
@@ -44,71 +40,35 @@ const ElementPropsPanel = ({
           crear uno nuevo.
         </p>
 
-        {firmas.length > 0 && (
-          <div className="mt-5">
-            <p className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2">
-              Firmas disponibles
-            </p>
-            <div className="flex flex-col gap-2">
-              {firmas.map((firma) => (
-                <button
-                  key={firma.id}
-                  type="button"
-                  onClick={() => onAgregarFirma(firma.id, firma.ruta)}
-                  className="flex items-center gap-3 px-3 py-2 rounded-xl border border-gray-200 hover:border-brand-primary hover:bg-brand-primary/5 text-left transition-all duration-150 cursor-pointer"
-                >
-                  <span className="text-[11px] font-bold text-brand-primary shrink-0">+ Firma</span>
-                  <span className="text-xs text-gray-700 truncate">{firma.nombre}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+
       </div>
     );
   }
 
-  const esTexto = elemento.tipo === 'texto';
-
   // La variable entra donde está el cursor, no al final del texto: quien diseña
   // escribe la frase alrededor de los datos, no una lista de variables sueltas.
   const insertarVariable = (clave: string) => {
+    // Sustituye todo el bloque por la variable elegida, para no mezclar texto
+    // anterior con la nueva etiqueta.
+    onCambiar({ texto: clave });
+
     const area = areaTexto.current;
-    const texto = elemento.texto;
-
-    if (!area) {
-      onCambiar({ texto: `${texto}${clave}` });
-      return;
+    if (area) {
+      requestAnimationFrame(() => {
+        area.focus();
+        area.setSelectionRange(clave.length, clave.length);
+      });
     }
-
-    const inicio = area.selectionStart ?? texto.length;
-    const fin = area.selectionEnd ?? texto.length;
-    const siguiente = `${texto.slice(0, inicio)}${clave}${texto.slice(fin)}`;
-
-    onCambiar({ texto: siguiente });
-
-    // El cursor queda después de la etiqueta insertada, para poder seguir
-    // escribiendo sin volver a hacer clic.
-    requestAnimationFrame(() => {
-      area.focus();
-      const nuevaPosicion = inicio + clave.length;
-      area.setSelectionRange(nuevaPosicion, nuevaPosicion);
-    });
   };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-bold text-gray-900">
-          {esTexto ? 'Bloque de texto' : 'Firma'}
-        </h2>
-        <span className="text-[11px] font-semibold text-gray-400 uppercase">
-          {esTexto ? 'Texto' : 'Imagen'}
-        </span>
+        <h2 className="text-sm font-bold text-gray-900">Bloque de texto</h2>
+        <span className="text-[11px] font-semibold text-gray-400 uppercase">Texto</span>
       </div>
 
-      {esTexto ? (
-        <>
+      <>
           <textarea
             ref={areaTexto}
             value={elemento.texto}
@@ -158,13 +118,6 @@ const ElementPropsPanel = ({
             </p>
           </div>
         </>
-      ) : (
-        <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 mb-4">
-          <p className="text-xs text-gray-500">
-            La firma no lleva texto. Ajuste su tamaño y su posición arrastrándola en el lienzo.
-          </p>
-        </div>
-      )}
 
       <div className="flex flex-col gap-3">
         <div>
@@ -196,7 +149,7 @@ const ElementPropsPanel = ({
             </label>
             <input
               type="range"
-              min={8}
+              min={3}
               max={72}
               step={1}
               value={elemento.fontSize}

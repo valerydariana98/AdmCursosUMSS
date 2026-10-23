@@ -45,12 +45,6 @@ const CopyIcon = () => (
   </svg>
 );
 
-const SignatureIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" d="M16 11a2 2 0 100-4m-1.8 6.8c-.4.1-.8.2-1.2.2-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4c0 3.2-2 5.6-5 5.6-1.3 0-2.5-.5-3.4-1.3M4 19h16" />
-  </svg>
-);
-
 const GenerateIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -226,15 +220,8 @@ const CertificatesListPage = () => {
           >
             Generar
           </Button>
-          <Button
-            variant="secondary"
-            icon={<SignatureIcon />}
-            onClick={() => navigate('/certificados/firmas')}
-          >
-            Firmas
-          </Button>
-          <Button
-            variant="primary"
+            <Button
+              variant="primary"
             icon={<PlusIcon />}
             onClick={() => navigate('/certificados/nuevo')}
           >

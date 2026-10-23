@@ -255,28 +255,7 @@ export const rubricItems = pgTable('rubric_items', {
   position: integer('position').notNull(),
 });
 
-// 13. Firmas de certificados (HU-03)
-// El archivo en disco es siempre WebP aunque lo que se suba sea PNG o JPG: la
-// conversión la hace el servidor con sharp para no repetirla en cada vista y
-// conservar la transparencia del original. La tabla guarda solo la ruta
-// relativa; la imagen nunca entra en la base de datos.
-export const firmas = pgTable(
-  'firmas',
-  {
-    id: serial('id').primaryKey(),
-    // Etiqueta para el docente en el diagramador, ej. "Firma Rector - Juan Pérez".
-    nombre: varchar('nombre', { length: 255 }).notNull(),
-    ruta: varchar('ruta', { length: 500 }).notNull(),
-    // Nombre del archivo que se subió. Solo para referencia: en disco está el
-    // WebP convertido.
-    originalNombre: varchar('original_nombre', { length: 255 }).notNull(),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-    updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  },
-  (table) => [index('firmas_nombre_idx').on(table.nombre)]
-);
-
-// 14. Plantillas de certificados (HU-01, HU-02)
+// 13. Plantillas de certificados (HU-01, HU-02)
 // Una plantilla es una imagen de fondo más los elementos colocados encima. El
 // fondo se guarda como archivo (ruta relativa) y el tamaño real se conserva en
 // `ancho`/`alto` para que el cliente mantenga la proporción y el servidor
@@ -313,11 +292,11 @@ export const plantillasCertificado = pgTable(
 );
 
 // 15. Elementos de una plantilla (HU-02)
-// Un elemento es un bloque de texto con variables o una firma superpuesta. Las
+// Un elemento es un bloque de texto con variables. Las
 // posiciones van en centésimas de porcentaje (0-10000) para que el mismo diseño
 // funcione a cualquier tamaño de pantalla y para que el viaje de ida y vuelta
 // al servidor no pierda precisión.
-export const plantillaElementoTipoEnum = pgEnum('plantilla_elemento_tipo', ['texto', 'firma']);
+export const plantillaElementoTipoEnum = pgEnum('plantilla_elemento_tipo', ['texto']);
 export const plantillaAlineacionEnum = pgEnum('plantilla_alineacion', [
   'izquierda',
   'centro',
@@ -334,9 +313,7 @@ export const plantillaElementos = pgTable(
     tipo: plantillaElementoTipoEnum('tipo').notNull(),
     // Contenido con variables `{...}` sin resolver. Solo en elementos de texto.
     texto: text('texto'),
-    // Firma superpuesta. Solo en elementos de tipo firma.
-    idFirma: integer('id_firma').references(() => firmas.id),
-    xPercent: integer('x_percent').notNull(),
+        xPercent: integer('x_percent').notNull(),
     yPercent: integer('y_percent').notNull(),
     anchoPercent: integer('ancho_percent').notNull(),
     alineacion: plantillaAlineacionEnum('alineacion').notNull(),
@@ -492,10 +469,6 @@ export const asistenciasRelations = relations(asistencias, ({ one }) => ({
 
 // ---- Certificados ----
 
-export const firmasRelations = relations(firmas, ({ many }) => ({
-  elementos: many(plantillaElementos),
-}));
-
 export const plantillasCertificadoRelations = relations(plantillasCertificado, ({ one, many }) => ({
   curso: one(cursos, {
     fields: [plantillasCertificado.idCurso],
@@ -512,9 +485,5 @@ export const plantillaElementosRelations = relations(plantillaElementos, ({ one 
   plantilla: one(plantillasCertificado, {
     fields: [plantillaElementos.idPlantilla],
     references: [plantillasCertificado.id],
-  }),
-  firma: one(firmas, {
-    fields: [plantillaElementos.idFirma],
-    references: [firmas.id],
   }),
 }));

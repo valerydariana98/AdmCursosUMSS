@@ -8,9 +8,7 @@
 
 import { Router } from 'express';
 import {
-  deleteFirma,
   deletePlantilla,
-  getFirmas,
   getJob,
   getJobZip,
   getMarcosBase,
@@ -19,26 +17,22 @@ import {
   getPlantillas,
   getPreview,
   postDuplicarPlantilla,
-  postFirma,
   postGenerar,
   postGenerarPdf,
   postGenerarInstructores,
   postPlantilla,
-  putFirma,
   putPlantilla,
 } from '../controllers/certificate.controller.js';
-import { subirFirma, subirFondo } from '../middlewares/upload.js';
+import { subirFondo } from '../middlewares/upload.js';
 import { validate, validateParams, validateQuery } from '../middlewares/validate.js';
 import {
   actualizarPlantillaSchema,
   duplicarPlantillaSchema,
-  firmaParamsSchema,
   generarSchema,
   jobParamsSchema,
   listarPlantillasQuerySchema,
   plantillaParamsSchema,
   previewQuerySchema,
-  renombrarFirmaSchema,
 } from '../schemas/certificate.schema.js';
 
 const router = Router();
@@ -68,21 +62,6 @@ router.post(
   validate(duplicarPlantillaSchema),
   postDuplicarPlantilla
 );
-
-// ---- Firmas ----
-
-router.get('/firmas', getFirmas);
-
-router.post('/firmas', subirFirma, postFirma);
-
-router.put(
-  '/firmas/:id',
-  validateParams(firmaParamsSchema),
-  validate(renombrarFirmaSchema),
-  putFirma
-);
-
-router.delete('/firmas/:id', validateParams(firmaParamsSchema), deleteFirma);
 
 // ---- Generación ----
 

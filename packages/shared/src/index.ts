@@ -1105,8 +1105,7 @@ export const CERTIFICATE_IMAGE_MIN_HEIGHT = 800;
 export const CERTIFICATE_IMAGE_MAX_WIDTH = 2500;
 export const CERTIFICATE_IMAGE_MAX_HEIGHT = 1750;
 
-// La imagen base se diseña en Canva y se exporta como PNG o JPG. La firma
-// además suele venir con fondo transparente, que el WebP conserva.
+// La imagen base se diseña en Canva y se exporta como PNG o JPG.
 export const CERTIFICATE_IMAGE_FORMATS = ['image/png', 'image/jpeg'] as const;
 export const CERTIFICATE_FORMAT_LABEL: Record<string, string> = {
   'image/png': 'PNG',
@@ -1114,7 +1113,6 @@ export const CERTIFICATE_FORMAT_LABEL: Record<string, string> = {
 };
 
 export const CERTIFICATE_MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
-export const CERTIFICATE_SIGNATURE_MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
 // Las posiciones y los tamaños viajan como enteros en centésimas de porcentaje
 // (0-10000), el mismo truco de `percentageHundredths`: el viaje del servidor al
@@ -1209,53 +1207,21 @@ export const resolveCertificateVariables = (
 };
 
 // ------------------------------------------------------------------------
-// Firmas
-// ------------------------------------------------------------------------
-
-export interface Firma {
-  id: number;
-  // Etiqueta que ve el docente en la galería, ej. "Firma Rector - Juan Pérez".
-  nombre: string;
-  // Ruta relativa servida como estático. El archivo en disco es WebP aunque se
-  // haya subido PNG o JPG.
-  ruta: string;
-  originalNombre: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// En la galería el cliente necesita saber si una firma está siendo usada antes
-// de ofrecer eliminarla: una firma en uso no se puede borrar sin dejar
-// plantillas sin poder renderizar.
-export interface FirmaListItem extends Firma {
-  enUso: boolean;
-  // Cuántas plantillas la referencian.
-  plantillasQueLaUsan: number;
-  nombresPlantillas: string[];
-}
-
-export type CreateFirma = Pick<Firma, 'nombre'>;
-
-export type UpdateFirma = Pick<Firma, 'nombre'>;
-
-// ------------------------------------------------------------------------
 // Plantillas
 // ------------------------------------------------------------------------
 
 export const CERTIFICATE_ALIGNMENTS = ['izquierda', 'centro', 'derecha'] as const;
 export type CertificateAlignment = (typeof CERTIFICATE_ALIGNMENTS)[number];
 
-export const CERTIFICATE_ELEMENT_TYPES = ['texto', 'firma'] as const;
+export const CERTIFICATE_ELEMENT_TYPES = ['texto'] as const;
 export type CertificateElementType = (typeof CERTIFICATE_ELEMENT_TYPES)[number];
 
 export interface PlantillaElemento {
   id: number;
   idPlantilla: number;
   tipo: CertificateElementType;
-  // Contenido con variables sin resolver. Solo en elementos de texto.
+  // Contenido con variables sin resolver.
   texto: string | null;
-  // Firma superpuesta. Solo en elementos de tipo firma.
-  idFirma: number | null;
   xPercent: number;
   yPercent: number;
   // Ancho disponible del bloque, para decidir dónde corta la línea el texto.
@@ -1269,11 +1235,8 @@ export interface PlantillaElemento {
   bloqueado?: boolean;
 }
 
-// Vista del editor: los elementos de tipo firma llegan con la firma resuelta,
-// para que el lienzo pueda dibujarla sin una segunda petición.
-export interface PlantillaElementoView extends PlantillaElemento {
-  firma: Firma | null;
-}
+// Vista del editor: coincide con el elemento persistido; ya no hay firmas.
+export type PlantillaElementoView = PlantillaElemento;
 
 // La plantilla tal como se guarda. `ancho`/`alto` son las dimensiones reales
 // del fondo: el cliente las usa para mantener la proporción y el servidor
@@ -1332,7 +1295,6 @@ export interface PlantillaListItem {
 export interface PlantillaElementoInput {
   tipo: CertificateElementType;
   texto: string | null;
-  idFirma: number | null;
   xPercent: number;
   yPercent: number;
   anchoPercent: number;
