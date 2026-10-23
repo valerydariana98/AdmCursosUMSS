@@ -7,7 +7,9 @@ import CoursesListPage from "./pages/courses/CoursesListPage";
 import CertificateEditorPage from "./pages/certificates/CertificateEditorPage";
 import CertificatesListPage from "./pages/certificates/CertificatesListPage";
 import GenerateCertificatesPage from "./pages/certificates/GenerateCertificatesPage";
+import GenerateInstructorCertificatesPage from "./pages/certificates/GenerateInstructorCertificatesPage";
 import SignaturesPage from "./pages/certificates/SignaturesPage";
+import VerifyCertificatePage from "./pages/certificates/VerifyCertificatePage";
 import GroupCreatePage from "./pages/groups/admin/GroupCreatePage";
 import GroupCreateGlobalPage from "./pages/groups/admin/GroupCreateGlobalPage";
 import GroupDetailPage from "./pages/groups/instructor/GroupDetailPage";
@@ -56,6 +58,7 @@ export default function App() {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/verificar/:codigo" element={<VerifyCertificatePage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -161,8 +164,16 @@ export default function App() {
             element={autenticado(<GenerateCertificatesPage />)}
           />
           <Route
+            path="/certificados/generar-instructores"
+            element={autenticado(<GenerateInstructorCertificatesPage />)}
+          />
+          <Route
             path="/certificados/:id/editar"
             element={autenticado(<CertificateEditorPage />)}
+          />
+          <Route
+            path="/verificar/:codigo"
+            element={<VerifyCertificatePage />}
           />
 
           {/* Rutas de Estudiantes por Grupo */}

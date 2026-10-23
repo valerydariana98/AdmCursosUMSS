@@ -1,0 +1,63 @@
+name: Deploy del front a GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# No interrumpir un deploy en curso por otro push.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Compilar el cliente
+        run: pnpm --filter client build
+        env:
+          # Subdirectorio bajo el que GH Pages sirve el sitio (repo AdmCursosUMSS).
+          VITE_BASE: /AdmCursosUMSS/
+          # URL del backend de Render: el cliente la usa en runtime para llamar a la API.
+          VITE_API_URL: https://admcursosumss.onrender.com
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Subir artefacto
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/client/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Desplegar
+        id: deployment
+        uses: actions/deploy-pages@v4

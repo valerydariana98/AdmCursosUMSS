@@ -286,6 +286,8 @@ export const firmas = pgTable(
 // plantilla propia del grupo. El índice único sobre `idGrupo` garantiza que un
 // grupo tenga como máximo una plantilla efectiva, igual que hace `rubrics` con
 // su grupo: si no hay específica, se usa la general del curso.
+export const plantillaDestinatarioEnum = pgEnum('plantilla_destinatario', ['estudiante', 'instructor']);
+
 export const plantillasCertificado = pgTable(
   'plantillas_certificado',
   {
@@ -295,6 +297,7 @@ export const plantillasCertificado = pgTable(
       .notNull()
       .references(() => cursos.id, { onDelete: 'cascade' }),
     idGrupo: integer('id_grupo').references(() => grupos.id, { onDelete: 'cascade' }),
+    destinatarioTipo: plantillaDestinatarioEnum('destinatario_tipo').notNull().default('estudiante'),
     rutaFondo: varchar('ruta_fondo', { length: 500 }).notNull(),
     ancho: integer('ancho').notNull(),
     alto: integer('alto').notNull(),
@@ -342,8 +345,45 @@ export const plantillaElementos = pgTable(
     color: varchar('color', { length: 9 }).notNull(),
     // Orden de dibujo: lo último queda encima.
     position: integer('position').notNull(),
+    bloqueado: boolean('bloqueado').notNull().default(false),
   },
   (table) => [index('plantilla_elementos_plantilla_idx').on(table.idPlantilla)]
+);
+
+// 16. Autoridades de una plantilla (issue #97, #99)
+export const plantillaAutoridades = pgTable(
+  'plantilla_autoridades',
+  {
+    id: serial('id').primaryKey(),
+    idPlantilla: integer('id_plantilla')
+      .notNull()
+      .references(() => plantillasCertificado.id, { onDelete: 'cascade' }),
+    titulo: varchar('titulo', { length: 255 }).notNull(),
+    nombre: varchar('nombre', { length: 255 }).notNull(),
+    orden: integer('orden').notNull().default(0),
+  },
+  (table) => [index('plantilla_autoridades_plantilla_idx').on(table.idPlantilla)]
+);
+
+// 17. Certificados emitidos (issue #98, #100, #101, #102)
+export const certificadosEmitidos = pgTable(
+  'certificados_emitidos',
+  {
+    id: serial('id').primaryKey(),
+    codigo: varchar('codigo', { length: 64 }).notNull().unique(),
+    tipo: varchar('tipo', { length: 32 }).notNull(),
+    destinatarioTipo: plantillaDestinatarioEnum('destinatario_tipo').notNull().default('estudiante'),
+    destinatarioId: integer('destinatario_id').notNull(),
+    plantillaId: integer('plantilla_id')
+      .notNull()
+      .references(() => plantillasCertificado.id, { onDelete: 'cascade' }),
+    grupoId: integer('id_grupo').notNull().references(() => grupos.id, { onDelete: 'cascade' }),
+    cursoId: integer('id_curso').notNull().references(() => cursos.id, { onDelete: 'cascade' }),
+    fechaEmision: varchar('fecha_emision', { length: 32 }).notNull(),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().default({}),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [index('certificados_emitidos_codigo_idx').on(table.codigo)]
 );
 
 // ==========================================

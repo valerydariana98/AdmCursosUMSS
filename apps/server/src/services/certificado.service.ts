@@ -20,7 +20,8 @@ import { createWriteStream } from 'node:fs';
 import { mkdir, readdir, stat, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { ZipArchive } from 'archiver';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
+import QRCode from 'qrcode';
 import {
   CERTIFICATE_CONDITION_LABEL,
   computeFinalGrade,
@@ -39,7 +40,9 @@ import {
   estudiantes,
   grupos,
   inscripciones,
+  certificadosEmitidos,
   firmas,
+  instructores,
   plantillaElementos,
   plantillasCertificado,
   rubricItems,
@@ -47,7 +50,7 @@ import {
 } from '../db/schema.js';
 import { getStudentAttendanceSummary } from './attendance.service.js';
 import { cellKey, loadGradeMap } from './grades.service.js';
-import { renderizarCertificado } from './certificado.render.js';
+import { renderizarCertificado, renderizarCertificadosEnPdf } from './certificado.render.js';
 import { SUBFOLDER_GENERADOS, uploadsDir } from './imagen.service.js';
 import { resolverPlantillaParaGrupo } from './plantillas.service.js';
 import { resolveGroupOwnershipFailure } from './groupOwnership.js';
@@ -512,4 +515,275 @@ export const descargarZip = (
   if (job.estado !== 'listo' || !job.zipRutaInterna) return { ok: false, reason: 'job_not_found' };
 
   return { ok: true, value: { ruta: job.zipRutaInterna, nombre: job.nombreArchivo ?? 'certificados.zip' } };
+};// ------------------------------------------------------------------
+// PDF consolidado (issue #101, #102)
+// ------------------------------------------------------------------
+
+const generarCodigoVerificacion = (): string =>
+  `CERT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+
+const generarQrBuffer = async (codigo: string): Promise<Buffer> => {
+  const base = process.env.PUBLIC_VERIFICATION_URL ?? 'http://localhost:5173/verificar';
+  const url = `${base}/${codigo}`;
+  return QRCode.toBuffer(url, { type: 'png', width: 128, margin: 1 });
+};
+
+export const iniciarJobPdfEstudiantes = async (
+  groupId: number,
+  actor: { teacherId: number | null; isAdmin: boolean }
+): Promise<CertificadoResult<{ jobId: string; total: number; aprobados: number }>> => {
+  const preview = await construirVistaPrevia(groupId, actor);
+  if (!preview.ok) return preview;
+
+  const { plantilla, totalEstudiantes, grupo } = preview.value;
+  if (!plantilla) return { ok: false, reason: 'sin_plantilla' };
+
+  const context = await cargarGrupoContexto(groupId);
+  if (!context) return { ok: false, reason: 'group_not_found' };
+
+  const evaluados = await evaluarEstudiantes(groupId, context);
+  const elegibles = evaluados.filter(
+    (e) => e.condicion === 'aprobacion' || e.condicion === 'asistencia'
+  );
+
+  if (elegibles.length === 0) return { ok: false, reason: 'sin_aprobados' };
+
+  await limpiarGeneradosAntiguos();
+
+  const jobId = nuevoJobId();
+  const job: JobInterno = {
+    jobId,
+    estado: 'pendiente',
+    total: elegibles.length,
+    procesados: 0,
+    excluidos: totalEstudiantes - elegibles.length,
+    mensajeError: null,
+    nombreArchivo: `Certificados_Estudiantes_Grupo${grupo.numero}_${jobId}.pdf`,
+    zipRutaInterna: null,
+  };
+
+  jobs.set(jobId, job);
+  void ejecutarJobPdfEstudiantes(jobId, groupId, plantilla.plantilla.id);
+
+  return { ok: true, value: { jobId, total: elegibles.length, aprobados: elegibles.length } };
+};
+
+const ejecutarJobPdfEstudiantes = async (
+  jobId: string,
+  groupId: number,
+  plantillaId: number
+): Promise<void> => {
+  const job = jobs.get(jobId);
+  if (!job) return;
+  job.estado = 'procesando';
+
+  try {
+    const context = await cargarGrupoContexto(groupId);
+    if (!context) throw new Error('El grupo ya no existe');
+
+    const [plantilla] = await db
+      .select()
+      .from(plantillasCertificado)
+      .where(eq(plantillasCertificado.id, plantillaId))
+      .limit(1);
+    if (!plantilla) throw new Error('La plantilla ya no existe');
+
+    const elementos = await cargarElementos(plantillaId);
+    const evaluados = await evaluarEstudiantes(groupId, context);
+    const elegibles = evaluados.filter(
+      (e) => e.condicion === 'aprobacion' || e.condicion === 'asistencia'
+    );
+
+    const carpeta = path.resolve(uploadsDir(), SUBFOLDER_GENERADOS, jobId);
+    await mkdir(carpeta, { recursive: true });
+
+    const fechaEmision = new Date().toLocaleDateString('es-BO');
+    const paginas: any[] = [];
+
+    for (const [indice, evaluado] of elegibles.entries()) {
+      const codigo = generarCodigoVerificacion();
+      const qrBuffer = await generarQrBuffer(codigo);
+
+      const contexto: CertificateVariableContext = {
+        nombreEstudiante: nombreCompleto(evaluado.estudiante),
+        nombreCurso: context.cursoNombre,
+        grupo: `Grupo ${context.numero}`,
+        notaFinal: evaluado.notaFinal ?? 0,
+        fechaEmision,
+      };
+
+      paginas.push({
+        fondoRuta: plantilla.rutaFondo,
+        fondoAncho: plantilla.ancho,
+        fondoAlto: plantilla.alto,
+        elementos,
+        contexto,
+        codigoVerificacion: codigo,
+        qrBuffer,
+      });
+
+      await db.insert(certificadosEmitidos).values({
+        codigo,
+        tipo: evaluado.condicion,
+        destinatarioTipo: 'estudiante',
+        destinatarioId: evaluado.estudiante.id,
+        plantillaId,
+        grupoId: groupId,
+        cursoId: context.cursoId,
+        fechaEmision,
+        metadata: { nombre: nombreCompleto(evaluado.estudiante) },
+      });
+
+      job.procesados = indice + 1;
+    }
+
+    const pdfRuta = path.join(carpeta, job.nombreArchivo ?? `certificados_${jobId}.pdf`);
+    await renderizarCertificadosEnPdf(pdfRuta, paginas);
+
+    job.zipRutaInterna = pdfRuta;
+    job.estado = 'listo';
+  } catch (error) {
+    job.estado = 'error';
+    job.mensajeError = error instanceof Error ? error.message : 'Error al generar';
+  }
+};
+
+export const iniciarJobPdfInstructores = async (
+  groupId: number,
+  actor: { teacherId: number | null; isAdmin: boolean }
+): Promise<CertificadoResult<{ jobId: string; total: number; aprobados: number }>> => {
+  const context = await cargarGrupoContexto(groupId);
+  if (!context) return { ok: false, reason: 'group_not_found' };
+
+  const denegado = resolveGroupOwnershipFailure(context, actor.teacherId, actor.isAdmin);
+  if (denegado) return { ok: false, reason: denegado };
+
+  const plantilla = await resolverPlantillaParaGrupo(context.cursoId, groupId);
+  if (!plantilla) return { ok: false, reason: 'sin_plantilla' };
+
+  await limpiarGeneradosAntiguos();
+
+  const jobId = nuevoJobId();
+  const job: JobInterno = {
+    jobId,
+    estado: 'pendiente',
+    total: 1,
+    procesados: 0,
+    excluidos: 0,
+    mensajeError: null,
+    nombreArchivo: `Certificado_Instructor_Grupo${context.numero}_${jobId}.pdf`,
+    zipRutaInterna: null,
+  };
+
+  jobs.set(jobId, job);
+  void ejecutarJobPdfInstructores(jobId, groupId, plantilla.plantilla.id);
+
+  return { ok: true, value: { jobId, total: 1, aprobados: 1 } };
+};
+
+const ejecutarJobPdfInstructores = async (
+  jobId: string,
+  groupId: number,
+  plantillaId: number
+): Promise<void> => {
+  const job = jobs.get(jobId);
+  if (!job) return;
+  job.estado = 'procesando';
+
+  try {
+    const context = await cargarGrupoContexto(groupId);
+    if (!context) throw new Error('El grupo ya no existe');
+
+    const [plantilla] = await db
+      .select()
+      .from(plantillasCertificado)
+      .where(eq(plantillasCertificado.id, plantillaId))
+      .limit(1);
+    if (!plantilla) throw new Error('La plantilla ya no existe');
+
+    const elementos = await cargarElementos(plantillaId);
+
+    const [instructor] = await db
+      .select()
+      .from(instructores)
+      .where(eq(instructores.id, context.instructorId))
+      .limit(1);
+    if (!instructor) throw new Error('El instructor no existe');
+
+    const carpeta = path.resolve(uploadsDir(), SUBFOLDER_GENERADOS, jobId);
+    await mkdir(carpeta, { recursive: true });
+
+    const fechaEmision = new Date().toLocaleDateString('es-BO');
+    const codigo = generarCodigoVerificacion();
+    const qrBuffer = await generarQrBuffer(codigo);
+
+    const contexto: CertificateVariableContext = {
+      nombreEstudiante: `${instructor.nombres} ${instructor.apPaterno} ${instructor.apMaterno}`.trim(),
+      nombreCurso: context.cursoNombre,
+      grupo: `Grupo ${context.numero}`,
+      notaFinal: 0,
+      fechaEmision,
+    };
+
+    const paginas = [
+      {
+        fondoRuta: plantilla.rutaFondo,
+        fondoAncho: plantilla.ancho,
+        fondoAlto: plantilla.alto,
+        elementos,
+        contexto,
+        codigoVerificacion: codigo,
+        qrBuffer,
+      },
+    ];
+
+    const pdfRuta = path.join(carpeta, job.nombreArchivo ?? `certificado_${jobId}.pdf`);
+    await renderizarCertificadosEnPdf(pdfRuta, paginas);
+
+    await db.insert(certificadosEmitidos).values({
+      codigo,
+      tipo: 'instructor',
+      destinatarioTipo: 'instructor',
+      destinatarioId: instructor.id,
+      plantillaId,
+      grupoId: groupId,
+      cursoId: context.cursoId,
+      fechaEmision,
+      metadata: { nombre: `${instructor.nombres} ${instructor.apPaterno}`.trim() },
+    });
+
+    job.zipRutaInterna = pdfRuta;
+    job.procesados = 1;
+    job.total = 1;
+    job.estado = 'listo';
+  } catch (error) {
+    job.estado = 'error';
+    job.mensajeError = error instanceof Error ? error.message : 'Error al generar';
+  }
+};
+
+export const verificarCertificado = async (
+  codigo: string
+): Promise<{ ok: true; value: any } | { ok: false; reason: 'not_found' }> => {
+  const [fila] = await db
+    .select()
+    .from(certificadosEmitidos)
+    .where(eq(certificadosEmitidos.codigo, codigo))
+    .limit(1);
+
+  if (!fila) return { ok: false, reason: 'not_found' };
+
+  return {
+    ok: true,
+    value: {
+      codigo: fila.codigo,
+      valido: true,
+      tipo: fila.tipo,
+      destinatarioTipo: fila.destinatarioTipo,
+      destinatarioId: fila.destinatarioId,
+      cursoId: fila.cursoId,
+      grupoId: fila.grupoId,
+      fechaEmision: fila.fechaEmision,
+    },
+  };
 };

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AdmCursos UMSS</title>
+    <script>
+      // GitHub Pages no hace fallback de SPA: cualquier ruta profunda
+      // (/verificar/CODE, /certificados/generar) devuelve 404. Este 404.html
+      // redirige al index conservando la ruta en la query (?/verificar/CODE),
+      // y el script de index.html la restaura antes de que React monte.
+      //
+      // pathSegmentsToKeep: cuántos segmentos del path son la base del sitio.
+      //   Proyecto  -> 1  (/<repo>)
+      //   Dominio propio o usuario -> 0
+      var pathSegmentsToKeep = 1;
+      var l = window.location;
+      l.replace(
+        l.protocol +
+          '//' +
+          l.hostname +
+          (l.port ? ':' + l.port : '') +
+          l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') +
+          '/?/' +
+          l.pathname
+            .slice(1)
+            .split('/')
+            .slice(pathSegmentsToKeep)
+            .join('/')
+            .replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

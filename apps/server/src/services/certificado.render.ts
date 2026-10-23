@@ -10,7 +10,10 @@
 // son imágenes.
 
 import { createWriteStream } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import PDFDocument from 'pdfkit';
+import sharp from 'sharp';
 import {
   CERTIFICATE_PAGE_HEIGHT,
   CERTIFICATE_PAGE_WIDTH,
@@ -31,18 +34,51 @@ const FIRMA_ALTO_POR_DEFECTO = 2000;
 const FIRMA_ANCHO_MAXIMO = 4000;
 
 interface RenderOpciones {
-  destino: string;
+  destino?: string;
   fondoRuta: string;
-  // Proporción real del fondo, para decidir si entra estirado o centrado.
+  // ProporciA3n real del fondo, para decidir si entra estirado o centrado.
   fondoAncho: number;
   fondoAlto: number;
   elementos: PlantillaElementoView[];
   contexto: CertificateVariableContext;
+  codigoVerificacion?: string;
+  qrBuffer?: Buffer;
 }
+
+interface RenderPaginaOpciones extends Omit<RenderOpciones, 'destino'> {}
 
 /** Convierte un porcentaje en centésimas a puntos de la página. */
 const aPuntos = (centesimas: number, lado: number): number =>
   (centesimas / CERTIFICATE_PERCENT_SCALE) * lado;
+
+// PDFKit solo entiende PNG y JPEG al insertar una imagen, pero `imagen.service`
+// guarda los fondos y las firmas convertidos a WebP para que el navegador los
+// pese menos. Sin esta conversión, `doc.image()` falla con "Unknown image
+// format" y el job de generación aborta. Se cachea por ruta: en un lote de 30
+// certificados el mismo fondo se reutiliza en todas las páginas y convertirlo
+// una sola vez evita repetir el trabajo de sharp.
+const imagenesPdfCache = new Map<string, Promise<Buffer>>();
+
+const cargarImagenPdf = (rutaAbsoluta: string): Promise<Buffer> => {
+  const enCache = imagenesPdfCache.get(rutaAbsoluta);
+  if (enCache) return enCache;
+
+  const promesa = (async () => {
+    const original = await readFile(rutaAbsoluta);
+    const extension = path.extname(rutaAbsoluta).toLowerCase();
+
+    // PNG y JPEG los lee pdfkit tal cual; el resto (WebP, TIFF, AVIF…) pasa por
+    // sharp para normalizarlo a PNG.
+    if (extension === '.png' || extension === '.jpg' || extension === '.jpeg') {
+      return original;
+    }
+
+    return sharp(original).png().toBuffer();
+  })();
+
+  imagenesPdfCache.set(rutaAbsoluta, promesa);
+  return promesa;
+};
 
 /**
  * Los tipos de `@types/pdfkit` declaran menos alineaciones que las que pdfkit
@@ -65,7 +101,7 @@ const aAlignPdfkit = (alineacion: PlantillaElementoView['alineacion']) => {
  * deformaría el diseño y los bordes decorativos quedarían inclinados. Se ajusta
  * al lado que manda y se centra, que es lo mismo que un "contain".
  */
-const dibujarFondo = (doc: PDFKit.PDFDocument, opciones: RenderOpciones) => {
+const dibujarFondo = async (doc: PDFKit.PDFDocument, opciones: RenderOpciones) => {
   const proporcionFondo = opciones.fondoAncho / opciones.fondoAlto;
   const proporcionPagina = CERTIFICATE_PAGE_WIDTH / CERTIFICATE_PAGE_HEIGHT;
 
@@ -84,7 +120,8 @@ const dibujarFondo = (doc: PDFKit.PDFDocument, opciones: RenderOpciones) => {
     x = (CERTIFICATE_PAGE_WIDTH - width) / 2;
   }
 
-  doc.image(resolveUploadPath(opciones.fondoRuta), x, y, { width, height });
+  const imagen = await cargarImagenPdf(resolveUploadPath(opciones.fondoRuta));
+  doc.image(imagen, x, y, { width, height });
 };
 
 /**
@@ -120,7 +157,7 @@ const dibujarTexto = (
   });
 };
 
-const dibujarFirma = (doc: PDFKit.PDFDocument, elemento: PlantillaElementoView) => {
+const dibujarFirma = async (doc: PDFKit.PDFDocument, elemento: PlantillaElementoView) => {
   if (!elemento.firma) return;
 
   const x = aPuntos(elemento.xPercent, CERTIFICATE_PAGE_WIDTH);
@@ -143,7 +180,8 @@ const dibujarFirma = (doc: PDFKit.PDFDocument, elemento: PlantillaElementoView) 
       valign: 'top',
     } as unknown as OpcionesImagen;
 
-    doc.image(resolveUploadPath(elemento.firma.ruta), x, y, opciones);
+    const imagen = await cargarImagenPdf(resolveUploadPath(elemento.firma.ruta));
+    doc.image(imagen, x, y, opciones);
   } catch {
     // Si el archivo de la firma ya no está en disco, el certificado se emite sin
     // ella en lugar de abortar todo el lote. La plantilla ya no puede usar una
@@ -157,16 +195,43 @@ const dibujarFirma = (doc: PDFKit.PDFDocument, elemento: PlantillaElementoView) 
  * terminado. El job que llama a esto espera la promesa para poder contar los
  * procesados con seguridad.
  */
+const dibujarPagina = async (doc: PDFKit.PDFDocument, opciones: RenderPaginaOpciones) => {
+  await dibujarFondo(doc, opciones as RenderOpciones);
+
+  const ordenados = [...opciones.elementos].sort((a, b) => a.position - b.position);
+
+  for (const elemento of ordenados) {
+    if (elemento.tipo === 'texto') {
+      dibujarTexto(doc, elemento, opciones.contexto);
+    } else {
+      await dibujarFirma(doc, elemento);
+    }
+  }
+
+  // QR y codigo de verificacion en la parte inferior (issue #98, #100).
+  if (opciones.qrBuffer) {
+    const qrSize = 72;
+    const x = CERTIFICATE_PAGE_WIDTH - qrSize - 24;
+    const y = CERTIFICATE_PAGE_HEIGHT - qrSize - 24;
+    doc.image(opciones.qrBuffer, x, y, { width: qrSize, height: qrSize });
+
+    if (opciones.codigoVerificacion) {
+      doc.fontSize(8).fillColor('#374151').text(opciones.codigoVerificacion, x - 40, y + qrSize + 4, {
+        width: qrSize + 80,
+        align: 'center',
+      });
+    }
+  }
+};
+
 export const renderizarCertificado = async (opciones: RenderOpciones): Promise<void> => {
+  if (!opciones.destino) throw new Error('destino requerido');
+
   const doc = new PDFDocument({
     size: [CERTIFICATE_PAGE_WIDTH, CERTIFICATE_PAGE_HEIGHT],
-    // Sin margen: el fondo se imprime de borde a borde y el texto se posiciona
-    // con coordenadas exactas, no con el padding por defecto de pdfkit.
     margins: { top: 0, right: 0, bottom: 0, left: 0 },
-    // La metadata queda en el PDF aunque no se muestre en pantalla: sirve para
-    // saber cuándo se generó cada documento.
     info: {
-      Title: 'Certificado de participación',
+      Title: 'Certificado de participacion',
       Producer: 'AdmCursosUMSS',
       Creator: 'AdmCursosUMSS',
     },
@@ -180,20 +245,44 @@ export const renderizarCertificado = async (opciones: RenderOpciones): Promise<v
     stream.on('error', reject);
     doc.on('error', reject);
 
-    dibujarFondo(doc, opciones);
+    // El dibujo es async (convierte las imágenes WebP a PNG antes de pasarlas a
+    // pdfkit), así que hay que esperarlo antes de cerrar el documento.
+    dibujarPagina(doc, opciones)
+      .then(() => doc.end())
+      .catch(reject);
+  });
+};
 
-    // El orden de dibujo es el `position` que el cliente guardó: lo último queda
-    // encima, igual que en el diagramador.
-    const ordenados = [...opciones.elementos].sort((a, b) => a.position - b.position);
+export const renderizarCertificadosEnPdf = async (
+  destino: string,
+  paginas: RenderPaginaOpciones[]
+): Promise<void> => {
+  const doc = new PDFDocument({
+    size: [CERTIFICATE_PAGE_WIDTH, CERTIFICATE_PAGE_HEIGHT],
+    margins: { top: 0, right: 0, bottom: 0, left: 0 },
+    info: {
+      Title: 'Certificados',
+      Producer: 'AdmCursosUMSS',
+      Creator: 'AdmCursosUMSS',
+    },
+  });
 
-    for (const elemento of ordenados) {
-      if (elemento.tipo === 'texto') {
-        dibujarTexto(doc, elemento, opciones.contexto);
-      } else {
-        dibujarFirma(doc, elemento);
+  const stream = createWriteStream(destino);
+
+  await new Promise<void>((resolve, reject) => {
+    doc.pipe(stream);
+    stream.on('finish', resolve);
+    stream.on('error', reject);
+    doc.on('error', reject);
+
+    // Cada página dibuja sus imágenes de forma async, así que hay que dibujar
+    // secuencial antes de cerrar el documento.
+    (async () => {
+      for (const [index, pagina] of paginas.entries()) {
+        if (index > 0) doc.addPage();
+        await dibujarPagina(doc, pagina);
       }
-    }
-
-    doc.end();
+      doc.end();
+    })().catch(reject);
   });
 };

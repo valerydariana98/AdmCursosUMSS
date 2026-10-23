@@ -17,8 +17,12 @@ const centesimas = z
   // se recorte en el PDF por el redondeo de una centésima.
   .max(CERTIFICATE_PERCENT_SCALE + 100, 'La posición excede el tamaño de la página');
 
+// Los parámetros de ruta y la query llegan siempre como string desde la URL
+// (`/plantillas/1` → `req.params.id === "1"`), así que hay que coercer. Un
+// número del body (JSON) pasa igual por `z.coerce`: solo se convierte si no lo
+// es ya.
 const idPositivo = z
-  .number({ error: 'Debe ser un número' })
+  .coerce.number({ error: 'Debe ser un número' })
   .int('Debe ser un número entero')
   .positive('Debe ser un número positivo');
 
