@@ -6,8 +6,7 @@
 // dejar márgenes.
 //
 // El texto se dibuja como texto de pdfkit, no como imagen: al imprimir sale
-// nítido a cualquier escala y el archivo pesa poco. Solo el fondo y las firmas
-// son imágenes.
+// nítido a cualquier escala y el archivo pesa poco. Solo el fondo es imagen.
 
 import { createWriteStream } from 'node:fs';
 import { readFile } from 'node:fs/promises';
@@ -25,15 +24,6 @@ import {
 } from 'shared';
 import { resolveUploadPath } from './imagen.service.js';
 
-// Alto por defecto de una firma, en centésimas de porcentaje. Las firmas se
-// digitalizan como franjas horizontales bajas (firma y rúbrica), así que un 20%
-// de la altura de la página las contiene sin deformarse.
-const FIRMA_ALTO_POR_DEFECTO = 2000;
-
-// Alto de la firma cuando el ancho pedido es mayor que el que la propia firma
-// permite mantener sin estirarla.
-const FIRMA_ANCHO_MAXIMO = 4000;
-
 // Banda inferior reservada a las autoridades (issue #97, #99, #102). Se dibujan
 // en una fila repartida sobre el ancho útil, sin invadir la esquina inferior
 // derecha, que es donde va el QR (ver `dibujarPagina`).
@@ -47,7 +37,7 @@ const AUTORIDADES_SEPARACION_Y = 18;
 interface RenderOpciones {
   destino?: string;
   fondoRuta: string;
-  // ProporciA3n real del fondo, para decidir si entra estirado o centrado.
+  // Proporción real del fondo, para decidir si entra estirado o centrado.
   fondoAncho: number;
   fondoAlto: number;
   elementos: PlantillaElementoView[];
@@ -67,11 +57,11 @@ const aPuntos = (centesimas: number, lado: number): number =>
   (centesimas / CERTIFICATE_PERCENT_SCALE) * lado;
 
 // PDFKit solo entiende PNG y JPEG al insertar una imagen, pero `imagen.service`
-// guarda los fondos y las firmas convertidos a WebP para que el navegador los
-// pese menos. Sin esta conversión, `doc.image()` falla con "Unknown image
-// format" y el job de generación aborta. Se cachea por ruta: en un lote de 30
-// certificados el mismo fondo se reutiliza en todas las páginas y convertirlo
-// una sola vez evita repetir el trabajo de sharp.
+// guarda los fondos convertidos a WebP para que el navegador los pese menos. Sin
+// esta conversión, `doc.image()` falla con "Unknown image format" y el job de
+// generación aborta. Se cachea por ruta: en un lote de 30 certificados el mismo
+// fondo se reutiliza en todas las páginas y convertirlo una sola vez evita
+// repetir el trabajo de sharp.
 const imagenesPdfCache = new Map<string, Promise<Buffer>>();
 
 const cargarImagenPdf = (rutaAbsoluta: string): Promise<Buffer> => {
@@ -94,15 +84,6 @@ const cargarImagenPdf = (rutaAbsoluta: string): Promise<Buffer> => {
   imagenesPdfCache.set(rutaAbsoluta, promesa);
   return promesa;
 };
-
-/**
- * Los tipos de `@types/pdfkit` declaran menos alineaciones que las que pdfkit
- * acepta en la práctica: a `align` le falta "left" y a `valign` le falta "top",
- * que son justamente las que necesita una firma pegada a una esquina. Se tipa el
- * objeto con la forma que realmente se le pasa en vez de renunciar al
- * posicionamiento y dejar todo centrado.
- */
-type OpcionesImagen = Parameters<PDFKit.PDFDocument['image']>[1];
 
 /** Traduce la alineación del dominio a la de pdfkit. */
 const aAlignPdfkit = (alineacion: PlantillaElementoView['alineacion']) => {
@@ -172,39 +153,6 @@ const dibujarTexto = (
   });
 };
 
-const dibujarFirma = async (doc: PDFKit.PDFDocument, elemento: PlantillaElementoView) => {
-  if (!elemento.firma) return;
-
-  const x = aPuntos(elemento.xPercent, CERTIFICATE_PAGE_WIDTH);
-  const y = aPuntos(elemento.yPercent, CERTIFICATE_PAGE_HEIGHT);
-
-  const anchoPedido = aPuntos(elemento.anchoPercent, CERTIFICATE_PAGE_WIDTH);
-  const altoPedido = aPuntos(FIRMA_ALTO_POR_DEFECTO, CERTIFICATE_PAGE_HEIGHT);
-
-  // El ancho se limita porque `fit` de pdfkit sí deforma si se le da una caja
-  // que no acompaña la proporción de la firma; una firma panorámica no puede
-  // estirarse hasta el ancho de la página.
-  const ancho = Math.min(anchoPedido, aPuntos(FIRMA_ANCHO_MAXIMO, CERTIFICATE_PAGE_WIDTH));
-
-  try {
-    // `align` decide hacia dónde crece la firma dentro de su caja y `valign:
-    // 'top'` la pega al borde superior, que es la `y` que el usuario eligió.
-    const opciones = {
-      fit: [ancho, altoPedido] as [number, number],
-      align: aAlignPdfkit(elemento.alineacion),
-      valign: 'top',
-    } as unknown as OpcionesImagen;
-
-    const imagen = await cargarImagenPdf(resolveUploadPath(elemento.firma.ruta));
-    doc.image(imagen, x, y, opciones);
-  } catch {
-    // Si el archivo de la firma ya no está en disco, el certificado se emite sin
-    // ella en lugar de abortar todo el lote. La plantilla ya no puede usar una
-    // firma borrada (el servicio lo impide), así que esto solo cubre el caso de
-    // un archivo perdido manualmente.
-  }
-};
-
 /**
  * Dibuja las autoridades firmantes en la banda inferior: una fila repartida con
  * el nombre en negrita y, debajo, el cargo o título. Van en una posición fija
@@ -251,11 +199,7 @@ const dibujarPagina = async (doc: PDFKit.PDFDocument, opciones: RenderPaginaOpci
   const ordenados = [...opciones.elementos].sort((a, b) => a.position - b.position);
 
   for (const elemento of ordenados) {
-    if (elemento.tipo === 'texto') {
-      dibujarTexto(doc, elemento, opciones.contexto);
-    } else {
-      await dibujarFirma(doc, elemento);
-    }
+    dibujarTexto(doc, elemento, opciones.contexto);
   }
 
   if (opciones.autoridades?.length) {

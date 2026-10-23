@@ -4,7 +4,7 @@ import { instalarMarcosBase } from './services/marcosBase.service.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 
-// Las carpetas de fondos, firmas y generados se crean antes de escuchar: si
+// Las carpetas de fondos y generados se crean antes de escuchar: si
 // faltara una, la primera subida fallaría en el peor momento (con un usuario
 // esperando) en lugar de al arrancar el servidor.
 prepararUploads()

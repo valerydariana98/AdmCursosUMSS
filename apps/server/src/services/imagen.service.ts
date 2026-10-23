@@ -42,7 +42,6 @@ export type ImageValidationResult =
 export const uploadsDir = (): string => process.env.UPLOADS_DIR ?? './uploads';
 
 export const SUBFOLDER_FONDO = 'fondos';
-export const SUBFOLDER_FIRMAS = 'firmas';
 export const SUBFOLDER_GENERADOS = 'generados';
 
 const buildPath = (subfolder: string, fileName: string): string =>
@@ -186,7 +185,7 @@ export const eliminarArchivo = async (relativeRoute: string | null | undefined):
 /** Asegura que las carpetas de trabajo existan. Se llama al arrancar el servidor. */
 export const prepararUploads = async (): Promise<void> => {
   await Promise.all(
-    [SUBFOLDER_FONDO, SUBFOLDER_FIRMAS, SUBFOLDER_GENERADOS].map((subfolder) =>
+    [SUBFOLDER_FONDO, SUBFOLDER_GENERADOS].map((subfolder) =>
       mkdir(path.resolve(uploadsDir(), subfolder), { recursive: true })
     )
   );

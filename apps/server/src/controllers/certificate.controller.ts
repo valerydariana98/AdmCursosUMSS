@@ -1,5 +1,5 @@
 // apps/server/src/controllers/certificate.controller.ts
-// Endpoints de plantillas, firmas y generación de certificados.
+// Endpoints de plantillas y generación de certificados.
 //
 // El patrón es el del reporte (report.controller.ts): el controlador resuelve
 // quién es el usuario y qué tipo de docente es, y el servicio decide si puede
@@ -15,14 +15,7 @@ import {
   CERTIFICATE_IMAGE_MIN_WIDTH,
   CERTIFICATE_PAPER_LABELS,
 } from 'shared';
-import {
-  crearFirma,
-  eliminarFirma,
-  listarFirmas,
-  renombrarFirma,
-  type FirmaFailure,
-} from '../services/firmas.service.js';
-import { leerDimensiones, validarFondo, type ImageValidationFailure } from '../services/imagen.service.js';
+import { validarFondo, type ImageValidationFailure } from '../services/imagen.service.js';
 import { listarMarcosBase } from '../services/marcosBase.service.js';
 import {
   crearPlantilla,
@@ -87,7 +80,6 @@ const PLANTAILLA_STATUS: Record<PlantillaFailure, number> = {
   grupo_no_pertenece_curso: 400,
   grupo_ya_tiene_plantilla: 409,
   fondo_obligatorio: 400,
-  firma_inexistente: 400,
   sin_elementos: 400,
 };
 
@@ -101,20 +93,7 @@ const PLANTAILLA_MESSAGE: Record<PlantillaFailure, string> = {
   grupo_ya_tiene_plantilla:
     'El grupo ya tiene una plantilla propia. Edite la existente o elimínela antes de crear otra',
   fondo_obligatorio: 'Debe subir una imagen de fondo',
-  firma_inexistente: 'Alguna de las firmas seleccionadas ya no existe',
   sin_elementos: 'La plantilla debe tener al menos un elemento',
-};
-
-const FIRMA_STATUS: Record<FirmaFailure, number> = {
-  firma_not_found: 404,
-  firma_en_uso: 409,
-  nombre_obligatorio: 400,
-};
-
-const FIRMA_MESSAGE: Record<FirmaFailure, string> = {
-  firma_not_found: 'La firma no existe',
-  nombre_obligatorio: 'El nombre del propietario es obligatorio',
-  firma_en_uso: 'La firma está en uso',
 };
 
 const CERTIFICADO_STATUS: Record<CertificadoFailure, number> = {
@@ -334,99 +313,6 @@ export const postDuplicarPlantilla = async (req: Request, res: Response, next: N
     }
 
     res.status(201).json(resultado.value);
-  } catch (error) {
-    next(error);
-  }
-};
-
-// ------------------------------------------------------------------
-// Firmas
-// ------------------------------------------------------------------
-
-export const getFirmas = async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.json(await listarFirmas());
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const postFirma = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const archivo = req.file;
-
-    if (!archivo) {
-      res.status(400).json({ message: 'Debe seleccionar un archivo de firma' });
-      return;
-    }
-
-    // A una firma no se le exige la resolución del fondo: es una franja pequeña
-    // yolk. Lo que sí hay que confirmar es que el archivo sea una imagen de
-    // verdad, porque multer solo mira el Content-Type declarado y aceptaría un
-    // PDF renombrado.
-    const dimensiones = await leerDimensiones(archivo.buffer);
-
-    if (!dimensiones.ok) {
-      res.status(IMAGEN_STATUS.imagen_invalida).json({
-        message: imagenMessage('imagen_invalida'),
-      });
-      return;
-    }
-
-    const resultado = await crearFirma({
-      nombre: String(req.body.nombre ?? '').trim(),
-      buffer: archivo.buffer,
-      originalNombre: archivo.originalname,
-    });
-
-    if (!resultado.ok) {
-      res.status(FIRMA_STATUS[resultado.reason]).json({
-        message: FIRMA_MESSAGE[resultado.reason],
-      });
-      return;
-    }
-
-    res.status(201).json(resultado.value);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const putFirma = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const resultado = await renombrarFirma(Number(req.params.id), String(req.body.nombre ?? ''));
-
-    if (!resultado.ok) {
-      res.status(FIRMA_STATUS[resultado.reason]).json({
-        message: FIRMA_MESSAGE[resultado.reason],
-      });
-      return;
-    }
-
-    res.json(resultado.value);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const deleteFirma = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const resultado = await eliminarFirma(Number(req.params.id));
-
-    if (!resultado.ok) {
-      // El 409 de "firma en uso" lleva las plantillas afectadas dentro de `meta`,
-      // que es donde el cliente busca los datos extra de un error. Sin ellos el
-      // docente solo vería un "no se puede eliminar" sin saber qué hacer.
-      res.status(FIRMA_STATUS[resultado.reason]).json({
-        message: FIRMA_MESSAGE[resultado.reason],
-        ...(resultado.reason === 'firma_en_uso'
-          ? { meta: { plantillas: resultado.plantillas } }
-          : {}),
-      });
-      return;
-    }
-
-    res.status(204).send();
   } catch (error) {
     next(error);
   }

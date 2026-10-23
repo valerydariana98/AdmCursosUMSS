@@ -22,12 +22,7 @@ let pdfRuta: string;
 // El servicio recibe rutas relativas a la carpeta de subidas (es lo que guarda la
 // base de datos), así que el test usa las mismas y no rutas absolutas.
 const FONDO = 'fondos/fondo.png';
-const FIRMA = 'firmas/firma.png';
 const PANORAMICO = 'fondos/panoramico.png';
-const FIRMA_AUSENTE = 'firmas/no-existe.png';
-
-const FIRMA_ANCHO = 400;
-const FIRMA_ALTO = 160;
 
 const crearImagen = async (
   destino: string,
@@ -52,7 +47,6 @@ const elementoTexto = (sobrescrituras: Partial<PlantillaElementoView> = {}): Pla
   idPlantilla: 1,
   tipo: 'texto',
   texto: 'Se otorga a {nombre_estudiante}',
-  idFirma: null,
   xPercent: 2500,
   yPercent: 4000,
   anchoPercent: 5000,
@@ -61,7 +55,6 @@ const elementoTexto = (sobrescrituras: Partial<PlantillaElementoView> = {}): Pla
   fontFamily: 'Helvetica',
   color: '#111827',
   position: 0,
-  firma: null,
   ...sobrescrituras,
 });
 
@@ -72,7 +65,6 @@ beforeAll(async () => {
   // niega a salir de ella, así que las rutas que se le pasan son relativas a esta.
   uploads = path.join(carpeta, 'uploads');
   await mkdir(path.join(uploads, 'fondos'), { recursive: true });
-  await mkdir(path.join(uploads, 'firmas'), { recursive: true });
   process.env.UPLOADS_DIR = uploads;
 
   pdfRuta = path.join(carpeta, 'certificado.pdf');
@@ -85,12 +77,6 @@ beforeAll(async () => {
     b: 235,
     alpha: 1,
   });
-  await crearImagen(path.join(uploads, 'firmas', 'firma.png'), FIRMA_ANCHO, FIRMA_ALTO, {
-    r: 20,
-    g: 20,
-    b: 80,
-    alpha: 1,
-  });
 });
 
 afterAll(async () => {
@@ -100,7 +86,7 @@ afterAll(async () => {
 });
 
 describe('renderizado del certificado', () => {
-  it('genera un PDF de una sola página con texto y firma', async () => {
+  it('genera un PDF de una sola página con texto', async () => {
     await renderizarCertificado({
       destino: pdfRuta,
       fondoRuta: FONDO,
@@ -115,29 +101,6 @@ describe('renderizado del certificado', () => {
           fontSize: 16,
           position: 1,
         }),
-        {
-          id: 3,
-          idPlantilla: 1,
-          tipo: 'firma',
-          texto: null,
-          idFirma: 1,
-          xPercent: 5000,
-          yPercent: 7500,
-          anchoPercent: 2500,
-          alineacion: 'centro',
-          fontSize: 16,
-          fontFamily: 'Helvetica',
-          color: '#111827',
-          position: 2,
-          firma: {
-            id: 1,
-            nombre: 'Firma Rector',
-            ruta: FIRMA,
-            originalNombre: 'firma.png',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        },
       ],
       contexto: {
         nombreEstudiante: 'María Fernanda Vargas',
@@ -229,52 +192,4 @@ describe('renderizado del certificado', () => {
     expect(contenido.subarray(0, 5).toString('ascii')).toBe('%PDF-');
   });
 
-  it('emite el certificado aunque el archivo de la firma ya no exista', async () => {
-    // Una firma borrada a mano del disco no puede tumbar un lote completo de
-    // certificados: el documento se emite sin ella.
-    const destino = path.join(carpeta, 'sin-firma.pdf');
-
-    await renderizarCertificado({
-      destino,
-      fondoRuta: FONDO,
-      fondoAncho: 1600,
-      fondoAlto: 1200,
-      elementos: [
-        elementoTexto(),
-        {
-          id: 4,
-          idPlantilla: 1,
-          tipo: 'firma',
-          texto: null,
-          idFirma: 99,
-          xPercent: 5000,
-          yPercent: 7500,
-          anchoPercent: 2500,
-          alineacion: 'centro',
-          fontSize: 16,
-          fontFamily: 'Helvetica',
-          color: '#111827',
-          position: 1,
-          firma: {
-            id: 99,
-            nombre: 'Firma inexistente',
-            ruta: FIRMA_AUSENTE,
-            originalNombre: 'no-existe.png',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        },
-      ],
-      contexto: {
-        nombreEstudiante: 'Estudiante',
-        nombreCurso: 'Curso',
-        grupo: 'Grupo 1',
-        notaFinal: 70,
-        fechaEmision: '16/10/2026',
-      },
-    });
-
-    const contenido = await readFile(destino);
-    expect(contenido.subarray(0, 5).toString('ascii')).toBe('%PDF-');
-  });
 });

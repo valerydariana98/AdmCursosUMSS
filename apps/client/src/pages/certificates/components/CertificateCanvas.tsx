@@ -12,16 +12,13 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { CERTIFICATE_PERCENT_SCALE } from 'shared';
-import { urlImagen } from '../../../services/certificateService';
 
 export interface ElementoBorrador {
   // Los elementos ya guardados traen su id. Los nuevos reciben uno negativo
   // temporal para poder distinguirlos en el lienzo y en la selección.
   id: number;
-  tipo: 'texto' | 'firma';
+  tipo: 'texto';
   texto: string;
-  idFirma: number | null;
-  firmaRuta: string | null;
   xPercent: number;
   yPercent: number;
   anchoPercent: number;
@@ -86,12 +83,9 @@ const CertificateCanvas = ({
   }, []);
 
   const handleClickEnFondo = (event: React.MouseEvent) => {
-    // Un clic sobre un elemento no debe crear otro texto encima: por eso solo se
-    // atiende el evento del fondo y no el del lienzo completo.
-    if (event.target !== event.currentTarget) {
-      onSeleccionar(null);
-      return;
-    }
+    // Un clic sobre un elemento no crea texto ni deselecciona: la selección se
+    // gestiona en el mousedown del propio bloque. Solo el fondo vacío crea texto.
+    if (event.target !== event.currentTarget) return;
 
     const punto = aPorcentaje(event.clientX, event.clientY);
 
@@ -143,6 +137,7 @@ const CertificateCanvas = ({
       <div
         ref={contenedor}
         onClick={handleClickEnFondo}
+        onContextMenu={(event) => event.preventDefault()}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
@@ -157,12 +152,14 @@ const CertificateCanvas = ({
         />
 
         {elementos.map((elemento) => {
-          const esFirma = elemento.tipo === 'firma';
-
           return (
             <div
               key={elemento.id}
               onMouseDown={(event) => handleMouseDown(event, elemento.id)}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                onSeleccionar(elemento.id);
+              }}
               className={`absolute cursor-move ${
                 seleccionado === elemento.id ? 'ring-2 ring-brand-primary rounded' : ''
               }`}
@@ -186,16 +183,7 @@ const CertificateCanvas = ({
                 wordBreak: 'break-word',
               }}
             >
-              {esFirma ? (
-                <img
-                  src={urlImagen(elemento.firmaRuta) ?? ''}
-                  alt="Firma"
-                  className="pointer-events-none max-h-20 mx-auto"
-                  draggable={false}
-                />
-              ) : (
-                <span className="pointer-events-none whitespace-pre-wrap">{elemento.texto}</span>
-              )}
+              <span className="pointer-events-none whitespace-pre-wrap">{elemento.texto}</span>
 
               {seleccionado === elemento.id && (
                 <button

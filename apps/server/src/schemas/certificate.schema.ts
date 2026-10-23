@@ -30,44 +30,23 @@ const colorHex = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/, 'Color inválido');
 
-// Un elemento de texto y uno de firma se validan por separado según su `tipo`:
-// cada uno declara solo los campos que usa, así que un texto con `idFirma` o una
-// firma con `texto` se rechazan en vez de guardarse con campos que el render
-// ignoraría en silencio.
-const elementoSchema = z.discriminatedUnion('tipo', [
-  z.object({
-    tipo: z.literal('texto'),
-    texto: z.string().max(500, 'El texto del bloque es demasiado largo'),
-    idFirma: z.null().optional(),
-    xPercent: centesimas,
-    yPercent: centesimas,
-    anchoPercent: centesimas,
-    alineacion: z.enum(CERTIFICATE_ALIGNMENTS),
-    fontSize: z.number().int().min(6).max(120),
-    fontFamily: z.string().min(1).max(100),
-    color: colorHex,
-  }),
-  z.object({
-    tipo: z.literal('firma'),
-    texto: z.null().optional(),
-    idFirma: idPositivo,
-    xPercent: centesimas,
-    yPercent: centesimas,
-    anchoPercent: centesimas,
-    alineacion: z.enum(CERTIFICATE_ALIGNMENTS),
-    fontSize: z.number().int().min(6).max(120),
-    fontFamily: z.string().min(1).max(100),
-    color: colorHex,
-  }),
-]);
+const elementoSchema = z.object({
+  tipo: z.literal('texto'),
+  texto: z.string().max(500, 'El texto del bloque es demasiado largo'),
+  xPercent: centesimas,
+  yPercent: centesimas,
+  anchoPercent: centesimas,
+  alineacion: z.enum(CERTIFICATE_ALIGNMENTS),
+    fontSize: z.number().int().min(3).max(120),
+  fontFamily: z.string().min(1).max(100),
+  color: colorHex,
+});
 
 // Un límite alto pero real: impide que un payload enorme se procese cuando lo
 // que un certificado admite son unas pocas decenas de bloques.
 const MAX_ELEMENTOS = 60;
 
 export const plantillaParamsSchema = z.object({ id: idPositivo });
-
-export const firmaParamsSchema = z.object({ id: idPositivo });
 
 export const jobParamsSchema = z.object({ jobId: z.string().min(1) });
 
@@ -101,10 +80,6 @@ export const actualizarPlantillaSchema = z.object({
 
 export const duplicarPlantillaSchema = z.object({
   nombre: z.string().trim().min(1).max(255).optional(),
-});
-
-export const renombrarFirmaSchema = z.object({
-  nombre: z.string().trim().min(1, 'El nombre del propietario es obligatorio').max(255),
 });
 
 export const generarSchema = z.object({
