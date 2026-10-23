@@ -17,12 +17,14 @@
 // certificado que el propio reporte dice que no corresponde.
 
 import { createWriteStream } from 'node:fs';
-import { mkdir, readdir, stat, unlink } from 'node:fs/promises';
+import { randomInt } from 'node:crypto';
+import { mkdir, readFile, readdir, stat, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { ZipArchive } from 'archiver';
-import { eq, inArray, and } from 'drizzle-orm';
-import QRCode from 'qrcode';
+import { and, eq, inArray } from 'drizzle-orm';
 import {
+  CERTIFICATE_CODE_ALPHABET,
+  CERTIFICATE_CODE_PATTERN,
   CERTIFICATE_CONDITION_LABEL,
   computeFinalGrade,
   resolveCertificateCondition,
@@ -30,9 +32,11 @@ import {
   type CertificateCondition,
   type CertificateJob,
   type CertificateJobState,
+  normalizeCertificateCode,
+  type CertificateData,
   type CertificatePreview,
-  type CertificateVariableContext,
-  type PlantillaElementoView,
+  type CertificateVerification,
+  type PlantillaAutoridad,
 } from 'shared';
 import { db } from '../db/index.js';
 import {
@@ -42,7 +46,7 @@ import {
   inscripciones,
   certificadosEmitidos,
   instructores,
-  plantillaElementos,
+  plantillaAutoridades,
   plantillasCertificado,
   rubricItems,
   rubrics,
@@ -61,6 +65,7 @@ export type CertificadoFailure =
   | 'no_enrolled_students'
   | 'sin_plantilla'
   | 'sin_aprobados'
+  | 'curso_no_finalizado'
   | 'job_not_found';
 
 export type CertificadoResult<T> = { ok: true; value: T } | { ok: false; reason: CertificadoFailure };
@@ -77,6 +82,9 @@ interface GrupoContexto {
   instructorId: number;
   passingGrade: number;
   maxAbsences: number;
+  // `cursos.estado` es true mientras el curso está activo; los certificados
+  // solo se emiten para cursos finalizados (issue #97, #99).
+  cursoActivo: boolean;
 }
 
 const cargarGrupoContexto = async (groupId: number): Promise<GrupoContexto | null> => {
@@ -93,6 +101,7 @@ const cargarGrupoContexto = async (groupId: number): Promise<GrupoContexto | nul
       instructorId: grupos.idInstructor,
       passingGrade: cursos.notaMin,
       maxAbsences: cursos.maxFaltas,
+      cursoActivo: cursos.estado,
     })
     .from(grupos)
     .innerJoin(cursos, eq(grupos.idCurso, cursos.id))
@@ -399,28 +408,114 @@ export const limpiarGeneradosAntiguos = async (maximoHoras = 24): Promise<void> 
  * "Certificado_María.pdf" no se abre en todos los sistemas.
  */
 const nombreArchivoCertificado = (estudiante: EstudianteRow, cursoNombre: string): string => {
-  const limpiar = (valor: string) =>
-    valor
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // quita los acentos
-      .replace(/[^a-zA-Z0-9]/g, '') // deja solo letras y números
-      .replace(/\s+/g, '');
-
-  const nombre = limpiar(`${estudiante.apPaterno}${estudiante.nombres}`) || 'estudiante';
-  const curso = limpiar(cursoNombre) || 'curso';
+  const nombre = limpiarNombreArchivo(`${estudiante.apPaterno}${estudiante.nombres}`) || 'estudiante';
+  const curso = limpiarNombreArchivo(cursoNombre) || 'curso';
 
   return `Certificado_${nombre}_${curso}.pdf`;
 };
 
-const cargarElementos = async (plantillaId: number): Promise<PlantillaElementoView[]> => {
-  const filas = await db
-    .select({ elemento: plantillaElementos })
-    .from(plantillaElementos)
-    .where(eq(plantillaElementos.idPlantilla, plantillaId))
-    .orderBy(plantillaElementos.position);
+/** Datos impresos en un certificado de estudiante o de instructor. */
+const datosCertificado = (
+  context: GrupoContexto,
+  tipo: CertificateData['tipo'],
+  destinatario: string
+): CertificateData => ({
+  tipo,
+  destinatario,
+  curso: context.cursoNombre,
+  duracionHoras: context.cursoHoras,
+  fechaIni: context.cursoFechaIni,
+  fechaFin: context.cursoFechaFin,
+  grupo: context.numero,
+  periodo: context.cursoPeriodo,
+});
 
-  return filas.map(({ elemento }) => ({
-    ...elemento,
+// Reciben certificado los que aprobaron y los que solo cumplieron la asistencia
+// (issue #101); la condición decide el título.
+const esElegible = (evaluado: EstudianteEvaluado) =>
+  evaluado.condicion === 'aprobacion' || evaluado.condicion === 'asistencia';
+
+const tipoCertificado = (evaluado: EstudianteEvaluado): 'aprobacion' | 'asistencia' =>
+  evaluado.condicion === 'aprobacion' ? 'aprobacion' : 'asistencia';
+
+/** Quita acentos y todo lo que no sea letra o número, para nombres de archivo. */
+const limpiarNombreArchivo = (valor: string): string =>
+  valor
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '');
+
+interface Emision {
+  tipo: 'aprobacion' | 'asistencia' | 'instructor';
+  destinatarioTipo: 'estudiante' | 'instructor';
+  destinatarioId: number;
+  nombre: string;
+  plantillaId: number;
+  context: GrupoContexto;
+  // Copia de los datos visibles: la verificación los sigue mostrando aunque se
+  // borre el curso o el grupo.
+  metadata: MetadataCertificado;
+}
+
+/**
+ * Código de verificación del certificado. Si ese certificado ya se emitió antes
+ * (mismo destinatario, grupo y tipo) se reutiliza su código: regenerar el lote no
+ * debe dejar varios códigos válidos para el mismo documento.
+ */
+const obtenerCodigo = async (emision: Emision): Promise<string> => {
+  const [existente] = await db
+    .select({ codigo: certificadosEmitidos.codigo })
+    .from(certificadosEmitidos)
+    .where(
+      and(
+        eq(certificadosEmitidos.destinatarioTipo, emision.destinatarioTipo),
+        eq(certificadosEmitidos.destinatarioId, emision.destinatarioId),
+        eq(certificadosEmitidos.grupoId, emision.context.id),
+        eq(certificadosEmitidos.tipo, emision.tipo)
+      )
+    )
+    .limit(1);
+
+  if (existente && CERTIFICATE_CODE_PATTERN.test(existente.codigo)) return existente.codigo;
+
+  const codigo = await generarCodigoUnico();
+
+  await db.insert(certificadosEmitidos).values({
+    codigo,
+    tipo: emision.tipo,
+    destinatarioTipo: emision.destinatarioTipo,
+    destinatarioId: emision.destinatarioId,
+    plantillaId: emision.plantillaId,
+    grupoId: emision.context.id,
+    cursoId: emision.context.cursoId,
+    fechaEmision: new Date().toLocaleDateString('es-BO'),
+    metadata: emision.metadata,
+  });
+
+  return codigo;
+};
+
+/** Datos, código y QR de una página de certificado. */
+const prepararEmision = async (emision: Emision) => ({
+  datos: datosCertificado(emision.context, emision.tipo, emision.nombre),
+  codigoVerificacion: await obtenerCodigo(emision),
+  qrBuffer: await cargarQrVerificacion(),
+});
+
+// Las autoridades van en una posición fija por diseño (issue #97, #99): la
+// tabla no guarda coordenadas, solo título, nombre y el orden de la fila.
+const cargarAutoridades = async (plantillaId: number): Promise<PlantillaAutoridad[]> => {
+  const filas = await db
+    .select()
+    .from(plantillaAutoridades)
+    .where(eq(plantillaAutoridades.idPlantilla, plantillaId))
+    .orderBy(plantillaAutoridades.orden);
+
+  return filas.map((fila) => ({
+    id: fila.id,
+    titulo: fila.titulo,
+    nombre: fila.nombre,
+    orden: fila.orden,
   }));
 };
 
@@ -458,11 +553,19 @@ export const iniciarJob = async (
 
   if (!preview.ok) return preview;
 
-  const { plantilla, aprobados, totalEstudiantes, grupo } = preview.value;
+  const { plantilla, totalEstudiantes, grupo, estudiantes } = preview.value;
 
   // Sin plantilla no se puede emitir: es preferible decirlo antes de que el
   // usuario pulse "generar" a que el proceso termine en error.
   if (!plantilla) return { ok: false, reason: 'sin_plantilla' };
+
+  const context = await cargarGrupoContexto(groupId);
+  if (!context) return { ok: false, reason: 'group_not_found' };
+  if (context.cursoActivo) return { ok: false, reason: 'curso_no_finalizado' };
+
+  const aprobados = estudiantes.filter(
+    (e) => e.condicion === 'aprobacion' || e.condicion === 'asistencia'
+  ).length;
 
   if (aprobados === 0) return { ok: false, reason: 'sin_aprobados' };
 
@@ -477,7 +580,7 @@ export const iniciarJob = async (
     procesados: 0,
     excluidos: totalEstudiantes - aprobados,
     mensajeError: null,
-    nombreArchivo: `certificados_grupo${grupo.numero}_${jobId}.zip`,
+    nombreArchivo: `Certificados_Estudiantes_${limpiarNombreArchivo(grupo.cursoNombre) || 'Curso'}_Grupo${grupo.numero}.zip`,
     zipRutaInterna: null,
   };
 
@@ -508,31 +611,19 @@ const ejecutarJob = async (jobId: string, groupId: number, plantillaId: number):
 
     if (!plantilla) throw new Error('La plantilla ya no existe');
 
-    const [elementos, evaluados] = await Promise.all([
-      cargarElementos(plantillaId),
+    const [autoridades, evaluados] = await Promise.all([
+      cargarAutoridades(plantillaId),
       evaluarEstudiantes(groupId, context),
     ]);
 
-    const aprobados = evaluados.filter((evaluado) => evaluado.condicion === 'aprobacion');
+    const elegibles = evaluados.filter(esElegible);
 
     const carpeta = path.resolve(uploadsDir(), SUBFOLDER_GENERADOS, jobId);
     await mkdir(carpeta, { recursive: true });
 
-    // La fecha se calcula una vez para todo el lote: emitir 30 certificados con
-    // fecha distinta porque el proceso cruzó la medianoche sería un descuido
-    // visible en los documentos de un mismo curso.
-    const fechaEmision = new Date().toLocaleDateString('es-BO');
     const generados: string[] = [];
 
-    for (const [indice, evaluado] of aprobados.entries()) {
-      const contexto: CertificateVariableContext = {
-        nombreEstudiante: nombreCompleto(evaluado.estudiante),
-        nombreCurso: context.cursoNombre,
-        grupo: `Grupo ${context.numero}`,
-        notaFinal: evaluado.notaFinal ?? 0,
-        fechaEmision,
-      };
-
+    for (const [indice, evaluado] of elegibles.entries()) {
       const nombre = nombreArchivoCertificado(evaluado.estudiante, context.cursoNombre);
 
       await renderizarCertificado({
@@ -540,8 +631,16 @@ const ejecutarJob = async (jobId: string, groupId: number, plantillaId: number):
         fondoRuta: plantilla.rutaFondo,
         fondoAncho: plantilla.ancho,
         fondoAlto: plantilla.alto,
-        elementos,
-        contexto,
+        autoridades,
+        ...(await prepararEmision({
+          tipo: tipoCertificado(evaluado),
+          destinatarioTipo: 'estudiante',
+          destinatarioId: evaluado.estudiante.id,
+          nombre: nombreCompleto(evaluado.estudiante),
+          plantillaId,
+          context,
+          metadata: metadataEstudiante(evaluado, context),
+        })),
       });
 
       generados.push(nombre);
@@ -589,8 +688,16 @@ export const descargarZip = (
 // PDF consolidado (issue #101, #102)
 // ------------------------------------------------------------------
 
-const generarCodigoVerificacion = (): string =>
-  `CERT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+// `randomInt` usa el generador criptográfico: con `Math.random` los códigos
+// serían predecibles y alguien podría fabricar uno que verifique.
+const generarCodigoVerificacion = (): string => {
+  const grupo = () =>
+    Array.from(
+      { length: 5 },
+      () => CERTIFICATE_CODE_ALPHABET[randomInt(CERTIFICATE_CODE_ALPHABET.length)]
+    ).join('');
+  return `${grupo()}-${grupo()}-${grupo()}`;
+};
 
 /**
  * El codigo es la llave publica del certificado: no puede repetirse. Se
@@ -612,10 +719,14 @@ const generarCodigoUnico = async (): Promise<string> => {
   return `${generarCodigoVerificacion()}-${Date.now().toString(36).toUpperCase()}`;
 };
 
-const generarQrBuffer = async (codigo: string): Promise<Buffer> => {
-  const base = process.env.PUBLIC_VERIFICATION_URL ?? 'http://localhost:5173/verificar';
-  const url = `${base}/${codigo}`;
-  return QRCode.toBuffer(url, { type: 'png', width: 128, margin: 1 });
+// El QR es el mismo en todos los certificados (lleva a la página donde se
+// escribe el código), así que se lee del disco una sola vez.
+const QR_VERIFICACION = path.resolve(process.cwd(), 'assets', 'certificados', 'qr-verificacion.png');
+let qrVerificacion: Promise<Buffer> | null = null;
+
+const cargarQrVerificacion = (): Promise<Buffer> => {
+  qrVerificacion ??= readFile(QR_VERIFICACION);
+  return qrVerificacion;
 };
 
 export const iniciarJobPdfEstudiantes = async (
@@ -630,11 +741,10 @@ export const iniciarJobPdfEstudiantes = async (
 
   const context = await cargarGrupoContexto(groupId);
   if (!context) return { ok: false, reason: 'group_not_found' };
+  if (context.cursoActivo) return { ok: false, reason: 'curso_no_finalizado' };
 
   const evaluados = await evaluarEstudiantes(groupId, context);
-  const elegibles = evaluados.filter(
-    (e) => e.condicion === 'aprobacion' || e.condicion === 'asistencia'
-  );
+  const elegibles = evaluados.filter(esElegible);
 
   if (elegibles.length === 0) return { ok: false, reason: 'sin_aprobados' };
 
@@ -648,7 +758,7 @@ export const iniciarJobPdfEstudiantes = async (
     procesados: 0,
     excluidos: totalEstudiantes - elegibles.length,
     mensajeError: null,
-    nombreArchivo: `Certificados_Estudiantes_Grupo${grupo.numero}_${jobId}.pdf`,
+    nombreArchivo: `Certificados_Estudiantes_${limpiarNombreArchivo(grupo.cursoNombre) || 'Curso'}_Grupo${grupo.numero}.pdf`,
     zipRutaInterna: null,
   };
 
@@ -678,50 +788,30 @@ const ejecutarJobPdfEstudiantes = async (
       .limit(1);
     if (!plantilla) throw new Error('La plantilla ya no existe');
 
-    const elementos = await cargarElementos(plantillaId);
+    const autoridades = await cargarAutoridades(plantillaId);
     const evaluados = await evaluarEstudiantes(groupId, context);
-    const elegibles = evaluados.filter(
-      (e) => e.condicion === 'aprobacion' || e.condicion === 'asistencia'
-    );
+    const elegibles = evaluados.filter(esElegible);
 
     const carpeta = path.resolve(uploadsDir(), SUBFOLDER_GENERADOS, jobId);
     await mkdir(carpeta, { recursive: true });
 
-    const fechaEmision = new Date().toLocaleDateString('es-BO');
-    const paginas: any[] = [];
+    const paginas: Parameters<typeof renderizarCertificadosEnPdf>[1] = [];
 
     for (const [indice, evaluado] of elegibles.entries()) {
-      const codigo = await generarCodigoUnico();
-      const qrBuffer = await generarQrBuffer(codigo);
-
-      const contexto: CertificateVariableContext = {
-        nombreEstudiante: nombreCompleto(evaluado.estudiante),
-        nombreCurso: context.cursoNombre,
-        grupo: `Grupo ${context.numero}`,
-        notaFinal: evaluado.notaFinal ?? 0,
-        fechaEmision,
-      };
-
       paginas.push({
         fondoRuta: plantilla.rutaFondo,
         fondoAncho: plantilla.ancho,
         fondoAlto: plantilla.alto,
-        elementos,
-        contexto,
-        codigoVerificacion: codigo,
-        qrBuffer,
-      });
-
-      await db.insert(certificadosEmitidos).values({
-        codigo,
-        tipo: evaluado.condicion,
-        destinatarioTipo: 'estudiante',
-        destinatarioId: evaluado.estudiante.id,
-        plantillaId,
-        grupoId: groupId,
-        cursoId: context.cursoId,
-        fechaEmision,
-        metadata: metadataEstudiante(evaluado, context),
+        autoridades,
+        ...(await prepararEmision({
+          tipo: tipoCertificado(evaluado),
+          destinatarioTipo: 'estudiante',
+          destinatarioId: evaluado.estudiante.id,
+          nombre: nombreCompleto(evaluado.estudiante),
+          plantillaId,
+          context,
+          metadata: metadataEstudiante(evaluado, context),
+        })),
       });
 
       job.procesados = indice + 1;
@@ -747,6 +837,7 @@ export const iniciarJobPdfInstructores = async (
 
   const denegado = resolveGroupOwnershipFailure(context, actor.teacherId, actor.isAdmin);
   if (denegado) return { ok: false, reason: denegado };
+  if (context.cursoActivo) return { ok: false, reason: 'curso_no_finalizado' };
 
   const plantilla = await resolverPlantillaParaGrupo(context.cursoId, groupId);
   if (!plantilla) return { ok: false, reason: 'sin_plantilla' };
@@ -761,7 +852,8 @@ export const iniciarJobPdfInstructores = async (
     procesados: 0,
     excluidos: 0,
     mensajeError: null,
-    nombreArchivo: `Certificado_Instructor_Grupo${context.numero}_${jobId}.pdf`,
+    // El nombre del instructor recién se conoce al ejecutar; ahí se completa.
+    nombreArchivo: `Certificado_Instructor_${limpiarNombreArchivo(context.cursoNombre) || 'Curso'}.pdf`,
     zipRutaInterna: null,
   };
 
@@ -791,7 +883,7 @@ const ejecutarJobPdfInstructores = async (
       .limit(1);
     if (!plantilla) throw new Error('La plantilla ya no existe');
 
-    const elementos = await cargarElementos(plantillaId);
+    const autoridades = await cargarAutoridades(plantillaId);
 
     const [instructor] = await db
       .select()
@@ -803,44 +895,34 @@ const ejecutarJobPdfInstructores = async (
     const carpeta = path.resolve(uploadsDir(), SUBFOLDER_GENERADOS, jobId);
     await mkdir(carpeta, { recursive: true });
 
-    const fechaEmision = new Date().toLocaleDateString('es-BO');
-    const codigo = await generarCodigoUnico();
-    const qrBuffer = await generarQrBuffer(codigo);
+    const nombreInstructor =
+      `${instructor.nombres} ${instructor.apPaterno} ${instructor.apMaterno}`.trim();
 
-    const contexto: CertificateVariableContext = {
-      nombreEstudiante: `${instructor.nombres} ${instructor.apPaterno} ${instructor.apMaterno}`.trim(),
-      nombreCurso: context.cursoNombre,
-      grupo: `Grupo ${context.numero}`,
-      notaFinal: 0,
-      fechaEmision,
-    };
+    // Nombre descriptivo de la HU #102: Certificado_Instructor_[Docente]_[Curso].pdf
+    job.nombreArchivo =
+      `Certificado_Instructor_${limpiarNombreArchivo(`${instructor.apPaterno}${instructor.nombres}`) || 'Instructor'}` +
+      `_${limpiarNombreArchivo(context.cursoNombre) || 'Curso'}.pdf`;
 
     const paginas = [
       {
         fondoRuta: plantilla.rutaFondo,
         fondoAncho: plantilla.ancho,
         fondoAlto: plantilla.alto,
-        elementos,
-        contexto,
-        codigoVerificacion: codigo,
-        qrBuffer,
+        autoridades,
+        ...(await prepararEmision({
+          tipo: 'instructor',
+          destinatarioTipo: 'instructor',
+          destinatarioId: instructor.id,
+          nombre: nombreInstructor,
+          plantillaId,
+          context,
+          metadata: metadataInstructor(instructor, context),
+        })),
       },
     ];
 
-    const pdfRuta = path.join(carpeta, job.nombreArchivo ?? `certificado_${jobId}.pdf`);
+    const pdfRuta = path.join(carpeta, job.nombreArchivo);
     await renderizarCertificadosEnPdf(pdfRuta, paginas);
-
-    await db.insert(certificadosEmitidos).values({
-      codigo,
-      tipo: 'instructor',
-      destinatarioTipo: 'instructor',
-      destinatarioId: instructor.id,
-      plantillaId,
-      grupoId: groupId,
-      cursoId: context.cursoId,
-      fechaEmision,
-      metadata: metadataInstructor(instructor, context),
-    });
 
     job.zipRutaInterna = pdfRuta;
     job.procesados = 1;
@@ -853,8 +935,12 @@ const ejecutarJobPdfInstructores = async (
 };
 
 export const verificarCertificado = async (
-  codigo: string
-): Promise<{ ok: true; value: any } | { ok: false; reason: 'not_found' }> => {
+  entrada: string
+): Promise<{ ok: true; value: CertificateVerification } | { ok: false; reason: 'not_found' }> => {
+  // Se acepta el código como lo tipee la persona (minúsculas, sin guiones). Los
+  // códigos del formato anterior (`CERT-...`) no se normalizan y se buscan tal cual.
+  const codigo = normalizeCertificateCode(entrada) ?? entrada.trim().toUpperCase();
+
   const [fila] = await db
     .select({
       certificado: certificadosEmitidos,
@@ -929,17 +1015,22 @@ export const verificarCertificado = async (
   return {
     ok: true,
     value: {
+      // Campos en inglés/camel que usa la página de verificación del cliente.
       codigo: c.codigo,
+      tipo: c.tipo,
+      destinatarioTipo: c.destinatarioTipo,
+      destinatario: nombreEstudiante,
+      curso: nombreCurso,
+      grupo: grupoNum,
+      fechaEmision,
+      // Detalle completo del certificado (copiado en `metadata` al emitir).
       codigo_qr: c.codigo,
       valido: true,
-      tipo: c.tipo,
       tipo_codigo: tipoLower,
       tipo_certificado: tipoCertificado,
-      destinatarioTipo: c.destinatarioTipo,
       destinatarioId: c.destinatarioId,
       cursoId: c.cursoId,
       grupoId: c.grupoId,
-      fechaEmision,
       fecha_emision: fechaEmision,
       nombre_estudiante: nombreEstudiante,
       ci_estudiante: ci,
@@ -947,7 +1038,6 @@ export const verificarCertificado = async (
       cargo,
       nombre_curso: nombreCurso,
       horas,
-      grupo: grupoNum,
       periodo,
       fecha_inicio: fechaIni,
       fecha_fin: fechaFin,

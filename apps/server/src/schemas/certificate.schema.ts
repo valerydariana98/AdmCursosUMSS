@@ -70,12 +70,22 @@ export const crearPlantillaSchema = z.object({
   ),
 });
 
+// Firmantes de la banda inferior. Tienen que declararse aquí: zod descarta las
+// claves que el esquema no conoce, y sin esto se perdían al editar.
+const autoridadSchema = z.object({
+  titulo: z.string().trim().max(255),
+  nombre: z.string().trim().max(255),
+  orden: z.number().int().min(0).optional(),
+});
+
 export const actualizarPlantillaSchema = z.object({
   nombre: z.string().trim().min(1, 'El nombre de la plantilla es obligatorio').max(255),
-  elementos: z.array(elementoSchema).max(
-    MAX_ELEMENTOS,
-    'La plantilla tiene demasiados elementos'
-  ),
+  // El contenido del certificado es fijo; se aceptan por compatibilidad.
+  elementos: z
+    .array(elementoSchema)
+    .max(MAX_ELEMENTOS, 'La plantilla tiene demasiados elementos')
+    .default([]),
+  autoridades: z.array(autoridadSchema).max(10, 'Demasiadas autoridades').default([]),
 });
 
 export const duplicarPlantillaSchema = z.object({

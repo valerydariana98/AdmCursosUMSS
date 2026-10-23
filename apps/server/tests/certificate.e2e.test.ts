@@ -13,7 +13,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { renderizarCertificado } from '../src/services/certificado.render.js';
-import type { PlantillaElementoView } from 'shared';
+import { CERTIFICATE_SAMPLE_DATA, type CertificateData } from 'shared';
 
 let carpeta: string;
 let uploads: string;
@@ -42,19 +42,8 @@ const crearImagen = async (
     .toFile(destino);
 };
 
-const elementoTexto = (sobrescrituras: Partial<PlantillaElementoView> = {}): PlantillaElementoView => ({
-  id: 1,
-  idPlantilla: 1,
-  tipo: 'texto',
-  texto: 'Se otorga a {nombre_estudiante}',
-  xPercent: 2500,
-  yPercent: 4000,
-  anchoPercent: 5000,
-  alineacion: 'centro',
-  fontSize: 24,
-  fontFamily: 'Helvetica',
-  color: '#111827',
-  position: 0,
+const datos = (sobrescrituras: Partial<CertificateData> = {}): CertificateData => ({
+  ...CERTIFICATE_SAMPLE_DATA,
   ...sobrescrituras,
 });
 
@@ -92,23 +81,10 @@ describe('renderizado del certificado', () => {
       fondoRuta: FONDO,
       fondoAncho: 1600,
       fondoAlto: 1200,
-      elementos: [
-        elementoTexto(),
-        elementoTexto({
-          id: 2,
-          texto: 'por aprobar {nombre_curso} con nota {nota_final}',
-          yPercent: 5000,
-          fontSize: 16,
-          position: 1,
-        }),
+      datos: datos(),
+      autoridades: [
+        { titulo: 'Director Académico', nombre: 'Juan Pérez Rojas', orden: 0 },
       ],
-      contexto: {
-        nombreEstudiante: 'María Fernanda Vargas',
-        nombreCurso: 'Álgebra I',
-        grupo: 'Grupo 3',
-        notaFinal: 87,
-        fechaEmision: '16/10/2026',
-      },
     });
 
     const contenido = await readFile(pdfRuta);
@@ -128,7 +104,7 @@ describe('renderizado del certificado', () => {
     expect(contenido.toString('latin1')).toMatch(/\/MediaBox\s*\[\s*0 0 792 612\s*\]/);
   });
 
-  it('deja las variables resueltas dentro del PDF sin el texto de la plantilla', async () => {
+  it('incluye el texto del certificado como texto vectorial', async () => {
     // El texto va comprimido en un flujo aparte, así que no se puede buscar
     // directamente. Lo que sí es comprobable es que el PDF pese lo bastante como
     // para contener texto vectorial: un certificado sin texto sería un cuadro de
@@ -146,14 +122,7 @@ describe('renderizado del certificado', () => {
       fondoRuta: FONDO,
       fondoAncho: 1600,
       fondoAlto: 1200,
-      elementos: [elementoTexto({ texto: 'Segundo certificado' })],
-      contexto: {
-        nombreEstudiante: 'Otro Estudiante',
-        nombreCurso: 'Otro curso',
-        grupo: 'Grupo 9',
-        notaFinal: 60,
-        fechaEmision: '17/10/2026',
-      },
+      datos: datos({ tipo: 'asistencia', destinatario: 'Otro Estudiante', curso: 'Otro curso' }),
     });
 
     const info = await stat(segundo);
@@ -178,14 +147,7 @@ describe('renderizado del certificado', () => {
       fondoRuta: PANORAMICO,
       fondoAncho: 1920,
       fondoAlto: 1080,
-      elementos: [elementoTexto()],
-      contexto: {
-        nombreEstudiante: 'Estudiante',
-        nombreCurso: 'Curso',
-        grupo: 'Grupo 1',
-        notaFinal: 70,
-        fechaEmision: '16/10/2026',
-      },
+      datos: datos({ tipo: 'instructor', grupo: 2, periodo: '2-2026' }),
     });
 
     const contenido = await readFile(destino);

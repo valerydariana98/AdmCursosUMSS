@@ -313,7 +313,7 @@ export const plantillaElementos = pgTable(
     tipo: plantillaElementoTipoEnum('tipo').notNull(),
     // Contenido con variables `{...}` sin resolver. Solo en elementos de texto.
     texto: text('texto'),
-        xPercent: integer('x_percent').notNull(),
+    xPercent: integer('x_percent').notNull(),
     yPercent: integer('y_percent').notNull(),
     anchoPercent: integer('ancho_percent').notNull(),
     alineacion: plantillaAlineacionEnum('alineacion').notNull(),

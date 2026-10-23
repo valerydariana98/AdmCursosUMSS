@@ -13,6 +13,7 @@ import {
   CERTIFICATE_IMAGE_MAX_WIDTH,
   CERTIFICATE_IMAGE_MIN_HEIGHT,
   CERTIFICATE_IMAGE_MIN_WIDTH,
+  CERTIFICATE_PAPER_LABELS,
 } from 'shared';
 import { validarFondo, type ImageValidationFailure } from '../services/imagen.service.js';
 import { listarMarcosBase } from '../services/marcosBase.service.js';
@@ -79,7 +80,6 @@ const PLANTAILLA_STATUS: Record<PlantillaFailure, number> = {
   grupo_no_pertenece_curso: 400,
   grupo_ya_tiene_plantilla: 409,
   fondo_obligatorio: 400,
-  sin_elementos: 400,
 };
 
 const PLANTAILLA_MESSAGE: Record<PlantillaFailure, string> = {
@@ -92,7 +92,6 @@ const PLANTAILLA_MESSAGE: Record<PlantillaFailure, string> = {
   grupo_ya_tiene_plantilla:
     'El grupo ya tiene una plantilla propia. Edite la existente o elimínela antes de crear otra',
   fondo_obligatorio: 'Debe subir una imagen de fondo',
-  sin_elementos: 'La plantilla debe tener al menos un elemento',
 };
 
 const CERTIFICADO_STATUS: Record<CertificadoFailure, number> = {
@@ -102,6 +101,7 @@ const CERTIFICADO_STATUS: Record<CertificadoFailure, number> = {
   no_enrolled_students: 400,
   sin_plantilla: 409,
   sin_aprobados: 400,
+  curso_no_finalizado: 409,
   job_not_found: 404,
 };
 
@@ -112,12 +112,14 @@ const CERTIFICADO_MESSAGE: Record<CertificadoFailure, string> = {
   no_enrolled_students: 'El grupo no tiene estudiantes inscritos',
   sin_plantilla:
     'El grupo no tiene plantilla de certificado, ni propia ni general del curso',
-  sin_aprobados: 'Ningún estudiante del grupo cumple la condición de aprobación',
+  sin_aprobados: 'Ningún estudiante del grupo tiene derecho a certificado (aprobación o asistencia)',
+  curso_no_finalizado: 'Los certificados solo se emiten para cursos finalizados',
   job_not_found: 'La generación no existe o todavía no terminó',
 };
 
 const IMAGEN_STATUS: Record<ImageValidationFailure, number> = {
   formato_no_soportado: 400,
+  proporcion_invalida: 400,
   resolucion_insuficiente: 400,
   resolucion_excesiva: 400,
   imagen_invalida: 400,
@@ -138,6 +140,10 @@ const imagenMessage = (
 
   if (reason === 'resolucion_insuficiente') {
     return `La imagen es demasiado pequeña${actual}. El mínimo es ${CERTIFICATE_IMAGE_MIN_WIDTH}x${CERTIFICATE_IMAGE_MIN_HEIGHT} px`;
+  }
+
+  if (reason === 'proporcion_invalida') {
+    return `La imagen${actual} no tiene proporción de papel horizontal (${CERTIFICATE_PAPER_LABELS}). Exporte el diseño a tamaño real de esos papeles.`;
   }
 
   return `La imagen es demasiado grande${actual}. El máximo es ${CERTIFICATE_IMAGE_MAX_WIDTH}x${CERTIFICATE_IMAGE_MAX_HEIGHT} px`;
@@ -223,6 +229,10 @@ export const postPlantilla = async (req: Request, res: Response, next: NextFunct
         ancho: validacion.width,
         alto: validacion.height,
         elementos: JSON.parse(String(req.body.elementos ?? '[]')),
+        // Las autoridades viajan igual que los elementos: como string JSON en
+        // el multipart. Sin parsearlas aquí se perdían al crear la plantilla y
+        // solo se guardaban al reabrir y volver a guardar.
+        autoridades: JSON.parse(String(req.body.autoridades ?? '[]')),
         fondoBuffer: archivo.buffer,
       },
       actor

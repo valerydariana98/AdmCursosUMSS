@@ -16,6 +16,7 @@ import {
   CERTIFICATE_IMAGE_MAX_WIDTH,
   CERTIFICATE_IMAGE_MIN_HEIGHT,
   CERTIFICATE_IMAGE_MIN_WIDTH,
+  resolverProporcionPapel,
 } from 'shared';
 
 // Las firmas pesan mucho menos que un fondo, pero siguen siendo imágenes: el
@@ -24,6 +25,7 @@ const WEBP_QUALITY = 82;
 
 export type ImageValidationFailure =
   | 'formato_no_soportado'
+  | 'proporcion_invalida'
   | 'resolucion_insuficiente'
   | 'resolucion_excesiva'
   | 'imagen_invalida';
@@ -118,6 +120,12 @@ export const validarFondo = async (
 
   if (width < CERTIFICATE_IMAGE_MIN_WIDTH || height < CERTIFICATE_IMAGE_MIN_HEIGHT) {
     return { ok: false, reason: 'resolucion_insuficiente', width, height };
+  }
+
+  // La proporción va antes que el máximo: una hoja en vertical es el error más
+  // frecuente y el mensaje "demasiado grande" solo lo confundiría.
+  if (!resolverProporcionPapel(width, height)) {
+    return { ok: false, reason: 'proporcion_invalida', width, height };
   }
 
   if (width > CERTIFICATE_IMAGE_MAX_WIDTH || height > CERTIFICATE_IMAGE_MAX_HEIGHT) {

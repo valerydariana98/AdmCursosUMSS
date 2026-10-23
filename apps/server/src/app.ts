@@ -65,7 +65,16 @@ app.use('/api/certificados', certificatesRouter);
 // estáticos. Los ZIP generados NO se sirven por acá: se descargan por un endpoint
 // que valida la sesión, porque un certificado es un documento oficial y no puede
 // quedar accesible solo por conocer la URL.
-app.use(toUrlPrefix(), express.static(uploadsDir()));
+//
+// helmet manda `Cross-Origin-Resource-Policy: same-origin`, y el cliente vive en
+// otro origen (otro puerto en local, otro dominio en producción): sin relajarlo
+// aquí, el navegador bloquea los `<img>` del editor aunque la URL responda 200.
+app.use(
+  toUrlPrefix(),
+  express.static(uploadsDir(), {
+    setHeaders: (res) => res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'),
+  })
+);
 
 // Grupos y sus sub-recursos conviven en el mismo prefijo: un grupo es la entidad
 // padre y sus endpoints cuelgan de /api/grupos/:id/...

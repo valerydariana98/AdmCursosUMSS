@@ -111,8 +111,10 @@ GET    /api/certificados/generar/:jobId/descargar         # el .zip
 
 ### Estándares que aplica
 
-* **Imagen base**: PNG o JPG, entre `1200x800` y `2500x1750` px. Para imprimir sin pérdida
-  use `1920x1080` (16:9) o `2000x1414` (A4 horizontal) a 300 DPI.
+* **Imagen base**: PNG o JPG en **horizontal**, con proporción de `A4`, `Carta` u `Oficio`
+  (el papel se valida al subir, del lado del cliente y del servidor). Ancho entre `1200` y
+  `2500` px; el tamaño de referencia es `2000x1414` (A4 horizontal). El servidor trae 3
+  marcos base listos para usar.
 * **Firmas**: se convierten a **WebP** en el servidor (`sharp`), conservando la
   transparencia. No se puede eliminar una firma que esté en uso.
 * **Salida**: un `.zip` con un **PDF** por estudiante, en carta horizontal (`792x612` pt) con

@@ -1,5 +1,5 @@
 {
-  "id": "9087f681-abf9-4929-ac51-f86e18259a60",
+  "id": "938c135a-b3da-4cb6-8bda-f06a8c543eac",
   "prevId": "7cd008c8-0687-4d1e-bf41-e9daa7ac3a6b",
   "version": "7",
   "dialect": "postgresql",
@@ -276,19 +276,19 @@
           "name": "plantilla_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "id_grupo": {
           "name": "id_grupo",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "id_curso": {
           "name": "id_curso",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "fecha_emision": {
           "name": "fecha_emision",
@@ -339,7 +339,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "certificados_emitidos_id_grupo_grupos_id_fk": {
@@ -352,7 +352,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "certificados_emitidos_id_curso_cursos_id_fk": {
@@ -365,7 +365,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -637,73 +637,6 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.firmas": {
-      "name": "firmas",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "nombre": {
-          "name": "nombre",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "ruta": {
-          "name": "ruta",
-          "type": "varchar(500)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "original_nombre": {
-          "name": "original_nombre",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "firmas_nombre_idx": {
-          "name": "firmas_nombre_idx",
-          "columns": [
-            {
-              "expression": "nombre",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1263,12 +1196,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "id_firma": {
-          "name": "id_firma",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "x_percent": {
           "name": "x_percent",
           "type": "integer",
@@ -1355,19 +1282,6 @@
             "id"
           ],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "plantilla_elementos_id_firma_firmas_id_fk": {
-          "name": "plantilla_elementos_id_firma_firmas_id_fk",
-          "tableFrom": "plantilla_elementos",
-          "tableTo": "firmas",
-          "columnsFrom": [
-            "id_firma"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -1813,8 +1727,7 @@
       "name": "plantilla_elemento_tipo",
       "schema": "public",
       "values": [
-        "texto",
-        "firma"
+        "texto"
       ]
     },
     "public.rol_enum": {
