@@ -11,11 +11,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import AlertInfo from '../../components/AlertInfo';
 import Button from '../../components/Button';
 import Select from '../../components/Select';
-import TextField from '../../components/TextField';
-import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../hooks/useCourses';
 import { ApiError } from '../../services/api';
-import { useGroups } from '../../hooks/useGroups';
 import { certificateService, urlImagen } from '../../services/certificateService';
 import {
   CERTIFICATE_IMAGE_FORMATS,
@@ -26,6 +23,7 @@ import {
   CERTIFICATE_KIND_LABEL,
   CERTIFICATE_PAPER_LABELS,
   CERTIFICATE_SAMPLE_DATA,
+  nombrePlantillaCertificado,
   resolverProporcionPapel,
   type CertificateData,
   type CertificateKind,
@@ -54,21 +52,15 @@ const DESTINATARIO_EJEMPLO: Record<CertificateKind, string> = {
 
 const TIPOS_VISTA_PREVIA = Object.keys(CERTIFICATE_KIND_LABEL) as CertificateKind[];
 
-const NOMBRE_EJEMPLO = 'Certificado de participación';
-
 const CertificateEditorPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const editando = id !== undefined;
-  const { user } = useAuth();
 
   const inputFondo = useRef<HTMLInputElement>(null);
   const { courses } = useCourses();
 
-  const [nombre, setNombre] = useState(editando ? '' : NOMBRE_EJEMPLO);
   const [cursoId, setCursoId] = useState<number | null>(null);
-  const [grupoId, setGrupoId] = useState<number | null>(null);
-  const { grupos } = useGroups(cursoId ?? 0);
 
   const [fondo, setFondo] = useState<{ url: string; ancho: number; alto: number } | null>(null);
   const [archivoFondo, setArchivoFondo] = useState<File | null>(null);
@@ -122,9 +114,7 @@ const CertificateEditorPage = () => {
 
         if (!vigente) return;
 
-        setNombre(plantilla.nombre);
         setCursoId(plantilla.idCurso);
-        setGrupoId(plantilla.idGrupo);
         setFondo({
           url: urlImagen(plantilla.rutaFondo) ?? '',
           ancho: plantilla.ancho,
@@ -246,7 +236,6 @@ const CertificateEditorPage = () => {
   // horas); sin curso, datos de muestra. Solo el destinatario es de ejemplo.
   const datosVistaPrevia = useMemo((): CertificateData => {
     const curso = courses.find((item) => item.id === cursoId);
-    const grupo = grupos.find((item) => item.id === grupoId);
 
     return {
       ...CERTIFICATE_SAMPLE_DATA,
@@ -257,11 +246,11 @@ const CertificateEditorPage = () => {
         fechaFin: curso.fechaFin,
         periodo: curso.periodo,
       }),
-      grupo: grupo?.numGrupo ?? null,
+      grupo: null,
       tipo: tipoVistaPrevia,
       destinatario: DESTINATARIO_EJEMPLO[tipoVistaPrevia],
     };
-  }, [courses, cursoId, grupos, grupoId, tipoVistaPrevia]);
+  }, [courses, cursoId, tipoVistaPrevia]);
 
   // ---- Guardado ----
 
@@ -270,27 +259,27 @@ const CertificateEditorPage = () => {
   const handleSave = async () => {
     setError(null);
 
-    if (nombre.trim() === '') {
-      setError('Indique un nombre para la plantilla');
-      return;
-    }
-
     if (!fondo) {
       setError('Suba una imagen base para el certificado');
       return;
     }
 
-    if (!editando && cursoId === null) {
+    const curso = courses.find((item) => item.id === cursoId);
+
+    if (!curso) {
       setError('Seleccione el curso al que pertenece la plantilla');
       return;
     }
+
+    // Una plantilla por curso: el nombre sale del curso, no lo escribe nadie.
+    const nombre = nombrePlantillaCertificado(curso.nombreCurso);
 
     setGuardando(true);
 
     try {
       if (editando) {
         await certificateService.update(Number(id), {
-          nombre: nombre.trim(),
+          nombre,
           autoridades: autoridades.map((a, index) => ({ titulo: a.titulo, nombre: a.nombre, orden: index })),
           elementos: [],
         });
@@ -303,9 +292,9 @@ const CertificateEditorPage = () => {
 
         const creada = await certificateService.create(
           {
-            nombre: nombre.trim(),
-            idCurso: cursoId!,
-            idGrupo: grupoId,
+            nombre,
+            idCurso: curso.id,
+            idGrupo: null,
             autoridades: autoridades.map((a, index) => ({ titulo: a.titulo, nombre: a.nombre, orden: index })),
             ancho: fondo.ancho,
             alto: fondo.alto,
@@ -333,18 +322,6 @@ const CertificateEditorPage = () => {
     label: `${curso.nombreCurso} (${curso.periodo})`,
   }));
 
-  // La opción vacía va explícita en la lista: el `placeholder` del Select se
-  // deshabilita apenas se elige un grupo, y sin esta opción no habría forma de
-  // volver a dejar el curso sin grupo.
-  const groupOptions = [
-    { value: '', label: 'General del curso (sin grupo)' },
-    ...grupos.map((grupo) => ({
-      value: grupo.id,
-      label: `Grupo ${grupo.numGrupo}`,
-    })),
-  ];
-
-  const soloAdmin = user?.rol === 'ADMIN';
 
   if (cargando) {
     return (
@@ -408,11 +385,15 @@ const CertificateEditorPage = () => {
             </button>
             {datosAbierto && (
               <div className="px-5 pb-5 flex flex-col gap-4">
-                <TextField
-                  label="Nombre de la plantilla"
-                  value={nombre}
-                  onChange={(event) => setNombre(event.target.value)}
-                  placeholder="Certificado de participación"
+                <Select
+                  label="Curso"
+                  value={cursoId ?? ''}
+                  onChange={(event) =>
+                    setCursoId(event.target.value === '' ? null : Number(event.target.value))
+                  }
+                  options={courseOptions}
+                  placeholder={editando ? 'Curso de la plantilla' : 'Seleccione un curso'}
+                  disabled={editando}
                 />
 
                 <div className="flex flex-col gap-2">
@@ -486,38 +467,6 @@ const CertificateEditorPage = () => {
                     Agregar autoridad
                   </button>
                 </div>
-
-                <Select
-                  label="Curso"
-                  value={cursoId ?? ''}
-                  onChange={(event) => {
-                    setCursoId(event.target.value === '' ? null : Number(event.target.value));
-                    setGrupoId(null);
-                  }}
-                  options={courseOptions}
-                  placeholder={editando ? 'Curso de la plantilla' : 'Seleccione un curso'}
-                  disabled={editando}
-                />
-
-                {soloAdmin && (
-                  <Select
-                    label="Grupo (opcional)"
-                    value={grupoId ?? ''}
-                    onChange={(event) =>
-                      setGrupoId(event.target.value === '' ? null : Number(event.target.value))
-                    }
-                    options={groupOptions}
-                    placeholder="General del curso"
-                    disabled={editando || cursoId === null}
-                  />
-                )}
-
-                {soloAdmin && !editando && grupoId === null && (
-                  <p className="text-[11px] text-gray-500 -mt-2">
-                    Sin grupo, la plantilla se aplica a todos los grupos del curso que no tengan una
-                    propia.
-                  </p>
-                )}
               </div>
             )}
           </div>
