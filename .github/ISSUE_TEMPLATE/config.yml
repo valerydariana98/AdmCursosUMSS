@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: QA documentation
+    url: https://github.com/valerydariana98/AdmCursosUMSS/tree/main/docs/qa
+    about: Test plan and sprint reports
