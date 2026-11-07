@@ -1,34 +1,34 @@
 ---
 name: Task
-about: Registrar una tarea de trabajo
+about: Register a work task
 title: "[TASK] "
 labels: "Task"
 ---
 
 <!--
-GESTIÓN EN GITHUB PROJECTS
+GITHUB PROJECTS MANAGEMENT
 
-Status: Seleccionar el estado correspondiente en el Project.
-Priority: Seleccionar la prioridad correspondiente en el Project.
-Sprint: Seleccionar el Sprint correspondiente en el Project.
-Assignee: Asignar al integrante responsable de la Task.
+Status: Select the corresponding status in the Project.
+Priority: Select the corresponding priority in the Project.
+Sprint: Select the corresponding sprint in the Project.
+Assignee: Assign the team member responsible for the task.
 -->
 
-## Descripción
+## Description
 
-<!-- Describe brevemente el trabajo que debe realizarse. -->
+<!-- Briefly describe the work to be done. -->
 
-## Criterios de finalización
+## Done criteria
 
-- [ ] [Criterio o resultado esperado]
-- [ ] [Criterio o resultado esperado]
+- [ ] [Criterion or expected result]
+- [ ] [Criterion or expected result]
 
-## Historia de Usuario relacionada
+## Related issue
 
-<!-- Indicar la Issue de la Historia de Usuario relacionada.
-Ejemplo: #123 -->
+<!-- The user story or bug this task comes from.
+Example: #123 -->
 
-## Dependencias
+## Dependencies
 
-<!-- Indicar únicamente si existe alguna dependencia.
-Ejemplo: Depende de #124 -->
+<!-- Only if there is a dependency.
+Example: Depends on #124 -->

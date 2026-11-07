@@ -1,65 +1,79 @@
 ---
 name: Bug Report
-about: Reportar un defecto del sistema
+about: Report a system defect
 title: "[BUG] "
 labels: "Bug"
 ---
 
 <!--
-GESTIÓN EN GITHUB PROJECTS
+GITHUB PROJECTS MANAGEMENT
 
-Bug Status: Seleccionar el estado correspondiente en el Project.
-Priority: Seleccionar la prioridad correspondiente en el Project.
-Severity: Seleccionar la severidad correspondiente en el Project.
-Sprint: Seleccionar el Sprint correspondiente en el Project.
-Assignee: Asignar al integrante responsable de analizar o corregir el Bug.
+Bug Status: Select the corresponding status in the Project.
+Priority: Select the corresponding priority in the Project.
+Severity: Select the corresponding severity in the Project.
+Sprint: Select the corresponding sprint in the Project.
+Assignee: Assign the team member responsible for analyzing or fixing the bug.
+
+Severity scale:
+- Critical: security issue, data loss, or a main flow is blocked with no workaround.
+- Major: a feature does not work as specified, but there is a workaround.
+- Minor: incorrect behavior with low impact (wrong message, minor validation).
+- Trivial: cosmetic (typo, alignment, color).
+
+Bug Status workflow: Open -> Triaged -> In Progress -> Fixed -> Retest -> Closed.
+If the retest fails: Retest -> Reopened -> In Progress.
+QA closes the bug after the retest passes, not the developer.
 -->
 
-## Descripción
+## Description
 
-<!-- Describir brevemente el comportamiento incorrecto identificado. -->
+<!-- Briefly describe the incorrect behavior. -->
 
-## Historia de Usuario relacionada
+## Related user story
 
-<!-- Indicar la Issue de la Historia de Usuario afectada, cuando corresponda.
-Ejemplo: #123 -->
+<!-- The user story affected, when applicable.
+Example: #123 -->
 
-## Test Case relacionado
+## Qase test case
 
-<!-- Indicar la Issue del Test Case que permitió detectar el defecto, cuando corresponda.
-Ejemplo: #130 -->
+<!-- The Qase test case that found the defect, when applicable.
+Example: ACU-12 (link) -->
 
-## Precondiciones
+## Preconditions
 
-<!-- Indicar las condiciones necesarias para reproducir el defecto. -->
+<!-- Conditions needed to reproduce the defect (role, existing data, state).
+Example: Logged in as DOCENTE; course "QA 101" exists with no groups. -->
 
-## Pasos para reproducir
+## Steps to reproduce
 
-1. [Paso 1]
-2. [Paso 2]
-3. [Paso 3]
+1. [Step 1]
+2. [Step 2]
+3. [Step 3]
 
-## Resultado esperado
+## Expected result
 
-<!-- Indicar qué debería ocurrir. -->
+<!-- What should happen, according to the user story. -->
 
-## Resultado actual
+## Actual result
 
-<!-- Indicar qué ocurre realmente. -->
+<!-- What actually happens. -->
 
-## Ambiente
+## Environment
 
-<!-- Indicar el ambiente donde se detectó el defecto.
-Ejemplo: Chrome / Windows 11 -->
+<!-- Where the defect was found.
+Example: Local (Docker) / Deploy (Render) · Chrome 130 · Windows 11 -->
 
-## Versión
+## Commit / build
 
-<!-- Indicar la versión del sistema en la que se detectó. -->
+<!-- Commit SHA of the version tested.
+Example: b3dd359 -->
 
-## Evidencia
+## Network / logs
 
-<!-- Adjuntar capturas, vídeos, archivos u otra evidencia cuando corresponda. -->
+<!-- From DevTools -> Network: endpoint, status code and response body.
+Add console or server errors if any.
+Example: POST /api/courses -> 201 Created (expected 403) -->
 
-## Fecha
+## Evidence
 
-<!-- Indicar la fecha en que se reportó el defecto. -->
+<!-- Attach screenshots, videos, files or other evidence when applicable. -->

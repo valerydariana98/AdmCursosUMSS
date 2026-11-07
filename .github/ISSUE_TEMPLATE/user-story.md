@@ -1,28 +1,39 @@
 ---
 name: User Story
-about: Crear una nueva Historia de Usuario
-title: "[HU] "
+about: Create a new user story
+title: "[US] "
 labels: "User Story"
 ---
 
 <!--
-GESTIÓN EN GITHUB PROJECTS
+GITHUB PROJECTS MANAGEMENT
 
-Status: Seleccionar el estado correspondiente en el Project.
-Priority: Seleccionar la prioridad correspondiente en el Project.
-Sprint: Seleccionar el Sprint correspondiente en el Project.
-Assignee: Asignar al integrante correspondiente cuando sea necesario.
+Status: Select the corresponding status in the Project.
+Priority: Select the corresponding priority in the Project.
+Sprint: Select the corresponding sprint in the Project.
+Assignee: Assign the team member responsible, when needed.
 -->
 
-## Descripción
+## Description
 
-Como [tipo de usuario], quiero [acción o necesidad], para [beneficio].
+As a [user role], I want [action or need], so that [benefit].
 
-## Criterios de aceptación
+## Acceptance criteria
 
-- [ ] [Dado que (condición inicial), cuando (acción realizada), entonces (resultado esperado)]
+- [ ] [Given (initial condition), when (action performed), then (expected result)]
 
-## Dependencias
+## Roles & permissions
 
-<!-- Indicar únicamente si existe alguna dependencia. 
-Ejemplo: Depende de #123 -->
+<!-- State which roles can perform this action (ADMIN / DOCENTE) and what
+happens for the others.
+Example: Only ADMIN. A DOCENTE does not see the button and the API returns 403. -->
+
+## Out of scope
+
+<!-- State what this story does NOT cover, to avoid assumptions.
+Example: Editing a course that already has enrolled students. -->
+
+## Dependencies
+
+<!-- Only if there is a dependency.
+Example: Depends on #123 -->
