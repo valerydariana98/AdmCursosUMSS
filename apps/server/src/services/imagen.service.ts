@@ -20,8 +20,7 @@ import {
   resolverProporcionPapel,
 } from 'shared';
 
-// Las firmas pesan mucho menos que un fondo, pero siguen siendo imágenes: el
-// límite de tamaño está en el middleware de subida, no aquí.
+// El límite de tamaño de las imágenes está en el middleware de subida, no aquí.
 const WEBP_QUALITY = 82;
 
 export type ImageValidationFailure =
@@ -170,8 +169,8 @@ export const guardarArchivo = async (
 };
 
 /**
- * Convierte a WebP y guarda. Es el camino que siguen tanto los fondos como las
- * firmas: el disco nunca guarda el archivo original tal como llegó.
+ * Convierte a WebP y guarda. Es el camino que siguen los fondos:
+ * el disco nunca guarda el archivo original tal como llegó.
  */
 export const guardarComoWebp = async (buffer: Buffer, subfolder: string): Promise<string> => {
   const webp = await convertirAWebp(buffer);
