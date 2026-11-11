@@ -1,6 +1,10 @@
 import { and, eq, notInArray } from 'drizzle-orm';
 import { fromPercentageHundredths, toPercentageHundredths } from 'shared';
-import { getCurrentTeacher, getCurrentTeacherId } from '../auth/currentTeacher.js';
+import {
+  type CurrentTeacher,
+  getCurrentTeacher,
+  getCurrentTeacherId,
+} from '../auth/currentTeacher.js';
 import { syncEvaluacionesFromRubric } from '../services/grades.service.js';
 import { getCurrentPeriod } from '../utils/period.js';
 import { db } from './index.js';
@@ -18,6 +22,7 @@ import {
   tipoEstudiante,
   tipos,
 } from './schema.js';
+import { seedAdminUser, seedDocenteUser } from './seedUsers.js';
 
 // Curso y grupo de prueba del docente simulado. Los nombres fijos permiten que el
 // seed sea idempotente y que el grupo siempre pertenezca al docente que simula la
@@ -272,13 +277,23 @@ const seedDevGrades = async (
   }
 };
 
-const seedDevGroupForTeacher = async () => {
-  const teacher = await getCurrentTeacher();
+// El grupo de prueba queda a nombre de CURRENT_TEACHER_ID si está definido
+// (bases con datos reales). Si no, del DOCENTE que crea el seed, así en una
+// base vacía (Docker local, CI) ese usuario entra y ya tiene un grupo.
+const resolveDevTeacher = async (
+  seededTeacher: CurrentTeacher | null
+): Promise<CurrentTeacher | null> => {
+  if (process.env.CURRENT_TEACHER_ID) return getCurrentTeacher();
+  return seededTeacher ?? getCurrentTeacher();
+};
+
+const seedDevGroupForTeacher = async (seededTeacher: CurrentTeacher | null) => {
+  const teacher = await resolveDevTeacher(seededTeacher);
 
   if (!teacher) {
     console.warn(
       `⚠️  No existe el instructor ${getCurrentTeacherId()}: no se creó el grupo de prueba. ` +
-        'Revisá CURRENT_TEACHER_ID en apps/server/.env.'
+        'Revisá CURRENT_TEACHER_ID o SEED_DOCENTE_* en apps/server/.env.'
     );
     return;
   }
@@ -421,16 +436,20 @@ async function main() {
       ])
       .onConflictDoNothing();
 
-    // 3. Grupo de prueba que pertenece al docente simulado
-    await seedDevGroupForTeacher();
+    // 3. Usuarios de prueba (solo si las variables SEED_* están definidas)
+    await seedAdminUser();
+    const seededTeacher = await seedDocenteUser();
 
-    console.log('✅ Seeding completado con éxito en Aiven.');
+    // 4. Grupo de prueba que pertenece al docente simulado
+    await seedDevGroupForTeacher(seededTeacher);
+
+    console.log('✅ Seeding completado con éxito.');
   } catch (error) {
     console.error('❌ Error ejecutando el seeding:', error);
     process.exit(1);
-  } finally {
-    process.exit(0);
   }
+
+  process.exit(0);
 }
 
 main();
